@@ -1,0 +1,27 @@
+[
+{
+  "directory": "C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/build",
+  "command": "C:\\mingw64\\bin\\g++.exe   -g -std=gnu++17 -o CMakeFiles\\Argmax.dir\\main.cpp.obj -c C:\\Users\\decan\\Documents\\Scolaire\\L3\\ProjectArgmax\\Argmax\\main.cpp",
+  "file": "C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/main.cpp"
+},
+{
+  "directory": "C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/build",
+  "command": "C:\\mingw64\\bin\\g++.exe   -g -std=gnu++17 -o CMakeFiles\\Argmax.dir\\source\\argmax.cpp.obj -c C:\\Users\\decan\\Documents\\Scolaire\\L3\\ProjectArgmax\\Argmax\\source\\argmax.cpp",
+  "file": "C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/source/argmax.cpp"
+},
+{
+  "directory": "C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/build",
+  "command": "C:\\mingw64\\bin\\g++.exe   -g -std=gnu++17 -o CMakeFiles\\Argmax.dir\\sat_specific\\clause.cpp.obj -c C:\\Users\\decan\\Documents\\Scolaire\\L3\\ProjectArgmax\\Argmax\\sat_specific\\clause.cpp",
+  "file": "C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/sat_specific/clause.cpp"
+},
+{
+  "directory": "C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/build",
+  "command": "C:\\mingw64\\bin\\g++.exe   -g -std=gnu++17 -o CMakeFiles\\Argmax.dir\\sat_specific\\formule.cpp.obj -c C:\\Users\\decan\\Documents\\Scolaire\\L3\\ProjectArgmax\\Argmax\\sat_specific\\formule.cpp",
+  "file": "C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/sat_specific/formule.cpp"
+},
+{
+  "directory": "C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/build",
+  "command": "C:\\mingw64\\bin\\g++.exe   -g -std=gnu++17 -o CMakeFiles\\Argmax.dir\\sat_specific\\solution.cpp.obj -c C:\\Users\\decan\\Documents\\Scolaire\\L3\\ProjectArgmax\\Argmax\\sat_specific\\solution.cpp",
+  "file": "C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/sat_specific/solution.cpp"
+}
+]
