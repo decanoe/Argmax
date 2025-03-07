@@ -1,3 +1,0 @@
-C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/build/CMakeFiles/Argmax.dir
-C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/build/CMakeFiles/edit_cache.dir
-C:/Users/decan/Documents/Scolaire/L3/ProjectArgmax/Argmax/build/CMakeFiles/rebuild_cache.dir

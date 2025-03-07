@@ -8,10 +8,10 @@
 
 class Solution: public Instance {
 protected:
-    std::vector<std::uint64_t> assignation;
+    BitString assignation;
     std::shared_ptr<Formule> formule;
 public:
-    Solution(std::shared_ptr<Formule> f, std::vector<std::uint64_t> assignation);
+    Solution(std::shared_ptr<Formule> f, BitString assignation);
     Solution(std::shared_ptr<Formule> f);
     Solution(const Solution&);
     
@@ -36,6 +36,7 @@ public:
 
     // Instance specific
     float score() const override;
+    bool is_max_score(float score) const override;
     int nb_args() const override;
     void mutate_arg(int index) override;
     void mutate_arg(int index, float probability) override;

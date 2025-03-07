@@ -50,7 +50,7 @@ Formule::Formule(std::string path) {
     file.close();
 }
 
-unsigned int Formule:: count_valid_clauses(const std::vector<std::uint64_t>& assignation) const {
+unsigned int Formule:: count_valid_clauses(const BitString& assignation) const {
     unsigned int count = 0;
     for (const Clause& clause : clauses)
         count += clause.evaluate(assignation);

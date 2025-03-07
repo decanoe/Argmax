@@ -7,17 +7,11 @@ bool get_bool(float proba = .5) {
 }
 
 Solution::Solution(const Solution& s): Solution(s.formule, s.assignation) {}
-Solution::Solution(std::shared_ptr<Formule> f, std::vector<std::uint64_t> assignation): formule(f), assignation(assignation) {}
-Solution::Solution(std::shared_ptr<Formule> f): formule(f) {
-    assignation = std::vector<std::uint64_t>(f->get_nb_variables() >> 6);
-
-    for (int i = 0; i < assignation.size(); i++)
-        assignation[i] = std::rand();
-}
+Solution::Solution(std::shared_ptr<Formule> f, BitString assignation): assignation(assignation), formule(f) {}
+Solution::Solution(std::shared_ptr<Formule> f): assignation(f->get_nb_variables()), formule(f) {}
 
 void Solution::randomize() {
-    for (int i = 0; i < assignation.size(); i++)
-        assignation[i] = std::rand();
+    assignation.randomize();
 }
 
 bool Solution::get(unsigned int index) const {
@@ -25,7 +19,7 @@ bool Solution::get(unsigned int index) const {
         std::cerr << "index out of range: asking for variable " << index << " out of " << get_nb_variables() << "\n";
         exit(1);
     }
-    return (assignation[index >> 6] & (1 << (index % (1 << 6)))) != 0;
+    return assignation.get_bit(index);
 }
 
 void Solution::set(unsigned int index, bool value) {
@@ -33,7 +27,7 @@ void Solution::set(unsigned int index, bool value) {
         std::cerr << "index out of range: setting value of variable " << index << " out of " << get_nb_variables() << "\n";
         exit(1);
     }
-    assignation[index >> 6] |= (1 << (index % (1 << 6)));
+    assignation.set_bit(index, value);
 }
 
 unsigned int Solution::get_nb_variables() const {
@@ -42,7 +36,7 @@ unsigned int Solution::get_nb_variables() const {
 
 std::string Solution::to_string(bool compress) const {
     std::string result = "";
-    for (int i = 0; i < get_nb_variables(); i++) {
+    for (unsigned int i = 0; i < get_nb_variables(); i++) {
         if (compress) result += std::to_string(get(i));
         else result += "x" + std::to_string(i + 1) + " = " + std::to_string(get(i)) + '\n';
     }
@@ -57,11 +51,14 @@ std::string Solution::to_string(bool compress) const {
 float Solution::score() const {
     return formule->count_valid_clauses(assignation);
 }
+bool Solution::is_max_score(float score) const {
+    return formule->get_nb_clauses() == score;
+}
 int Solution::nb_args() const {
     return get_nb_variables();
 }
 void Solution::mutate_arg(int index) {
-    assignation[index >> 6] ^= 1 << (index % (1 << 6));
+    assignation.switch_bit(index);
 }
 void Solution::mutate_arg(int index, float probability) {
     if (get_bool(probability)) mutate_arg(index);
@@ -71,6 +68,5 @@ std::unique_ptr<Instance> Solution::breed(std::unique_ptr<Instance> other) {
     return clone();
 }
 std::unique_ptr<Instance> Solution::clone() const {
-    auto ptr = std::unique_ptr<Solution>{ new Solution(*this) }; // <- 1
-    return ptr;
+    return std::unique_ptr<Solution>(new Solution(*this));
 }

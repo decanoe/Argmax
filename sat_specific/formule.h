@@ -4,6 +4,7 @@
 #include "clause.h"
 #include <iostream>
 #include <fstream>
+#include <string>
 
 class Formule {
 private:
@@ -16,7 +17,7 @@ public:
 
     /// @brief returns the number of true clauses
     /// @param assignation the assignation of each variables
-    unsigned int count_valid_clauses(const std::vector<std::uint64_t>& assignation) const;
+    unsigned int count_valid_clauses(const BitString& assignation) const;
 
     // @returns Number of clauses
     unsigned int get_nb_clauses() const;

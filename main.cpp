@@ -12,21 +12,30 @@ int main(int argc, char *args[]) {
         std::cerr << "\033[1;31mYou need to put a path to a cnf (or txt) file\n\033[0m";
         exit(1);
     }
-    std::shared_ptr<Formule> f = std::make_shared<Formule>(args[1]);
-
+    std::shared_ptr<Formule> f = std::shared_ptr<Formule>(new Formule(args[1]));
+    std::cout << "file loaded\n";
+    
     Solution solution(f);
-
+    
     std::string best = "no best";
-    int max = 0;
-    int percent = 0;
-    int nb_iter = 1024;
+    unsigned int max = 0;
+    // int percent = 0;
+    int nb_iter = 2024;
+    
+    
+    solution.randomize();
+    std::unique_ptr<Instance> temp = hill_climb_tab(solution.clone(), 10, nb_iter);
+    Solution result = *dynamic_cast<Solution*>(temp.get());
+    best = result.to_string(true);
+    max = result.score();
+    /*
     for (int i = 0; i <= nb_iter; i++)
     {
         solution.randomize();
         std::unique_ptr<Instance> temp = hill_climb(solution.clone());
         Solution result = *dynamic_cast<Solution*>(temp.get());
     
-        int count = result.score();
+        unsigned int count = result.score();
         if (count > max) {
             max = count;
             best = result.to_string(true);
@@ -46,7 +55,7 @@ int main(int argc, char *args[]) {
             std::cout << t + "]          ";
         }
     }
+    */
     std::cout << "\nmax score: " << best << " : " << max << " out of " << f->get_nb_clauses() << "\n";
-    
     return 0;
 }
