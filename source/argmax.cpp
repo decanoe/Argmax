@@ -123,7 +123,7 @@ std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr
                 best_score = score;
                 best = instance->clone();
                 if (best->is_max_score(best_score)) {
-                    std::cout << "\r                                                   \r";
+                    std::cout << "\r                                                                                         \r";
                     return best;
                 }
             }
@@ -164,11 +164,11 @@ std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr
             for (int i = 0; i < p / 10; i++) t += "=";//"▆";
             for (int i = p / 10; i < 10; i++) t += " ";
             
-            std::cout << t + "]          ";
+            std::cout << t + "] best in generation: " + std::to_string(score_1) + "\t overall best: " + std::to_string(best_score) + "                    ";
         }
     }
     
-    std::cout << "\r                                                   \r";
+    std::cout << "\r                                                                                           \r";
     return best;
 }
 

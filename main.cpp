@@ -65,20 +65,23 @@ void run_hill_climb_ban(int argc, char *args[]) {
     std::unique_ptr<Instance> temp = Argmax::hill_climb_tab(solution.clone(), solution.nb_args() / 4, 2048);
     Solution result = *dynamic_cast<Solution*>(temp.get());
 
-    std::cout << "\nmax score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
+    std::cout << "max score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
 }
 void run_simple_evo(int argc, char *args[]) {
     std::shared_ptr<Formule> f = std::shared_ptr<Formule>(new Formule(args[1]));
     
     Solution solution(f);
-    
+    auto p = Argmax::simple_evolution_parameters();
+    p.mutation_probability = 0.01f;
+    p.generation_count = 2048;
+
     std::unique_ptr<Instance> temp = Argmax::simple_evolution(
         [solution]() -> std::unique_ptr<Instance> { return solution.randomize_clone(); },
-        Argmax::simple_evolution_parameters()
+        p
     );
     Solution result = *dynamic_cast<Solution*>(temp.get());
 
-    std::cout << "\nmax score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
+    std::cout << "max score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
 }
 
 int main(int argc, char *args[]) {
