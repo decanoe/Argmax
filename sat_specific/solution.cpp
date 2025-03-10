@@ -10,8 +10,9 @@ Solution::Solution(const Solution& s): Solution(s.formule, s.assignation) {}
 Solution::Solution(std::shared_ptr<Formule> f, BitString assignation): assignation(assignation), formule(f) {}
 Solution::Solution(std::shared_ptr<Formule> f): assignation(f->get_nb_variables(), f->get_nb_variables()), formule(f) {}
 
-void Solution::randomize() {
+Solution& Solution::randomize() {
     assignation.randomize();
+    return *this;
 }
 
 bool Solution::get(unsigned int index) const {
@@ -68,8 +69,19 @@ void Solution::mutate_arg(int index, float probability) {
     if (get_bool(probability)) mutate_arg(index);
 }
 
-std::unique_ptr<Instance> Solution::breed(std::unique_ptr<Instance> other) {
-    return clone();
+std::unique_ptr<Instance> Solution::breed(const std::unique_ptr<Instance>& other_inst) {
+    Solution* other = dynamic_cast<Solution*>(other_inst.get());
+    if (other == nullptr) { std::cerr << "Instance is of wrong type, expected Solution !"; exit(-1); }
+
+    BitString no_match_mask = this->assignation ^ other->assignation;
+    BitString match_mask = ~no_match_mask;
+    
+    BitString random = BitString(this->assignation);
+    random.randomize();
+
+    return std::make_unique<Solution>(this->formule,
+        (this->assignation & match_mask) | (random & no_match_mask)
+    );
 }
 std::unique_ptr<Instance> Solution::clone() const {
     return std::unique_ptr<Solution>(new Solution(*this));

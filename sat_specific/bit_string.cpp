@@ -40,6 +40,11 @@ BitString BitString::operator|(const BitString& other) const {
     for (size_t i = 0; i < result.string.size(); i++) result.string[i] = other.string[i] | string[i];
     return result;
 }
+BitString BitString::operator^(const BitString& other) const {
+    BitString result(std::min(size(), other.size()));
+    for (size_t i = 0; i < result.string.size(); i++) result.string[i] = other.string[i] ^ string[i];
+    return result;
+}
 BitString BitString::operator~() const {
     BitString result(string.size());
     for (size_t i = 0; i < result.string.size(); i++) result.string[i] = ~(string[i]);

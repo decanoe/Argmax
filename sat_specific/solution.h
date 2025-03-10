@@ -15,8 +15,8 @@ public:
     Solution(std::shared_ptr<Formule> f);
     Solution(const Solution&);
     
-    /// @brief randomizes the variables states
-    void randomize();
+    /// @brief randomizes the variables states in place and returns itself
+    Solution& randomize();
 
     /// @param index The index of the value to return (generates an error if it's out of range)
     /// @return The value of the variable 
@@ -41,7 +41,7 @@ public:
     void mutate_arg(int index) override;
     void mutate_arg(int index, float probability) override;
 
-    std::unique_ptr<Instance> breed(std::unique_ptr<Instance> other) override;
+    std::unique_ptr<Instance> breed(const std::unique_ptr<Instance>& other) override;
     std::unique_ptr<Instance> clone() const override;
     
     friend std::ostream& operator<<(std::ostream&, const Solution&);

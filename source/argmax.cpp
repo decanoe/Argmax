@@ -1,6 +1,7 @@
 #include "argmax.h"
 #include <chrono>
 #include <list>
+#include <vector>
 #include <algorithm>
 
 float get_time_from(std::chrono::system_clock::time_point point) {
@@ -96,6 +97,52 @@ std::unique_ptr<Instance> Argmax::hill_climb_tab(const std::unique_ptr<Instance>
 
 
 
+std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr<Instance>()> spawner, simple_evolution_parameters parameters) {
+    std::vector<std::unique_ptr<Instance>> population = std::vector<std::unique_ptr<Instance>>();
+    population.reserve(parameters.population_size);
+    for (unsigned int i = 0; i < parameters.population_size; i++) population.push_back(spawner());
+    
+    std::unique_ptr<Instance> best = nullptr;
+    float best_score = 0;
+    for (unsigned int g = 0; g < parameters.generation_count; g++)
+    {
+        std::unique_ptr<Instance> parent_1 = nullptr;
+        float score_1 = 0;
+        std::unique_ptr<Instance> parent_2 = nullptr;
+        float score_2 = 0;
+        
+        // get parents
+        for (std::unique_ptr<Instance>& instance : population)
+        {
+            float score = instance->score();
+
+            if (score > best_score || best == nullptr) {
+                best_score = score;
+                best = instance->clone();
+            }
+
+            if (score > score_1 || parent_1 == nullptr) {
+                score_1 = score;
+                parent_1 = std::move(instance);
+            }
+            else if (score > score_2 || parent_2 == nullptr) {
+                score_2 = score;
+                parent_2 = std::move(instance);
+            }
+        }
+        
+        // make new population
+        for (unsigned int i = 0; i < parameters.population_size; i++) {
+            population[i] = parent_1->breed(parent_2);
+
+            //mutate offspring
+            for (int arg = 0; arg < population[i]->nb_args(); arg++)
+                population[i]->mutate_arg(arg, parameters.mutation_probability);
+        }
+    }
+    
+    return best;
+}
 
 
 

@@ -14,7 +14,7 @@ public:
     virtual void mutate_arg(int index) = 0;
     virtual void mutate_arg(int index, float probability) = 0;
 
-    virtual std::unique_ptr<Instance> breed(std::unique_ptr<Instance> other) = 0;
+    virtual std::unique_ptr<Instance> breed(const std::unique_ptr<Instance>& other) = 0;
     virtual std::unique_ptr<Instance> clone() const = 0;
 };
 

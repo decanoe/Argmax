@@ -23,6 +23,7 @@ public:
 
     BitString operator&(const BitString&) const;
     BitString operator|(const BitString&) const;
+    BitString operator^(const BitString&) const;
     BitString operator~() const;
     bool is_null() const;
 
