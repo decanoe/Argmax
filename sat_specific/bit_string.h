@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <ostream>
+#include <iostream>
 
 class BitString
 {
@@ -16,7 +16,8 @@ public:
     void set_bit(unsigned int index, bool state);
     bool get_bit(unsigned int index) const;
     void switch_bit(unsigned int index);
-    void randomize();
+    BitString& randomize();
+    BitString randomize_clone() const;
 
     const std::vector<std::uint64_t>& get_uint64_string() const;
     std::uint64_t get_uint64(unsigned int index) const;
