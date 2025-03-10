@@ -78,14 +78,17 @@ int change_to_best_neighbor(std::unique_ptr<Instance>& instance, const std::list
 std::unique_ptr<Instance> hill_climb_tab(const std::unique_ptr<Instance> start, size_t black_list_size, unsigned int max_iter) {
     std::list<int> black_list;
     std::unique_ptr<Instance> result = start->clone();
+    std::unique_ptr<Instance> best = result->clone();
     for (size_t i = 0; i < max_iter; i++)
     {
         int index = change_to_best_neighbor(result, black_list);
         if (index == -1) return result;
+        
+        if (result->score() > best->score()) best = result->clone();
 
         black_list.push_front(index);
         if (black_list.size() > black_list_size) black_list.pop_back();
     }
     
-    return result;
+    return best;
 }

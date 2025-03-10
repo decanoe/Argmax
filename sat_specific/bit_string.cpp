@@ -1,6 +1,7 @@
 #include "bit_string.h"
 
 BitString::BitString(unsigned int max_size): string((max_size >> 6) + (max_size % (1<<6) != 0), 0) {}
+BitString::BitString(const BitString& b): string(b.string) {}
 
 unsigned int BitString::size() const {
     return string.size() << 6;

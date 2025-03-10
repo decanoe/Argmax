@@ -9,7 +9,7 @@ private:
 public:
     BitString() = default;
     BitString(unsigned int max_size);
-    BitString(const BitString&) = default;
+    BitString(const BitString&);
 
     unsigned int size() const;
     void set_bit(unsigned int index, bool state);

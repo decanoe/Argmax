@@ -43,6 +43,10 @@ std::string Solution::to_string(bool compress) const {
     return result;
 }
 
+std::ostream& operator<<(std::ostream& c, const Solution& s) {
+    return c << s.assignation;
+}
+
 
 
 
