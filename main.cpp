@@ -18,8 +18,6 @@ void algo_message(){
 }
 
 void run_hill_climb(int argc, char *args[]) {
-    
-
     std::shared_ptr<Formule> f = std::shared_ptr<Formule>(new Formule(args[1]));
     std::cout << "file loaded\n";
     
@@ -70,11 +68,17 @@ void run_hill_climb_ban(int argc, char *args[]) {
     std::cout << "\nmax score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
 }
 void run_simple_evo(int argc, char *args[]) {
+    std::shared_ptr<Formule> f = std::shared_ptr<Formule>(new Formule(args[1]));
     
-    // [=]() -> std::unique_ptr<Instance>
-    // {
-    //    return solution.randomize().clone();
-    // };
+    Solution solution(f);
+    
+    std::unique_ptr<Instance> temp = Argmax::simple_evolution(
+        [solution]() -> std::unique_ptr<Instance> { return solution.randomize_clone(); },
+        Argmax::simple_evolution_parameters()
+    );
+    Solution result = *dynamic_cast<Solution*>(temp.get());
+
+    std::cout << "\nmax score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
 }
 
 int main(int argc, char *args[]) {

@@ -3,6 +3,7 @@
 #include <list>
 #include <vector>
 #include <algorithm>
+#include <string>
 
 float get_time_from(std::chrono::system_clock::time_point point) {
     auto end = std::chrono::system_clock::now();
@@ -104,12 +105,14 @@ std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr
     
     std::unique_ptr<Instance> best = nullptr;
     float best_score = 0;
+    int progress_percent = 0;
     for (unsigned int g = 0; g < parameters.generation_count; g++)
     {
         std::unique_ptr<Instance> parent_1 = nullptr;
         float score_1 = 0;
         std::unique_ptr<Instance> parent_2 = nullptr;
         float score_2 = 0;
+
         
         // get parents
         for (std::unique_ptr<Instance>& instance : population)
@@ -119,6 +122,10 @@ std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr
             if (score > best_score || best == nullptr) {
                 best_score = score;
                 best = instance->clone();
+                if (best->is_max_score(best_score)) {
+                    std::cout << "\r                                                   \r";
+                    return best;
+                }
             }
 
             if (score > score_1 || parent_1 == nullptr) {
@@ -130,17 +137,38 @@ std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr
                 parent_2 = std::move(instance);
             }
         }
+
+        if (parent_1 == nullptr || parent_2 == nullptr) {
+            std::cerr << "\033[1;31mNot enough instances in the population, can't find parents !\033[0m";
+            exit(-1);
+        }
         
         // make new population
         for (unsigned int i = 0; i < parameters.population_size; i++) {
             population[i] = parent_1->breed(parent_2);
-
+            
             //mutate offspring
-            for (int arg = 0; arg < population[i]->nb_args(); arg++)
-                population[i]->mutate_arg(arg, parameters.mutation_probability);
+            for (int arg = 0; arg < population[i]->nb_args(); arg++) population[i]->mutate_arg(arg, parameters.mutation_probability);
+        }
+
+
+
+
+        // pretty print to wait
+        int p = 100 * (float)g / parameters.generation_count;
+        if (p != progress_percent) {
+            progress_percent = p;
+            std::string t = "\rprogress: " + std::to_string(progress_percent);
+            if (p < 10) t += " ";
+            t += "% [";
+            for (int i = 0; i < p / 10; i++) t += "=";//"▆";
+            for (int i = p / 10; i < 10; i++) t += " ";
+            
+            std::cout << t + "]          ";
         }
     }
     
+    std::cout << "\r                                                   \r";
     return best;
 }
 

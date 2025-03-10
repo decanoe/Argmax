@@ -14,6 +14,9 @@ Solution& Solution::randomize() {
     assignation.randomize();
     return *this;
 }
+std::unique_ptr<Instance> Solution::randomize_clone() const {
+    return std::make_unique<Solution>(formule, assignation.randomize_clone());
+}
 
 bool Solution::get(unsigned int index) const {
     if (index >= get_nb_variables()) {
@@ -75,6 +78,10 @@ std::unique_ptr<Instance> Solution::breed(const std::unique_ptr<Instance>& other
 
     BitString no_match_mask = this->assignation ^ other->assignation;
     BitString match_mask = ~no_match_mask;
+    // std::cout << "\nthis:\t" << this->assignation << "\n";
+    // std::cout << "other:\t" << other->assignation << "\n";
+    // std::cout << "mask:\t" << no_match_mask << "\n";
+    // exit(-1);
     
     BitString random = BitString(this->assignation);
     random.randomize();

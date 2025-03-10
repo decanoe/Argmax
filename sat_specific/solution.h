@@ -43,6 +43,7 @@ public:
 
     std::unique_ptr<Instance> breed(const std::unique_ptr<Instance>& other) override;
     std::unique_ptr<Instance> clone() const override;
+    std::unique_ptr<Instance> randomize_clone() const;
     
     friend std::ostream& operator<<(std::ostream&, const Solution&);
 };
