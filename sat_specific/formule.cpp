@@ -38,7 +38,7 @@ Formule::Formule(std::string path) {
     int v1, v2, v3;
     while (file >> v1 >> v2 >> v3)
     {
-        clauses.push_back(Clause(v1, v2, v3));
+        clauses.push_back(Clause(v1, v2, v3, nb_variables));
         index++;
         std::getline(file, w); // skip end of line
     }

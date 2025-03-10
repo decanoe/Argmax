@@ -37,7 +37,7 @@ bool change_to_better_neighbor(std::unique_ptr<Instance>& instance) {
     instance = std::move(best);
     return true;
 }
-std::unique_ptr<Instance> hill_climb(const std::unique_ptr<Instance> start, unsigned int max_iter) {
+std::unique_ptr<Instance> Argmax::hill_climb(const std::unique_ptr<Instance> start, unsigned int max_iter) {
     std::unique_ptr<Instance> result = start->clone();
     unsigned int i = 0;
     while (change_to_better_neighbor(result) && ++i < max_iter);
@@ -75,7 +75,7 @@ int change_to_best_neighbor(std::unique_ptr<Instance>& instance, const std::list
     instance = std::move(best);
     return index;
 }
-std::unique_ptr<Instance> hill_climb_tab(const std::unique_ptr<Instance> start, size_t black_list_size, unsigned int max_iter) {
+std::unique_ptr<Instance> Argmax::hill_climb_tab(const std::unique_ptr<Instance> start, size_t black_list_size, unsigned int max_iter) {
     std::list<int> black_list;
     std::unique_ptr<Instance> result = start->clone();
     std::unique_ptr<Instance> best = result->clone();
@@ -92,3 +92,12 @@ std::unique_ptr<Instance> hill_climb_tab(const std::unique_ptr<Instance> start, 
     
     return best;
 }
+
+
+
+
+
+
+
+
+

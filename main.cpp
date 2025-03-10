@@ -24,7 +24,9 @@ int main(int argc, char *args[]) {
     
     
     solution.randomize();
-    std::unique_ptr<Instance> temp = hill_climb_tab(solution.clone(), solution.nb_args() / 4, nb_iter);
+    std::cout << "s1\n";
+    std::unique_ptr<Instance> temp = Argmax::hill_climb_tab(solution.clone(), solution.nb_args() / 4, nb_iter);
+    std::cout << "s2\n";
     Solution result = *dynamic_cast<Solution*>(temp.get());
     max = result.score();
     /*

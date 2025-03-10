@@ -8,11 +8,11 @@ void Clause::set_state(unsigned int index, Clause::State state) {
     not_mask.set_bit(index, state == State::Not);
 }
 
-Clause::Clause(int v1, int v2, int v3) {
+Clause::Clause(int v1, int v2, int v3, unsigned int print_size) {
     nb_var = __max(__abs(v1), __max(__abs(v2), __abs(v3)));
 
-    normal_mask = BitString(nb_var);
-    not_mask = BitString(nb_var);
+    normal_mask = BitString(print_size, nb_var);
+    not_mask = BitString(print_size, nb_var);
 
     if (v1 != 0) set_state(__abs(v1) - 1, v1 > 0 ? State::Normal : State::Not);
     if (v2 != 0) set_state(__abs(v2) - 1, v2 > 0 ? State::Normal : State::Not);

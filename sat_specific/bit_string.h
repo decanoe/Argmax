@@ -6,9 +6,10 @@ class BitString
 {
 private:
     std::vector<std::uint64_t> string;
+    unsigned int print_size;
 public:
     BitString() = default;
-    BitString(unsigned int max_size);
+    BitString(unsigned int print_size, unsigned int start_size = 0);
     BitString(const BitString&);
 
     unsigned int size() const;

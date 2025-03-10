@@ -8,7 +8,7 @@ bool get_bool(float proba = .5) {
 
 Solution::Solution(const Solution& s): Solution(s.formule, s.assignation) {}
 Solution::Solution(std::shared_ptr<Formule> f, BitString assignation): assignation(assignation), formule(f) {}
-Solution::Solution(std::shared_ptr<Formule> f): assignation(f->get_nb_variables()), formule(f) {}
+Solution::Solution(std::shared_ptr<Formule> f): assignation(f->get_nb_variables(), f->get_nb_variables()), formule(f) {}
 
 void Solution::randomize() {
     assignation.randomize();
