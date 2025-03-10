@@ -5,41 +5,42 @@
 // chcp 65001
 #define __max(a,b) (((a) > (b)) ? (a) : (b))
 
-int main(int argc, char *args[]) {
-    srand(time(NULL));
+void path_message() {
+    std::cerr << "\033[1;31mYou need to put a path to a cnf (or txt) file\n\033[0m";
+    exit(1);
+}
+void algo_message(){
+    std::cerr << "\033[1;31mYou need to put an algorithm to run :\n\
+\t-hc         \tto use hill_climb algorithm\n\
+\t-hc_ban     \tto use hill_climb algorithm with ban list\n\
+\t-evo_simple \tto use the simple evolution algorithm\n\033[0m";
+    exit(2);
+}
 
-    if (argc < 2) {
-        std::cerr << "\033[1;31mYou need to put a path to a cnf (or txt) file\n\033[0m";
-        exit(1);
-    }
+void run_hill_climb(int argc, char *args[]) {
+    
+
     std::shared_ptr<Formule> f = std::shared_ptr<Formule>(new Formule(args[1]));
     std::cout << "file loaded\n";
     
     Solution solution(f);
     
-    std::string best = "no best";
+    Solution best = solution;
     unsigned int max = 0;
-    // int percent = 0;
-    int nb_iter = 2024;
-    
+    int percent = 0;
+    int nb_iter = 2028;
     
     solution.randomize();
-    std::cout << "s1\n";
-    std::unique_ptr<Instance> temp = Argmax::hill_climb_tab(solution.clone(), solution.nb_args() / 4, nb_iter);
-    std::cout << "s2\n";
-    Solution result = *dynamic_cast<Solution*>(temp.get());
-    max = result.score();
-    /*
     for (int i = 0; i <= nb_iter; i++)
     {
         solution.randomize();
-        std::unique_ptr<Instance> temp = hill_climb(solution.clone());
+        std::unique_ptr<Instance> temp = Argmax::hill_climb(solution.clone());
         Solution result = *dynamic_cast<Solution*>(temp.get());
     
         unsigned int count = result.score();
         if (count > max) {
             max = count;
-            best = result.to_string(true);
+            best = result;
         }
 
         if (max >= f->get_nb_clauses()) break;
@@ -56,7 +57,37 @@ int main(int argc, char *args[]) {
             std::cout << t + "]          ";
         }
     }
-    */
-    std::cout << "\nmax score: " << result << " : " << max << " out of " << f->get_nb_clauses() << "\n";
+    std::cout << "\nmax score: " << best << " : " << max << " out of " << f->get_nb_clauses() << "\n";
+}
+void run_hill_climb_ban(int argc, char *args[]) {
+    std::shared_ptr<Formule> f = std::shared_ptr<Formule>(new Formule(args[1]));
+    
+    Solution solution(f);
+    solution.randomize();
+    std::unique_ptr<Instance> temp = Argmax::hill_climb_tab(solution.clone(), solution.nb_args() / 4, 2048);
+    Solution result = *dynamic_cast<Solution*>(temp.get());
+
+    std::cout << "\nmax score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
+}
+void run_simple_evo(int argc, char *args[]) {
+    
+    // [=]() -> std::unique_ptr<Instance>
+    // {
+    //    return solution.randomize().clone();
+    // };
+}
+
+int main(int argc, char *args[]) {
+    if (argc < 2) path_message();
+    if (argc < 3) algo_message();
+
+    srand(time(NULL));
+
+    std::string arg2 = args[2];
+    if (arg2 == "-hc") run_hill_climb(argc, args);
+    else if (arg2 == "-hc_ban") run_hill_climb_ban(argc, args);
+    else if (arg2 == "-evo_simple") run_simple_evo(argc, args);
+    else algo_message();
+
     return 0;
 }
