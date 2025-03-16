@@ -1,6 +1,6 @@
 #include "formule.h"
 
-Formule::Formule(std::string path) {
+Formule::Formule(const std::string& path) {
     std::ifstream file = std::ifstream(path);
     if (!file.is_open()) {
         std::cerr << "\033[1;31mERROR: cannot open file !\033[0m\n";

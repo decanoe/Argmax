@@ -13,7 +13,7 @@ private:
 public:
     /// @brief Creates a representation of a formule from a cnf (or txt) file in DIMACS CNF format
     /// @param path the cnf (or txt) file path
-    Formule(std::string path);
+    Formule(const std::string& path);
 
     /// @brief returns the number of true clauses
     /// @param assignation the assignation of each variables
