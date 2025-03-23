@@ -1,6 +1,9 @@
 #include "source/argmax.h"
 #include "sat_specific/formule.h"
 #include "sat_specific/solution.h"
+
+#include "FA/deck.h"
+#include "FA/hand.h"
 #include <time.h>
 // chcp 65001
 #define __max(a,b) (((a) > (b)) ? (a) : (b))
@@ -13,7 +16,8 @@ void algo_message(){
     std::cerr << "\033[1;31mYou need to put an algorithm to run :\n\
 \t-hc         \tto use hill_climb algorithm\n\
 \t-hc_ban     \tto use hill_climb algorithm with ban list\n\
-\t-evo_simple \tto use the simple evolution algorithm\n\033[0m";
+\t-evo_simple \tto use the simple evolution algorithm\n\n\
+\t-fa         \tto run with fa problem\n\033[0m";
     exit(2);
 }
 
@@ -26,7 +30,7 @@ void run_hill_climb(int argc, char *args[]) {
     Solution best = solution;
     unsigned int max = 0;
     int percent = 0;
-    int nb_iter = 2028;
+    int nb_iter = 512;
     
     solution.randomize();
     for (int i = 0; i <= nb_iter; i++)
@@ -84,6 +88,25 @@ void run_simple_evo(int argc, char *args[]) {
     std::cout << "max score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
 }
 
+void run_simple_evo_fa(int argc, char *args[]) {
+    std::shared_ptr<Deck> deck = std::make_shared<Deck>(args[1], args[2]);
+    
+    Hand h(deck);
+    auto p = Argmax::simple_evolution_parameters();
+    p.mutation_probability = 0.1f;
+    p.generation_count = 128;
+    p.mutation_probability = 0.5f;
+
+    std::unique_ptr<Instance> temp = Argmax::simple_evolution(
+        [h]() -> std::unique_ptr<Instance> { return h.randomize_clone(); },
+        p,
+        true
+    );
+    Hand result = *dynamic_cast<Hand*>(temp.get());
+
+    std::cout << "max score: " << result << " : " << int(result.score()) << " points\n";
+}
+
 int main(int argc, char *args[]) {
     if (argc < 2) path_message();
     if (argc < 3) algo_message();
@@ -94,6 +117,7 @@ int main(int argc, char *args[]) {
     if (arg2 == "-hc") run_hill_climb(argc, args);
     else if (arg2 == "-hc_ban") run_hill_climb_ban(argc, args);
     else if (arg2 == "-evo_simple") run_simple_evo(argc, args);
+    else if (argc == 4 && (std::string)args[3] == "-fa") run_simple_evo_fa(argc, args);
     else algo_message();
 
     return 0;

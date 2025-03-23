@@ -98,11 +98,13 @@ std::unique_ptr<Instance> Argmax::hill_climb_tab(const std::unique_ptr<Instance>
 
 
 
-std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr<Instance>()> spawner, simple_evolution_parameters parameters) {
+std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr<Instance>()> spawner, simple_evolution_parameters parameters, bool show_best) {
     std::vector<std::unique_ptr<Instance>> population = std::vector<std::unique_ptr<Instance>>();
     population.reserve(parameters.population_size);
     for (unsigned int i = 0; i < parameters.population_size; i++) population.push_back(spawner());
     
+    std::cout << "\n";
+
     std::unique_ptr<Instance> best = nullptr;
     float best_score = 0;
     int progress_percent = 0;
@@ -158,17 +160,23 @@ std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr
         int p = 100 * (float)g / parameters.generation_count;
         if (p != progress_percent) {
             progress_percent = p;
-            std::string t = "\rprogress: " + std::to_string(progress_percent);
+            std::string t = "\033[A\r\033[Kprogress: " + std::to_string(progress_percent);
             if (p < 10) t += " ";
             t += "% [";
             for (int i = 0; i < p / 10; i++) t += "=";//"▆";
             for (int i = p / 10; i < 10; i++) t += " ";
             
-            std::cout << t + "] best in generation: " + std::to_string(score_1) + "\t overall best: " + std::to_string(best_score) + "                    ";
+            std::cout << t + "] best in generation: " + std::to_string(score_1) + "\t overall best: " + std::to_string(best_score) + "\n\033[Kbest instance of gen: ";
+            if (show_best) parent_1->cout(std::cout);
         }
     }
     
-    std::cout << "\r                                                                                           \r";
+    std::cout << "\r\033[K\033[A\r\033[K\r";
+    std::cout << "population:\n";
+    for (std::unique_ptr<Instance>& instance : population) {
+        instance->cout(std::cout) << "\n";
+    }
+
     return best;
 }
 
