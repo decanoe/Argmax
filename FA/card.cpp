@@ -9,3 +9,4 @@ unsigned int Card::get_map_count() const { return this->map_count; }
 unsigned int Card::get_plant_count() const { return this->plant_count; }
 unsigned int Card::get_beast_count() const { return this->beast_count; }
 unsigned int Card::get_rock_count() const { return this->rock_count; }
+unsigned int Card::get_index() const { return 0; }

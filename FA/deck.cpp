@@ -96,6 +96,7 @@ Deck::Deck(const std::string& peoples_path, const std::string& sanctuaries_path)
                 if      (reward_type == People::Score_type::Color1)   people_card->set_score_type(reward_type, score_value, col1);
                 else if (reward_type == People::Score_type::Color2)   people_card->set_score_type(reward_type, score_value, col1, col2);
                 else if (reward_type == People::Score_type::Resource) people_card->set_score_type(reward_type, score_value, resource);
+                else people_card->set_score_type(reward_type, score_value);
                 this->peoples.push_back(people_card);
             }
         }
@@ -172,12 +173,13 @@ Deck::Deck(const std::string& peoples_path, const std::string& sanctuaries_path)
 
             std::shared_ptr<Sanctuary> sanctuary_card = std::make_shared<Sanctuary>(color, day=="night", map, plant, beast, rock);
 
-            if (reward_type == Sanctuary::Score_type::None) this->peoples.push_back(sanctuary_card);
+            if (reward_type == Sanctuary::Score_type::None) this->sanctuaries.push_back(sanctuary_card);
             else {
                 if      (reward_type == Sanctuary::Score_type::Color1)   sanctuary_card->set_score_type(reward_type, score_value, col1);
                 else if (reward_type == Sanctuary::Score_type::Color2)   sanctuary_card->set_score_type(reward_type, score_value, col1, col2);
                 else if (reward_type == Sanctuary::Score_type::Resource) sanctuary_card->set_score_type(reward_type, score_value, resource);
-                this->peoples.push_back(sanctuary_card);
+                else sanctuary_card->set_score_type(reward_type, score_value);
+                this->sanctuaries.push_back(sanctuary_card);
             }
         }
     }

@@ -24,6 +24,8 @@ public:
     People& set_score_type(Score_type type, unsigned int score, Card::Color color);
     People& set_score_type(Score_type type, unsigned int score, Card::Color color1, Card::Color color2);
 
+    unsigned int get_index() const override;
+
     bool cost_paid(std::shared_ptr<Deck> deck, const std::vector<unsigned int>& sanctuaries, const std::vector<unsigned int>& cards, unsigned int card_index) const;
     unsigned int score(std::shared_ptr<Deck> deck, const std::vector<unsigned int>& sanctuaries, const std::vector<unsigned int>& cards, unsigned int card_index) const override;
 };

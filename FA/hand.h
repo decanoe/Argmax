@@ -6,12 +6,18 @@
 
 class Hand: public Instance {
 protected:
+    std::shared_ptr<Deck> deck;
     std::vector<unsigned int> peoples;
     std::vector<unsigned int> sanctuaries;
+
     bool get_bool(float proba = .5);
+    unsigned int get_rand_index(unsigned int max);
+    unsigned int get_rand_index(unsigned int max, std::vector<unsigned int> blacklist);
 public:
-    Hand();
+    Hand(std::shared_ptr<Deck> deck);
     Hand(const Hand&);
+
+    unsigned int nb_sanctuary() const;
     
     // Instance specific
     float score() const override;
@@ -25,6 +31,7 @@ public:
     std::unique_ptr<Instance> randomize_clone() const;
     Hand& randomize();
     
+    std::ostream& cout(std::ostream& c) const override;
     friend std::ostream& operator<<(std::ostream&, const Hand&);
 };
 

@@ -37,6 +37,8 @@ People& People::set_score_type(Score_type type, unsigned int score, Card::Color 
     return *this;
 }
 
+unsigned int People::get_index() const { return index; }
+
 bool People::cost_paid(std::shared_ptr<Deck> deck, const std::vector<unsigned int>& sanctuaries, const std::vector<unsigned int>& cards, unsigned int card_index) const {
     unsigned int p = 0, b = 0, r = 0;
     
@@ -57,7 +59,7 @@ bool People::cost_paid(std::shared_ptr<Deck> deck, const std::vector<unsigned in
 }
 unsigned int People::_color_score(std::shared_ptr<Deck> deck, const std::vector<unsigned int>& sanctuaries, const std::vector<unsigned int>& cards, unsigned int card_index) const {
     std::vector<unsigned int> col_counts = std::vector<unsigned int>(5, 0);
-    for (unsigned int card : cards) col_counts[deck->get_people(card)->get_color()] += 1;
+    for (size_t i = card_index; i < cards.size(); i++) col_counts[deck->get_people(cards[i])->get_color()] += 1;
     for (unsigned int sanctuary : sanctuaries) col_counts[deck->get_sanctuary(sanctuary)->get_color()] += 1;
 
     switch (this->type)
@@ -77,23 +79,23 @@ unsigned int People::score(std::shared_ptr<Deck> deck, const std::vector<unsigne
     case Score_type::None: return 0;
     case Score_type::Fix: return score_value;
     case Score_type::Night:
-        for (unsigned int card : cards) i += deck->get_people(card)->is_night();
+        for (size_t i = card_index; i < cards.size(); i++) i += deck->get_people(cards[i])->is_night();
         for (unsigned int sanctuary : sanctuaries) i += deck->get_sanctuary(sanctuary)->is_night();
         return i * score_value;
     case Score_type::Resource:
         switch (resource)
         {
         case ResourceType::Map:
-            for (unsigned int card : cards) i += deck->get_people(card)->get_map_count();
+            for (size_t i = card_index; i < cards.size(); i++) i += deck->get_people(cards[i])->get_map_count();
             for (unsigned int sanctuary : sanctuaries) i += deck->get_sanctuary(sanctuary)->get_map_count();
         case ResourceType::Plant:
-            for (unsigned int card : cards) i += deck->get_people(card)->get_plant_count();
+            for (size_t i = card_index; i < cards.size(); i++) i += deck->get_people(cards[i])->get_plant_count();
             for (unsigned int sanctuary : sanctuaries) i += deck->get_sanctuary(sanctuary)->get_plant_count();
         case ResourceType::Beast:
-            for (unsigned int card : cards) i += deck->get_people(card)->get_beast_count();
+            for (size_t i = card_index; i < cards.size(); i++) i += deck->get_people(cards[i])->get_beast_count();
             for (unsigned int sanctuary : sanctuaries) i += deck->get_sanctuary(sanctuary)->get_beast_count();
         case ResourceType::Rock:
-            for (unsigned int card : cards) i += deck->get_people(card)->get_rock_count();
+            for (size_t i = card_index; i < cards.size(); i++) i += deck->get_people(cards[i])->get_rock_count();
             for (unsigned int sanctuary : sanctuaries) i += deck->get_sanctuary(sanctuary)->get_rock_count();
         }
         return i * score_value;

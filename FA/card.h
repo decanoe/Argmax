@@ -17,6 +17,7 @@ public:
     unsigned int get_plant_count() const;
     unsigned int get_beast_count() const;
     unsigned int get_rock_count() const;
+    virtual unsigned int get_index() const;
     
     virtual unsigned int score(std::shared_ptr<Deck> deck, const std::vector<unsigned int>& sanctuaries, const std::vector<unsigned int>& cards, unsigned int card_index) const = 0;
 protected:
