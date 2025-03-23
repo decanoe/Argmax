@@ -17,6 +17,7 @@ void algo_message(){
 \t-hc         \tto use hill_climb algorithm\n\
 \t-hc_ban     \tto use hill_climb algorithm with ban list\n\
 \t-evo_simple \tto use the simple evolution algorithm\n\n\
+\t-evo        \tto use the evolution algorithm\n\n\
 \t-fa         \tto run with fa problem\n\033[0m";
     exit(2);
 }
@@ -87,6 +88,23 @@ void run_simple_evo(int argc, char *args[]) {
 
     std::cout << "max score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
 }
+void run_evo(int argc, char *args[]) {
+    std::shared_ptr<Formule> f = std::shared_ptr<Formule>(new Formule(args[1]));
+
+    Solution solution(f);
+    auto p = Argmax::evolution_parameters();
+    p.mutation_probability = 0.01f;
+    p.generation_count = 256;
+
+    std::unique_ptr<Instance> temp = Argmax::evolution(
+        [solution]() -> std::unique_ptr<Instance> { return solution.randomize_clone(); },
+        p,
+        true
+    );
+    Solution result = *dynamic_cast<Solution*>(temp.get());
+
+    std::cout << "max score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
+}
 
 void run_simple_evo_fa(int argc, char *args[]) {
     std::shared_ptr<Deck> deck = std::make_shared<Deck>(args[1], args[2]);
@@ -117,6 +135,7 @@ int main(int argc, char *args[]) {
     if (arg2 == "-hc") run_hill_climb(argc, args);
     else if (arg2 == "-hc_ban") run_hill_climb_ban(argc, args);
     else if (arg2 == "-evo_simple") run_simple_evo(argc, args);
+    else if (arg2 == "-evo") run_evo(argc, args);
     else if (argc == 4 && (std::string)args[3] == "-fa") run_simple_evo_fa(argc, args);
     else algo_message();
 

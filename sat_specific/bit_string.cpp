@@ -38,12 +38,12 @@ BitString& BitString::randomize() {
 BitString BitString::randomize_clone() const {
     BitString result = BitString(*this);
     for (unsigned int i = 0; i < result.string.size(); i++)
-    result.string[i] = rand64();
+        result.string[i] = rand64();
     return result;
 }
 
 const std::vector<std::uint64_t>& BitString::get_uint64_string() const { return string; }
-std::uint64_t BitString::get_uint64(unsigned int index) const { return string[index]; }
+std::uint64_t BitString::get_uint64(unsigned int index) const { if (index >= string.size()) return 0; else return string[index]; }
 
 BitString BitString::operator&(const BitString& other) const {
     BitString result(std::min(print_size, other.print_size), std::min(size(), other.size()));
@@ -51,17 +51,17 @@ BitString BitString::operator&(const BitString& other) const {
     return result;
 }
 BitString BitString::operator|(const BitString& other) const {
-    BitString result(std::min(print_size, other.print_size), std::min(size(), other.size()));
-    for (size_t i = 0; i < result.string.size(); i++) result.string[i] = other.string[i] | string[i];
+    BitString result(std::min(print_size, other.print_size), std::max(size(), other.size()));
+    for (size_t i = 0; i < result.string.size(); i++) result.string[i] = other.get_uint64(i) | get_uint64(i);
     return result;
 }
 BitString BitString::operator^(const BitString& other) const {
-    BitString result(std::min(print_size, other.print_size), std::min(size(), other.size()));
-    for (size_t i = 0; i < result.string.size(); i++) result.string[i] = other.string[i] ^ string[i];
+    BitString result(std::min(print_size, other.print_size), std::max(size(), other.size()));
+    for (size_t i = 0; i < result.string.size(); i++) result.string[i] = other.get_uint64(i) ^ get_uint64(i);
     return result;
 }
 BitString BitString::operator~() const {
-    BitString result(print_size, string.size());
+    BitString result(print_size, size());
     for (size_t i = 0; i < result.string.size(); i++) result.string[i] = ~(string[i]);
     return result;
 }
@@ -77,6 +77,7 @@ std::ostream& BitString::print_uint64(std::ostream& c, std::uint64_t value) {
     return c;
 }
 std::ostream& operator<<(std::ostream& c, const BitString& s) {
+    c << "[" << s.print_size << "]";
     for (unsigned int i = 0; i < std::max(1U, std::min(s.print_size, s.size())); i++)
         if (s.get_bit(i)) c << "\033[1;34m1\033[0m";
         else c << "0";
