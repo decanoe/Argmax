@@ -45,6 +45,7 @@ public:
     std::unique_ptr<Instance> clone() const override;
     std::unique_ptr<Instance> randomize_clone() const;
     
+    std::ostream& cout(std::ostream& c) const override;
     friend std::ostream& operator<<(std::ostream&, const Solution&);
 };
 
