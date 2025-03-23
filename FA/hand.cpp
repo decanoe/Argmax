@@ -46,10 +46,18 @@ std::ostream& operator<<(std::ostream& c, const Hand& h) {
 
 // instance specific
 float Hand::score() const {
+    if (!std::isnan(stored_score)) return stored_score;
     unsigned int s = 0;
     for (unsigned int i = 0; i < peoples.size(); ++i) s += deck->get_people(peoples[i])->score(deck, sanctuaries, peoples, i);
     for (unsigned int i = 0; i < nb_sanctuary(); ++i) s += deck->get_sanctuary(sanctuaries[i])->score(deck, sanctuaries, peoples, i);
     return s;
+}
+float Hand::score() {
+    if (!std::isnan(stored_score)) return stored_score;
+    stored_score = 0;
+    for (unsigned int i = 0; i < peoples.size(); ++i) stored_score += deck->get_people(peoples[i])->score(deck, sanctuaries, peoples, i);
+    for (unsigned int i = 0; i < nb_sanctuary(); ++i) stored_score += deck->get_sanctuary(sanctuaries[i])->score(deck, sanctuaries, peoples, i);
+    return stored_score;
 }
 bool Hand::is_max_score(float score) const {
     return false;
@@ -58,6 +66,7 @@ int Hand::nb_args() const {
     return 9;
 }
 void Hand::mutate_arg(int index) {
+    stored_score = NAN;
     if (index == 8) {
         unsigned int replaced_index = get_rand_index(nb_sanctuary());
         std::vector<unsigned int> black_list = sanctuaries;
@@ -123,5 +132,6 @@ Hand& Hand::randomize() {
     for (int i = 0; i < 8; i++) peoples.push_back(get_rand_index(deck->get_people_count(), peoples));
     for (int i = 0; i < 7; i++) sanctuaries.push_back(get_rand_index(deck->get_sanctuary_count(), sanctuaries));
     
+    stored_score = NAN;
     return *this;
 }

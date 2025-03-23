@@ -12,6 +12,7 @@ Solution::Solution(std::shared_ptr<Formule> f): assignation(f->get_nb_variables(
 
 Solution& Solution::randomize() {
     assignation.randomize();
+    stored_score = NAN;
     return *this;
 }
 std::unique_ptr<Instance> Solution::randomize_clone() const {
@@ -32,6 +33,7 @@ void Solution::set(unsigned int index, bool value) {
         exit(1);
     }
     assignation.set_bit(index, value);
+    stored_score = NAN;
 }
 
 unsigned int Solution::get_nb_variables() const {
@@ -58,7 +60,12 @@ std::ostream& operator<<(std::ostream& c, const Solution& s) {
 
 // instance specific
 float Solution::score() const {
-    return formule->count_valid_clauses(assignation);
+    if (std::isnan(stored_score)) return formule->count_valid_clauses(assignation);
+    return stored_score;
+}
+float Solution::score() {
+    if (std::isnan(stored_score)) stored_score = formule->count_valid_clauses(assignation);
+    return stored_score;
 }
 bool Solution::is_max_score(float score) const {
     return formule->get_nb_clauses() == score;
@@ -68,6 +75,7 @@ int Solution::nb_args() const {
 }
 void Solution::mutate_arg(int index) {
     assignation.switch_bit(index);
+    this->stored_score = NAN;
 }
 void Solution::mutate_arg(int index, float probability) {
     if (get_bool(probability)) mutate_arg(index);

@@ -1,15 +1,18 @@
 #pragma once
 #include <memory>
 #include <iostream>
+#include <cmath>
 
 class Instance
 {
-private:
+protected:
+    float stored_score = NAN;
 public:
     Instance() = default;
     Instance(const Instance&) = default;
 
     virtual float score() const = 0;
+    virtual float score() = 0;
     virtual bool is_max_score(float score) const { return false; }
     virtual int nb_args() const = 0;
     virtual void mutate_arg(int index) = 0;

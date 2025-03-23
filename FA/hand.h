@@ -21,6 +21,7 @@ public:
     
     // Instance specific
     float score() const override;
+    float score() override;
     bool is_max_score(float score) const override;
     int nb_args() const override;
     void mutate_arg(int index) override;
