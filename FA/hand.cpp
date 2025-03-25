@@ -21,7 +21,7 @@ Hand::Hand(const Hand& h): deck(h.deck), peoples(h.peoples), sanctuaries(h.sanct
 unsigned int Hand::nb_sanctuary() const {
     unsigned int count = 0;
     for (unsigned int i = 0; i < peoples.size() - 1; ++i)
-        count += deck->get_people(peoples[i])->get_index() > deck->get_people(peoples[i+1])->get_index();
+        count += deck->get_people(peoples[i])->get_index() < deck->get_people(peoples[i+1])->get_index();
     return count;
 }
 
