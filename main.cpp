@@ -16,9 +16,9 @@ void algo_message(){
     std::cerr << "\033[1;31mYou need to put an algorithm to run :\n\
 \t-hc         \tto use hill_climb algorithm\n\
 \t-hc_ban     \tto use hill_climb algorithm with ban list\n\
-\t-evo_simple \tto use the simple evolution algorithm\n\n\
+\t-evo_simple \tto use the simple evolution algorithm\n\
 \t-evo        \tto use the evolution algorithm\n\n\
-\t-fa         \tto run with fa problem\n\033[0m";
+\t-fa -<algo> \tto run with fa problem\n\033[0m";
     exit(2);
 }
 
@@ -106,16 +106,82 @@ void run_evo(int argc, char *args[]) {
     std::cout << "max score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
 }
 
+void run_hill_climb_fa(int argc, char *args[]) {
+    std::shared_ptr<Deck> deck = std::make_shared<Deck>(args[1], args[2]);
+    
+    Hand h(deck);
+    
+    Hand best = h;
+    unsigned int max = 0;
+    int percent = 0;
+    int nb_iter = 512;
+    
+    for (int i = 0; i <= nb_iter; i++)
+    {
+        h.randomize();
+        std::unique_ptr<Instance> temp = Argmax::hill_climb(h.clone());
+        Hand result = *dynamic_cast<Hand*>(temp.get());
+    
+        unsigned int count = result.score();
+        if (count > max) {
+            max = count;
+            best = result;
+        }
+
+        int p = 100 * (float)i / nb_iter;
+        if (p != percent) {
+            percent = p;
+            std::string t = "\rprogress: " + std::to_string(p);
+            if (p < 10) t += " ";
+            t += "% [";
+            for (int i = 0; i < p / 10; i++) t += "=";//"▆";
+            for (int i = p / 10; i < 10; i++) t += " ";
+            
+            std::cout << t + "]          ";
+        }
+    }
+
+    std::cout << "max score: " << int(best.score()) << " points with hand\n";
+    best.pretty_cout(std::cout);
+}
+void run_hill_climb_ban_fa(int argc, char *args[]) {
+    std::shared_ptr<Deck> deck = std::make_shared<Deck>(args[1], args[2]);
+    
+    Hand h(deck);
+    h.randomize();
+    std::unique_ptr<Instance> temp = Argmax::hill_climb_tab(h.clone(), 3, 2048);
+    Hand result = *dynamic_cast<Hand*>(temp.get());
+
+    std::cout << "max score: " << int(result.score()) << " points with hand\n";
+    result.pretty_cout(std::cout);
+}
 void run_simple_evo_fa(int argc, char *args[]) {
     std::shared_ptr<Deck> deck = std::make_shared<Deck>(args[1], args[2]);
     
     Hand h(deck);
     auto p = Argmax::simple_evolution_parameters();
     p.mutation_probability = 0.1f;
-    p.generation_count = 128;
-    p.mutation_probability = 0.5f;
+    p.generation_count = 256;
 
     std::unique_ptr<Instance> temp = Argmax::simple_evolution(
+        [h]() -> std::unique_ptr<Instance> { return h.randomize_clone(); },
+        p,
+        true
+    );
+    Hand result = *dynamic_cast<Hand*>(temp.get());
+
+    std::cout << "max score: " << int(result.score()) << " points with hand\n";
+    result.pretty_cout(std::cout);
+}
+void run_evo_fa(int argc, char *args[]) {
+    std::shared_ptr<Deck> deck = std::make_shared<Deck>(args[1], args[2]);
+    
+    Hand h(deck);
+    auto p = Argmax::evolution_parameters();
+    p.mutation_probability = 0.1f;
+    p.generation_count = 256;
+
+    std::unique_ptr<Instance> temp = Argmax::evolution(
         [h]() -> std::unique_ptr<Instance> { return h.randomize_clone(); },
         p,
         true
@@ -138,7 +204,16 @@ int main(int argc, char *args[]) {
     else if (arg2 == "-hc_ban") run_hill_climb_ban(argc, args);
     else if (arg2 == "-evo_simple") run_simple_evo(argc, args);
     else if (arg2 == "-evo") run_evo(argc, args);
-    else if (argc == 4 && (std::string)args[3] == "-fa") run_simple_evo_fa(argc, args);
+
+    else if (argc >= 4 && (std::string)args[3] == "-fa") {
+        if (argc < 5) algo_message();
+
+        std::string arg4 = args[4];
+        if (arg4 == "-hc") run_hill_climb_fa(argc, args);
+        else if (arg4 == "-hc_ban") run_hill_climb_ban_fa(argc, args);
+        else if (arg4 == "-evo_simple") run_simple_evo_fa(argc, args);
+        else if (arg4 == "-evo") run_evo_fa(argc, args);
+    }
     else algo_message();
 
     return 0;
