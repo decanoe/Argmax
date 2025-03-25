@@ -122,10 +122,12 @@ void run_simple_evo_fa(int argc, char *args[]) {
     );
     Hand result = *dynamic_cast<Hand*>(temp.get());
 
-    std::cout << "max score: " << result << " : " << int(result.score()) << " points\n";
+    std::cout << "max score: " << int(result.score()) << " points with hand\n";
+    result.pretty_cout(std::cout);
 }
 
 int main(int argc, char *args[]) {
+    system("chcp 65001");
     if (argc < 2) path_message();
     if (argc < 3) algo_message();
 
