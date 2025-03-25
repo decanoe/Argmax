@@ -193,11 +193,11 @@ std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr
     }
 
     std::cout << "\r\033[K\033[A\r\033[K\r";
-    std::cout << "population:\n";
-    for (std::unique_ptr<Instance> &instance : population)
-    {
-        instance->cout(std::cout) << "\n";
-    }
+    // std::cout << "population:\n";
+    // for (std::unique_ptr<Instance> &instance : population)
+    // {
+    //     instance->cout(std::cout) << "\n";
+    // }
 
     return best;
 }

@@ -41,12 +41,12 @@ Deck::Deck(const std::string& peoples_path, const std::string& sanctuaries_path)
             /* #endregion */
             /* #region get reward type */
             People::Score_type reward_type =
-                (_color == "none"       ? People::Score_type::None :
-                (_color == "fix"        ? People::Score_type::Fix :
-                (_color == "night"      ? People::Score_type::Night :
-                (_color == "resource"   ? People::Score_type::Resource :
-                (_color == "color1"     ? People::Score_type::Color1 :
-                (_color == "color2"     ? People::Score_type::Color2 :
+                (_reward_type == "none"       ? People::Score_type::None :
+                (_reward_type == "fix"        ? People::Score_type::Fix :
+                (_reward_type == "night"      ? People::Score_type::Night :
+                (_reward_type == "resource"   ? People::Score_type::Resource :
+                (_reward_type == "color1"     ? People::Score_type::Color1 :
+                (_reward_type == "color2"     ? People::Score_type::Color2 :
                 People::Score_type::Colorset))))));
             /* #endregion */
             
@@ -124,12 +124,12 @@ Deck::Deck(const std::string& peoples_path, const std::string& sanctuaries_path)
             /* #endregion */
             /* #region get reward type */
             Sanctuary::Score_type reward_type =
-                (_color == "none"       ? Sanctuary::Score_type::None :
-                (_color == "fix"        ? Sanctuary::Score_type::Fix :
-                (_color == "night"      ? Sanctuary::Score_type::Night :
-                (_color == "resource"   ? Sanctuary::Score_type::Resource :
-                (_color == "color1"     ? Sanctuary::Score_type::Color1 :
-                (_color == "color2"     ? Sanctuary::Score_type::Color2 :
+                (_reward_type == "none"       ? Sanctuary::Score_type::None :
+                (_reward_type == "fix"        ? Sanctuary::Score_type::Fix :
+                (_reward_type == "night"      ? Sanctuary::Score_type::Night :
+                (_reward_type == "resource"   ? Sanctuary::Score_type::Resource :
+                (_reward_type == "color1"     ? Sanctuary::Score_type::Color1 :
+                (_reward_type == "color2"     ? Sanctuary::Score_type::Color2 :
                 Sanctuary::Score_type::Colorset))))));
             /* #endregion */
             

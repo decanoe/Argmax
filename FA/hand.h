@@ -13,6 +13,7 @@ protected:
     bool get_bool(float proba = .5);
     unsigned int get_rand_index(unsigned int max);
     unsigned int get_rand_index(unsigned int max, std::vector<unsigned int> blacklist);
+    static std::string to_str_2(unsigned int value);
 public:
     Hand(std::shared_ptr<Deck> deck);
     Hand(const Hand&);
@@ -32,6 +33,7 @@ public:
     std::unique_ptr<Instance> randomize_clone() const;
     Hand& randomize();
     
+    std::ostream& pretty_cout(std::ostream& c) const;
     std::ostream& cout(std::ostream& c) const override;
     friend std::ostream& operator<<(std::ostream&, const Hand&);
 };

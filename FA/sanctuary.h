@@ -9,9 +9,9 @@ private:
     Score_type type;
     Card::Color col1, col2;
     Card::ResourceType resource;
-    unsigned int score_value;
+    unsigned int score_value = 0;
 
-    unsigned int _color_score(std::shared_ptr<Deck> deck, const std::vector<unsigned int>& sanctuaries, const std::vector<unsigned int>& cards, unsigned int card_index) const;
+    static std::string to_str_2(unsigned int value);
 public:
     Sanctuary(Color color, bool night, unsigned int map_count, unsigned int plant_count, unsigned int beast_count, unsigned int rock_count);
     
@@ -20,5 +20,7 @@ public:
     Sanctuary& set_score_type(Score_type type, unsigned int score, Card::Color color);
     Sanctuary& set_score_type(Score_type type, unsigned int score, Card::Color color1, Card::Color color2);
 
-    unsigned int score(std::shared_ptr<Deck> deck, const std::vector<unsigned int>& sanctuaries, const std::vector<unsigned int>& cards, unsigned int card_index) const override;
+    unsigned int score(const HandInfo&) const override;
+
+    std::vector<std::string> get_string_display() const override;
 };

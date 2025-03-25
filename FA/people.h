@@ -6,14 +6,14 @@ class People: public Card
 public:
     enum Score_type { None, Fix, Night, Resource, Color1, Color2, Colorset };
 private:
-    unsigned int index;
-    unsigned int plant_cost, beast_cost, rock_cost;
+    unsigned int index = 0;
+    unsigned int plant_cost = 0, beast_cost = 0, rock_cost = 0;
     Score_type type;
     Card::Color col1, col2;
     Card::ResourceType resource;
-    unsigned int score_value;
+    unsigned int score_value = 0;
 
-    unsigned int _color_score(std::shared_ptr<Deck> deck, const std::vector<unsigned int>& sanctuaries, const std::vector<unsigned int>& cards, unsigned int card_index) const;
+    static std::string to_str_2(unsigned int value);
 public:
     People(unsigned int index, Color color, bool night, unsigned int map_count, unsigned int plant_count, unsigned int beast_count, unsigned int rock_count);
     
@@ -26,6 +26,8 @@ public:
 
     unsigned int get_index() const override;
 
-    bool cost_paid(std::shared_ptr<Deck> deck, const std::vector<unsigned int>& sanctuaries, const std::vector<unsigned int>& cards, unsigned int card_index) const;
-    unsigned int score(std::shared_ptr<Deck> deck, const std::vector<unsigned int>& sanctuaries, const std::vector<unsigned int>& cards, unsigned int card_index) const override;
+    bool cost_paid(const HandInfo&) const;
+    unsigned int score(const HandInfo&) const override;
+    
+    std::vector<std::string> get_string_display() const override;
 };

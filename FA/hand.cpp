@@ -25,6 +25,47 @@ unsigned int Hand::nb_sanctuary() const {
     return count;
 }
 
+std::string Hand::to_str_2(unsigned int value) {
+    if (value < 10) return std::to_string(value) + " ";
+    return std::to_string(value);
+}
+std::ostream& Hand::pretty_cout(std::ostream& c) const {
+    std::vector<std::vector<std::string>> people_str = std::vector<std::vector<std::string>>();
+    std::vector<std::vector<std::string>> sanctuary_str = std::vector<std::vector<std::string>>();
+    std::vector<unsigned int> people_scores = std::vector<unsigned int>();
+    std::vector<unsigned int> sanctuary_scores = std::vector<unsigned int>();
+
+    Card::HandInfo info = Card::HandInfo();
+    for (unsigned int i = 0; i < nb_sanctuary(); ++i) info.add(*deck->get_sanctuary(sanctuaries[i]));
+    for (auto p = peoples.rbegin(); p != peoples.rend(); ++p)
+    {
+        people_scores.push_back(deck->get_people(*p)->score(info.add(*deck->get_people(*p))));
+        people_str.push_back(deck->get_people(*p)->get_string_display());
+    }
+    for (unsigned int i = 0; i < nb_sanctuary(); ++i)
+    {
+        sanctuary_scores.push_back(deck->get_sanctuary(sanctuaries[i])->score(info));
+        sanctuary_str.push_back(deck->get_sanctuary(sanctuaries[i])->get_string_display());
+    }
+
+    for (auto card_score : sanctuary_scores) c << "   +" << to_str_2(card_score) << "   ";
+    c << "\n";
+    for (size_t line = 0; line < sanctuary_str[0].size(); line++) {
+        for (auto card : sanctuary_str)
+            c << card[line] << " ";
+        c << "\n";
+    }
+    
+    for (auto card_score = people_scores.rbegin(); card_score != people_scores.rend(); card_score++) c << "    +" << to_str_2(*card_score) << "     ";
+    c << "\n";
+    for (size_t line = 0; line < people_str[0].size(); line++) {
+        for (auto card = people_str.rbegin(); card != people_str.rend(); card++)
+            c << (*card)[line] << " ";
+        c << "\n";
+    }
+
+    return c;
+}
 std::ostream& Hand::cout(std::ostream& c) const { return c << *this; }
 std::ostream& operator<<(std::ostream& c, const Hand& h) {
     c << "(Peoples : ";
@@ -47,16 +88,20 @@ std::ostream& operator<<(std::ostream& c, const Hand& h) {
 // instance specific
 float Hand::score() const {
     if (!std::isnan(stored_score)) return stored_score;
+    Card::HandInfo info = Card::HandInfo();
     unsigned int s = 0;
-    for (unsigned int i = 0; i < peoples.size(); ++i) s += deck->get_people(peoples[i])->score(deck, sanctuaries, peoples, i);
-    for (unsigned int i = 0; i < nb_sanctuary(); ++i) s += deck->get_sanctuary(sanctuaries[i])->score(deck, sanctuaries, peoples, i);
+    for (unsigned int i = 0; i < nb_sanctuary(); ++i) info.add(*deck->get_sanctuary(sanctuaries[i]));
+    for (auto p = peoples.rbegin(); p != peoples.rend(); ++p) s += deck->get_people(*p)->score(info.add(*deck->get_people(*p)));
+    for (unsigned int i = 0; i < nb_sanctuary(); ++i) s += deck->get_sanctuary(sanctuaries[i])->score(info);
     return s;
 }
 float Hand::score() {
     if (!std::isnan(stored_score)) return stored_score;
-    stored_score = 0;
-    for (unsigned int i = 0; i < peoples.size(); ++i) stored_score += deck->get_people(peoples[i])->score(deck, sanctuaries, peoples, i);
-    for (unsigned int i = 0; i < nb_sanctuary(); ++i) stored_score += deck->get_sanctuary(sanctuaries[i])->score(deck, sanctuaries, peoples, i);
+    Card::HandInfo info = Card::HandInfo();
+    unsigned int stored_score = 0;
+    for (unsigned int i = 0; i < nb_sanctuary(); ++i) info.add(*deck->get_sanctuary(sanctuaries[i]));
+    for (auto p = peoples.rbegin(); p != peoples.rend(); ++p) stored_score += deck->get_people(*p)->score(info.add(*deck->get_people(*p)));
+    for (unsigned int i = 0; i < nb_sanctuary(); ++i) stored_score += deck->get_sanctuary(sanctuaries[i])->score(info);
     return stored_score;
 }
 bool Hand::is_max_score(float score) const {
