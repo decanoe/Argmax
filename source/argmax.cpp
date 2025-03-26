@@ -308,11 +308,24 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         /* #endregion */
         
         /* #region despawning part of the population */
-        std::sort(population.begin(), population.end(),
-            [](const InstanceGenWrapper &a, const InstanceGenWrapper &b)
-            {
-                return a.instance->score() < b.instance->score();
-            });
+        switch (parameters.despawn_criteria)
+        {
+        case evolution_parameters::DespawnCriteria::combined:
+            std::sort(population.begin(), population.end(), [g](const InstanceGenWrapper &a, const InstanceGenWrapper &b) {
+                    return a.instance->score() + a.generation < b.instance->score() + b.generation; });
+            break;
+        case evolution_parameters::DespawnCriteria::lowest_score:
+            std::sort(population.begin(), population.end(), [](const InstanceGenWrapper &a, const InstanceGenWrapper &b) {
+                    return a.instance->score() < b.instance->score(); });
+            break;
+        case evolution_parameters::DespawnCriteria::oldest :
+            std::sort(population.begin(), population.end(), [g](const InstanceGenWrapper &a, const InstanceGenWrapper &b) {
+                    return a.generation < b.generation; });
+            break;
+        
+        default:
+            break;
+        }
         
         unsigned int despawned_count = 0;
         auto it = population.begin();
