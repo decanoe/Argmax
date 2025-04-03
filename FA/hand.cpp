@@ -86,7 +86,7 @@ std::ostream& operator<<(std::ostream& c, const Hand& h) {
 
 
 // instance specific
-float Hand::score() const {
+float Hand::score_const() const {
     if (!std::isnan(stored_score)) return stored_score;
     Card::HandInfo info = Card::HandInfo();
     unsigned int s = 0;
@@ -94,15 +94,6 @@ float Hand::score() const {
     for (auto p = peoples.rbegin(); p != peoples.rend(); ++p) s += deck->get_people(*p)->score(info.add(*deck->get_people(*p)));
     for (unsigned int i = 0; i < nb_sanctuary(); ++i) s += deck->get_sanctuary(sanctuaries[i])->score(info);
     return s;
-}
-float Hand::score() {
-    if (!std::isnan(stored_score)) return stored_score;
-    Card::HandInfo info = Card::HandInfo();
-    unsigned int stored_score = 0;
-    for (unsigned int i = 0; i < nb_sanctuary(); ++i) info.add(*deck->get_sanctuary(sanctuaries[i]));
-    for (auto p = peoples.rbegin(); p != peoples.rend(); ++p) stored_score += deck->get_people(*p)->score(info.add(*deck->get_people(*p)));
-    for (unsigned int i = 0; i < nb_sanctuary(); ++i) stored_score += deck->get_sanctuary(sanctuaries[i])->score(info);
-    return stored_score;
 }
 bool Hand::is_max_score(float score) const {
     return false;
@@ -179,4 +170,14 @@ Hand& Hand::randomize() {
     
     stored_score = NAN;
     return *this;
+}
+
+std::vector<float> Hand::to_point() const {
+    std::vector<float> result = std::vector<float>();
+    result.reserve(8+nb_sanctuary());
+
+    for (auto i : peoples) result.push_back((float)i / deck->get_people_count());
+    for (size_t i = 0; i < nb_sanctuary(); i++) result.push_back((float)sanctuaries[i] / deck->get_sanctuary_count());
+
+    return result;
 }

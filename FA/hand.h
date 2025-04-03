@@ -21,8 +21,7 @@ public:
     unsigned int nb_sanctuary() const;
     
     // Instance specific
-    float score() const override;
-    float score() override;
+    float score_const() const override;
     bool is_max_score(float score) const override;
     int nb_args() const override;
     void mutate_arg(int index) override;
@@ -32,6 +31,8 @@ public:
     std::unique_ptr<Instance> clone() const override;
     std::unique_ptr<Instance> randomize_clone() const;
     Hand& randomize();
+
+    std::vector<float> to_point() const override;
     
     std::ostream& pretty_cout(std::ostream& c) const;
     std::ostream& cout(std::ostream& c) const override;
