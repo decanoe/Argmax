@@ -33,7 +33,20 @@ namespace Argmax {
         DespawnCriteria despawn_criteria = DespawnCriteria::lowest_score;
         bool protect_child_from_despawn = true;
     };
-    
+    struct InstanceGenWrapper
+    {
+        std::unique_ptr<Instance> instance;
+        unsigned int generation;
+
+        InstanceGenWrapper(std::unique_ptr<Instance> i, unsigned int g)
+        {
+            instance = std::move(i);
+            generation = g;
+        }
+    };
+
+    float standard_derivation(std::vector<std::unique_ptr<Instance>>& population);
+    float standard_derivation(std::vector<InstanceGenWrapper>& population);
 
     std::unique_ptr<Instance> hill_climb(const std::unique_ptr<Instance> start, unsigned int max_iter = 1024);
     std::unique_ptr<Instance> hill_climb_tab(const std::unique_ptr<Instance> start, size_t black_list_size = 3, unsigned int max_iter = 1024);

@@ -59,12 +59,8 @@ std::ostream& operator<<(std::ostream& c, const Solution& s) {
 
 
 // instance specific
-float Solution::score() const {
+float Solution::score_const() const {
     if (std::isnan(stored_score)) return formule->count_valid_clauses(assignation);
-    return stored_score;
-}
-float Solution::score() {
-    if (std::isnan(stored_score)) stored_score = formule->count_valid_clauses(assignation);
     return stored_score;
 }
 bool Solution::is_max_score(float score) const {
@@ -79,6 +75,12 @@ void Solution::mutate_arg(int index) {
 }
 void Solution::mutate_arg(int index, float probability) {
     if (get_bool(probability)) mutate_arg(index);
+}
+
+std::vector<float> Solution::to_point() const {
+    std::vector<float> result = std::vector<float>(get_nb_variables(), 0);
+    for (size_t i = 0; i < get_nb_variables(); i++) result[i] = get(i);
+    return result;
 }
 
 std::unique_ptr<Instance> Solution::breed(const std::unique_ptr<Instance>& other_inst) {

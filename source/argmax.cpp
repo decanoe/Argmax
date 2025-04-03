@@ -4,10 +4,10 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <math.h>
 #include <random>
 
-float get_time_from(std::chrono::system_clock::time_point point)
-{
+float get_time_from(std::chrono::system_clock::time_point point) {
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_time = end - point;
     double elapsed_seconds = elapsed_time.count();
@@ -17,11 +17,53 @@ float get_time_from(std::chrono::system_clock::time_point point)
     // float elapsed += get_time_from(start);
 }
 
+float Argmax::standard_derivation(std::vector<std::unique_ptr<Instance>>& population) {
+    std::vector<float> centroid = std::vector<float>();
+
+    for (const auto& temp: population) {
+        std::vector<float> vect = temp->to_point();
+        while (centroid.size() < vect.size()) centroid.push_back(0);
+        
+        for (size_t i = 0; i < vect.size(); i++) centroid[i] += vect[i];
+    }
+    for (size_t i = 0; i < centroid.size(); i++) centroid[i] /= population.size();
+
+    float variance = 0;
+    for (const auto& temp: population) {
+        std::vector<float> vect = temp->to_point();
+        
+        for (size_t i = 0; i < vect.size(); i++) {
+            variance += (centroid[i] - vect[i])*(centroid[i] - vect[i]);
+        }
+    }
+    return sqrtf(variance / population.size());
+}
+float Argmax::standard_derivation(std::vector<InstanceGenWrapper>& population) {
+    std::vector<float> centroid = std::vector<float>();
+
+    for (const auto& temp: population) {
+        std::vector<float> vect = temp.instance->to_point();
+        while (centroid.size() < vect.size()) centroid.push_back(0);
+        
+        for (size_t i = 0; i < vect.size(); i++) centroid[i] += vect[i];
+    }
+    for (size_t i = 0; i < centroid.size(); i++) centroid[i] /= population.size();
+
+    float variance = 0;
+    for (const auto& temp: population) {
+        std::vector<float> vect = temp.instance->to_point();
+        
+        for (size_t i = 0; i < vect.size(); i++) {
+            variance += (centroid[i] - vect[i])*(centroid[i] - vect[i]);
+        }
+    }
+    return sqrtf(variance / population.size());
+}
+
 /// @brief changes <instance> to its best scoring neighbor
 /// @param instance
 /// @return true if a better neighbor was found
-bool change_to_better_neighbor(std::unique_ptr<Instance> &instance)
-{
+bool change_to_better_neighbor(std::unique_ptr<Instance> &instance) {
     std::unique_ptr<Instance> best = nullptr;
     float score = instance->score();
 
@@ -43,8 +85,7 @@ bool change_to_better_neighbor(std::unique_ptr<Instance> &instance)
     instance = std::move(best);
     return true;
 }
-std::unique_ptr<Instance> Argmax::hill_climb(const std::unique_ptr<Instance> start, unsigned int max_iter)
-{
+std::unique_ptr<Instance> Argmax::hill_climb(const std::unique_ptr<Instance> start, unsigned int max_iter) {
     std::unique_ptr<Instance> result = start->clone();
     unsigned int i = 0;
     while (change_to_better_neighbor(result) && ++i < max_iter)
@@ -55,8 +96,7 @@ std::unique_ptr<Instance> Argmax::hill_climb(const std::unique_ptr<Instance> sta
 /// @brief changes <instance> to its best scoring neighbor
 /// @param instance
 /// @return index of the argument changed (-1 if max was reach)
-int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list<int> &black_list)
-{
+int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list<int> &black_list) {
     std::unique_ptr<Instance> best = nullptr;
     float score = instance->score();
     int index = -1;
@@ -87,8 +127,7 @@ int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list
     instance = std::move(best);
     return index;
 }
-std::unique_ptr<Instance> Argmax::hill_climb_tab(const std::unique_ptr<Instance> start, size_t black_list_size, unsigned int max_iter)
-{
+std::unique_ptr<Instance> Argmax::hill_climb_tab(const std::unique_ptr<Instance> start, size_t black_list_size, unsigned int max_iter) {
     std::list<int> black_list;
     std::unique_ptr<Instance> result = start->clone();
     std::unique_ptr<Instance> best = result->clone();
@@ -109,8 +148,7 @@ std::unique_ptr<Instance> Argmax::hill_climb_tab(const std::unique_ptr<Instance>
     return best;
 }
 
-std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr<Instance>()> spawner, simple_evolution_parameters parameters, bool show_best)
-{
+std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr<Instance>()> spawner, simple_evolution_parameters parameters, bool show_best) {
     std::vector<std::unique_ptr<Instance>> population = std::vector<std::unique_ptr<Instance>>();
     population.reserve(parameters.population_size);
     for (unsigned int i = 0; i < parameters.population_size; i++)
@@ -120,7 +158,7 @@ std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr
 
     std::unique_ptr<Instance> best = nullptr;
     float best_score = 0;
-    int progress_percent = 0;
+    int progress_percent = -1;
     for (unsigned int g = 0; g < parameters.generation_count; g++)
     {
         std::unique_ptr<Instance> parent_1 = nullptr;
@@ -202,31 +240,22 @@ std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr
     return best;
 }
 
-struct InstanceGenWrapper
-{
-    std::unique_ptr<Instance> instance;
-    unsigned int generation;
-
-    InstanceGenWrapper(std::unique_ptr<Instance> i, unsigned int g)
-    {
-        instance = std::move(i);
-        generation = g;
-    }
-};
-std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, bool show_best)
-{
+void erase_lines(unsigned int& line_count) {
+    for (size_t i = 0; i < line_count; i++) std::cout << "\r\033[1A\033[K";
+    line_count = 0;
+}
+std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, bool show_best) {
     auto rng = std::default_random_engine{};
     std::vector<InstanceGenWrapper> population = std::vector<InstanceGenWrapper>();
     population.reserve(parameters.population_max_size + parameters.population_spawn_size);
     for (unsigned int i = 0; i < parameters.population_start_size; i++)
         population.push_back(InstanceGenWrapper(spawner(), 0));
 
-    std::cout << "\n";
+    unsigned int line_count = 0;
 
     /* #region get best instance */
     std::unique_ptr<Instance> best = nullptr;
     float best_score = 0;
-    int progress_percent = 0;
     for (InstanceGenWrapper &instance : population)
     {
         float score = instance.instance->score();
@@ -241,6 +270,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
     }
     /* #endregion */
 
+    int progress_percent = -1;
     for (unsigned int g = 1; g < parameters.generation_count; g++)
     {
         /* #region spawning new generation */
@@ -295,7 +325,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                     best = instance->clone();
                     if (best->is_max_score(best_score))
                     {
-                        std::cout << "\r\033[K";
+                        erase_lines(line_count);
                         return best;
                     }
                 }
@@ -311,15 +341,15 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         switch (parameters.despawn_criteria)
         {
         case evolution_parameters::DespawnCriteria::combined:
-            std::sort(population.begin(), population.end(), [g](const InstanceGenWrapper &a, const InstanceGenWrapper &b) {
+            std::sort(population.begin(), population.end(), [g](InstanceGenWrapper &a, InstanceGenWrapper &b) {
                     return a.instance->score() + a.generation < b.instance->score() + b.generation; });
             break;
         case evolution_parameters::DespawnCriteria::lowest_score:
-            std::sort(population.begin(), population.end(), [](const InstanceGenWrapper &a, const InstanceGenWrapper &b) {
+            std::sort(population.begin(), population.end(), [](InstanceGenWrapper &a, InstanceGenWrapper &b) {
                     return a.instance->score() < b.instance->score(); });
             break;
         case evolution_parameters::DespawnCriteria::oldest :
-            std::sort(population.begin(), population.end(), [g](const InstanceGenWrapper &a, const InstanceGenWrapper &b) {
+            std::sort(population.begin(), population.end(), [g](InstanceGenWrapper &a, InstanceGenWrapper &b) {
                     return a.generation < b.generation; });
             break;
         
@@ -341,34 +371,59 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         }
         /* #endregion */
         
+        /* #region get best instance in gen */
+        unsigned int best_in_gen = 0;
+        float best_score_in_gen = 0;
+        for (size_t i = 0; i < population.size(); i++)
+        {
+            float score = population[i].instance->score();
+
+            if (score > best_score_in_gen || best == nullptr)
+            {
+                best_score_in_gen = score;
+                best_in_gen = i;
+            }
+        }
+        /* #endregion */
+
         /* #region pretty print to wait */
         int p = 100 * (float)g / parameters.generation_count;
         if (p != progress_percent)
         {
+            erase_lines(line_count);
             progress_percent = p;
-            std::string t = "\033[A\r\033[Kprogress: " + std::to_string(progress_percent);
-            if (p < 10)
-                t += " ";
+            std::string t = "progress: " + std::to_string(progress_percent);
+            if (p < 10) t += " ";
             t += "% [";
             for (int i = 0; i < p / 10; i++)
                 t += "="; //"▆";
             for (int i = p / 10; i < 10; i++)
                 t += " ";
             
-            t += "] it: " + std::to_string(g) + "/" + std::to_string(parameters.generation_count) + " \t";
+            t += "] it: " + std::to_string(g) + "/" + std::to_string(parameters.generation_count) + "\n";
+            std::cout << t;
+            line_count++;
 
-            std::cout << t + "\n\033[K";
             if (show_best)
             {
-                std::cout << "overall best ";
+                std::cout << "best in generation ";
+                population[best_in_gen].instance->cout(std::cout);
+                std::cout << "\t with score of " + std::to_string(best_score_in_gen) + "\tAge: " + std::to_string(g-population[best_in_gen].generation) + "\n";
+                line_count++;
+
+                std::cout << "overall best       ";
                 best->cout(std::cout);
-                std::cout << "\t with score of " + std::to_string(best_score);
+                std::cout << "\t with score of " + std::to_string(best_score) + "\n";
+                line_count++;
             }
+            
+            std::cout << "standard deviation: " + std::to_string(standard_derivation(population)) + "\n";
+            line_count++;
         }
         /* #endregion */
     }
 
-    std::cout << "\r\033[K\033[A\r\033[K\r";
+    erase_lines(line_count);
 
     return best;
 }
