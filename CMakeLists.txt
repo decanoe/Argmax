@@ -8,6 +8,7 @@ add_compile_options(-Wall -Werror)
 add_executable(${CMAKE_PROJECT_NAME}
     main.cpp
     source/argmax.cpp
+    source/file_data.cpp
 
     sat_specific/clause.cpp
     sat_specific/formule.cpp

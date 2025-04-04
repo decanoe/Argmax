@@ -7,7 +7,8 @@
 #include <math.h>
 #include <random>
 
-float get_time_from(std::chrono::system_clock::time_point point) {
+float get_time_from(std::chrono::system_clock::time_point point)
+{
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_time = end - point;
     double elapsed_seconds = elapsed_time.count();
@@ -17,44 +18,58 @@ float get_time_from(std::chrono::system_clock::time_point point) {
     // float elapsed += get_time_from(start);
 }
 
-float Argmax::standard_derivation(std::vector<std::unique_ptr<Instance>>& population) {
+float Argmax::standard_derivation(std::vector<std::unique_ptr<Instance>> &population)
+{
     std::vector<float> centroid = std::vector<float>();
 
-    for (const auto& temp: population) {
+    for (const auto &temp : population)
+    {
         std::vector<float> vect = temp->to_point();
-        while (centroid.size() < vect.size()) centroid.push_back(0);
-        
-        for (size_t i = 0; i < vect.size(); i++) centroid[i] += vect[i];
+        while (centroid.size() < vect.size())
+            centroid.push_back(0);
+
+        for (size_t i = 0; i < vect.size(); i++)
+            centroid[i] += vect[i];
     }
-    for (size_t i = 0; i < centroid.size(); i++) centroid[i] /= population.size();
+    for (size_t i = 0; i < centroid.size(); i++)
+        centroid[i] /= population.size();
 
     float variance = 0;
-    for (const auto& temp: population) {
+    for (const auto &temp : population)
+    {
         std::vector<float> vect = temp->to_point();
-        
-        for (size_t i = 0; i < vect.size(); i++) {
-            variance += (centroid[i] - vect[i])*(centroid[i] - vect[i]);
+
+        for (size_t i = 0; i < vect.size(); i++)
+        {
+            variance += (centroid[i] - vect[i]) * (centroid[i] - vect[i]);
         }
     }
     return sqrtf(variance / population.size());
 }
-float Argmax::standard_derivation(std::vector<InstanceGenWrapper>& population) {
+float Argmax::standard_derivation(std::vector<InstanceGenWrapper> &population)
+{
     std::vector<float> centroid = std::vector<float>();
 
-    for (const auto& temp: population) {
+    for (const auto &temp : population)
+    {
         std::vector<float> vect = temp.instance->to_point();
-        while (centroid.size() < vect.size()) centroid.push_back(0);
-        
-        for (size_t i = 0; i < vect.size(); i++) centroid[i] += vect[i];
+        while (centroid.size() < vect.size())
+            centroid.push_back(0);
+
+        for (size_t i = 0; i < vect.size(); i++)
+            centroid[i] += vect[i];
     }
-    for (size_t i = 0; i < centroid.size(); i++) centroid[i] /= population.size();
+    for (size_t i = 0; i < centroid.size(); i++)
+        centroid[i] /= population.size();
 
     float variance = 0;
-    for (const auto& temp: population) {
+    for (const auto &temp : population)
+    {
         std::vector<float> vect = temp.instance->to_point();
-        
-        for (size_t i = 0; i < vect.size(); i++) {
-            variance += (centroid[i] - vect[i])*(centroid[i] - vect[i]);
+
+        for (size_t i = 0; i < vect.size(); i++)
+        {
+            variance += (centroid[i] - vect[i]) * (centroid[i] - vect[i]);
         }
     }
     return sqrtf(variance / population.size());
@@ -63,7 +78,8 @@ float Argmax::standard_derivation(std::vector<InstanceGenWrapper>& population) {
 /// @brief changes <instance> to its best scoring neighbor
 /// @param instance
 /// @return true if a better neighbor was found
-bool change_to_better_neighbor(std::unique_ptr<Instance> &instance) {
+bool change_to_better_neighbor(std::unique_ptr<Instance> &instance)
+{
     std::unique_ptr<Instance> best = nullptr;
     float score = instance->score();
 
@@ -85,7 +101,8 @@ bool change_to_better_neighbor(std::unique_ptr<Instance> &instance) {
     instance = std::move(best);
     return true;
 }
-std::unique_ptr<Instance> Argmax::hill_climb(const std::unique_ptr<Instance> start, unsigned int max_iter) {
+std::unique_ptr<Instance> Argmax::hill_climb(const std::unique_ptr<Instance> start, unsigned int max_iter)
+{
     std::unique_ptr<Instance> result = start->clone();
     unsigned int i = 0;
     while (change_to_better_neighbor(result) && ++i < max_iter)
@@ -96,7 +113,8 @@ std::unique_ptr<Instance> Argmax::hill_climb(const std::unique_ptr<Instance> sta
 /// @brief changes <instance> to its best scoring neighbor
 /// @param instance
 /// @return index of the argument changed (-1 if max was reach)
-int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list<int> &black_list) {
+int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list<int> &black_list)
+{
     std::unique_ptr<Instance> best = nullptr;
     float score = instance->score();
     int index = -1;
@@ -127,7 +145,8 @@ int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list
     instance = std::move(best);
     return index;
 }
-std::unique_ptr<Instance> Argmax::hill_climb_tab(const std::unique_ptr<Instance> start, size_t black_list_size, unsigned int max_iter) {
+std::unique_ptr<Instance> Argmax::hill_climb_tab(const std::unique_ptr<Instance> start, size_t black_list_size, unsigned int max_iter)
+{
     std::list<int> black_list;
     std::unique_ptr<Instance> result = start->clone();
     std::unique_ptr<Instance> best = result->clone();
@@ -148,7 +167,8 @@ std::unique_ptr<Instance> Argmax::hill_climb_tab(const std::unique_ptr<Instance>
     return best;
 }
 
-std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr<Instance>()> spawner, simple_evolution_parameters parameters, bool show_best) {
+std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr<Instance>()> spawner, simple_evolution_parameters parameters, bool show_best)
+{
     std::vector<std::unique_ptr<Instance>> population = std::vector<std::unique_ptr<Instance>>();
     population.reserve(parameters.population_size);
     for (unsigned int i = 0; i < parameters.population_size; i++)
@@ -240,14 +260,77 @@ std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr
     return best;
 }
 
-void erase_lines(unsigned int& line_count) {
-    for (size_t i = 0; i < line_count; i++) std::cout << "\r\033[1A\033[K";
+Argmax::evolution_parameters::evolution_parameters(const FileData &file_data)
+{
+    generation_count = file_data.get_int("generation_count", generation_count);
+
+    population_start_size = file_data.get_int("population_start_size", population_start_size);
+    population_spawn_size = file_data.get_int("population_spawn_size", population_spawn_size);
+    population_despawn_size = file_data.get_int("population_despawn_size", population_despawn_size);
+
+    spawn_per_parent = file_data.get_int("spawn_per_parent", spawn_per_parent);
+    competition_goup_size = file_data.get_int("competition_goup_size", competition_goup_size);
+    mutation_probability = file_data.get_float("mutation_probability", mutation_probability);
+
+    /* #region run_algo_on_child */
+    std::string algo = file_data.get_string("run_algo_on_child", "");
+         if (algo == "hill_climb")      run_algo_on_child = ChildAlgo::hill_climb;
+    else if (algo == "hill_climb_ban")  run_algo_on_child = ChildAlgo::hill_climb_ban;
+    else if (algo == "lambda_mutation") run_algo_on_child = ChildAlgo::lambda_mutation;
+    else                                run_algo_on_child = ChildAlgo::none;
+    /* #endregion */
+    child_algo_budget = file_data.get_int("child_algo_budget", child_algo_budget);
+    child_algo_parameter = file_data.get_int("child_algo_parameter", child_algo_parameter);
+    protect_child_from_despawn = file_data.get_bool("protect_child_from_despawn", protect_child_from_despawn);
+
+    despawn_criteria_age_multiplier = file_data.get_float("despawn_criteria_age_multiplier", despawn_criteria_age_multiplier);
+    despawn_criteria_diversity_multiplier = file_data.get_float("despawn_criteria_diversity_multiplier", despawn_criteria_diversity_multiplier);
+
+    nb_islands = file_data.get_int("nb_islands", nb_islands);
+    generation_between_migrations = file_data.get_int("generation_between_migrations", generation_between_migrations);
+    percent_of_population_per_migrations = file_data.get_float("percent_of_population_per_migrations", percent_of_population_per_migrations);
+
+    debug_show_best = file_data.get_bool("debug_show_best", debug_show_best);
+}
+std::ostream &Argmax::operator<<(std::ostream &c, const evolution_parameters &p)
+{
+    c << "generation_count:                         " << p.generation_count;
+
+    c << "\npopulation_start_size:                    " << p.population_start_size;
+    c << "\npopulation_spawn_size:                    " << p.population_spawn_size;
+    c << "\npopulation_despawn_size:                  " << p.population_despawn_size;
+
+    c << "\nspawn_per_parent:                         " << p.spawn_per_parent;
+    c << "\ncompetition_goup_size:                    " << p.competition_goup_size;
+    c << "\nmutation_probability:                     " << p.mutation_probability;
+
+    c << "\nrun_algo_on_child:                        " << p.run_algo_on_child;
+    c << "\nchild_algo_budget:                        " << p.child_algo_budget;
+    c << "\nchild_algo_parameter:                     " << p.child_algo_parameter;
+    c << "\nprotect_child_from_despawn:               " << p.protect_child_from_despawn;
+
+    c << "\ndespawn_criteria_age_multiplier:          " << p.despawn_criteria_age_multiplier;
+    c << "\ndespawn_criteria_diversity_multiplier:    " << p.despawn_criteria_diversity_multiplier;
+
+    c << "\nnb_islands:                               " << p.nb_islands;
+    c << "\ngeneration_between_migrations:            " << p.generation_between_migrations;
+    c << "\npercent_of_population_per_migrations:     " << p.percent_of_population_per_migrations;
+
+    c << "\ndebug_show_best:                          " << p.debug_show_best;
+    return c;
+}
+
+void erase_lines(unsigned int &line_count)
+{
+    for (size_t i = 0; i < line_count; i++)
+        std::cout << "\r\033[1A\033[K";
     line_count = 0;
 }
-std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, bool show_best) {
+std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters)
+{
     auto rng = std::default_random_engine{};
     std::vector<InstanceGenWrapper> population = std::vector<InstanceGenWrapper>();
-    population.reserve(parameters.population_max_size + parameters.population_spawn_size);
+    population.reserve(parameters.population_start_size + parameters.population_spawn_size);
     for (unsigned int i = 0; i < parameters.population_start_size; i++)
         population.push_back(InstanceGenWrapper(spawner(), 0));
 
@@ -315,7 +398,20 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 for (int arg = 0; arg < instance->nb_args(); arg++)
                     instance->mutate_arg(arg, parameters.mutation_probability);
 
-                if (parameters.run_hc_on_child) instance = hill_climb(std::move(instance), 256);
+                switch (parameters.run_algo_on_child)
+                {
+                case evolution_parameters::ChildAlgo::hill_climb:
+                    instance = hill_climb(std::move(instance), instance->nb_args() / parameters.child_algo_budget);
+                    break;
+                case evolution_parameters::ChildAlgo::hill_climb_ban:
+                    instance = hill_climb_tab(std::move(instance), parameters.child_algo_parameter, instance->nb_args() / parameters.child_algo_budget);
+                    break;
+                case evolution_parameters::ChildAlgo::lambda_mutation:
+                    // instance = hill_climb(std::move(instance), parameters.child_algo_parameter, parameters.child_algo_budget);
+                    break;
+                default:
+                    break;
+                }
 
                 /* #region test for best instance */
                 float score = instance->score();
@@ -336,41 +432,28 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             }
         }
         /* #endregion */
-        
+
         /* #region despawning part of the population */
-        switch (parameters.despawn_criteria)
-        {
-        case evolution_parameters::DespawnCriteria::combined:
-            std::sort(population.begin(), population.end(), [g](InstanceGenWrapper &a, InstanceGenWrapper &b) {
-                    return a.instance->score() + a.generation < b.instance->score() + b.generation; });
-            break;
-        case evolution_parameters::DespawnCriteria::lowest_score:
-            std::sort(population.begin(), population.end(), [](InstanceGenWrapper &a, InstanceGenWrapper &b) {
-                    return a.instance->score() < b.instance->score(); });
-            break;
-        case evolution_parameters::DespawnCriteria::oldest :
-            std::sort(population.begin(), population.end(), [g](InstanceGenWrapper &a, InstanceGenWrapper &b) {
-                    return a.generation < b.generation; });
-            break;
-        
-        default:
-            break;
-        }
-        
+        float gen_mult = parameters.despawn_criteria_age_multiplier;
+        float freq_mult = parameters.despawn_criteria_diversity_multiplier;
+        std::sort(population.begin(), population.end(), [g, gen_mult, freq_mult](InstanceGenWrapper &a, InstanceGenWrapper &b)
+                  { return a.instance->score() + a.generation * gen_mult < b.instance->score() + b.generation * gen_mult; });
+
         unsigned int despawned_count = 0;
         auto it = population.begin();
 
-        while (it != population.end() && (despawned_count < parameters.population_despawn_size || population.size() > parameters.population_max_size))
+        while (it != population.end() && (despawned_count < parameters.population_despawn_size || population.size() > parameters.population_start_size))
         {
             if (parameters.protect_child_from_despawn && it->generation == g)
                 it++;
-            else {
+            else
+            {
                 it = population.erase(it);
                 despawned_count++;
             }
         }
         /* #endregion */
-        
+
         /* #region get best instance in gen */
         unsigned int best_in_gen = 0;
         float best_score_in_gen = 0;
@@ -393,22 +476,23 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             erase_lines(line_count);
             progress_percent = p;
             std::string t = "progress: " + std::to_string(progress_percent);
-            if (p < 10) t += " ";
+            if (p < 10)
+                t += " ";
             t += "% [";
             for (int i = 0; i < p / 10; i++)
                 t += "="; //"▆";
             for (int i = p / 10; i < 10; i++)
                 t += " ";
-            
+
             t += "] it: " + std::to_string(g) + "/" + std::to_string(parameters.generation_count) + "\n";
             std::cout << t;
             line_count++;
 
-            if (show_best)
+            if (parameters.debug_show_best)
             {
                 std::cout << "best in generation ";
                 population[best_in_gen].instance->cout(std::cout);
-                std::cout << "\t with score of " + std::to_string(best_score_in_gen) + "\tAge: " + std::to_string(g-population[best_in_gen].generation) + "\n";
+                std::cout << "\t with score of " + std::to_string(best_score_in_gen) + "\tAge: " + std::to_string(g - population[best_in_gen].generation) + "\n";
                 line_count++;
 
                 std::cout << "overall best       ";
@@ -416,7 +500,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 std::cout << "\t with score of " + std::to_string(best_score) + "\n";
                 line_count++;
             }
-            
+
             std::cout << "standard deviation: " + std::to_string(standard_derivation(population)) + "\n";
             line_count++;
         }
