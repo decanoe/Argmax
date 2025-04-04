@@ -2,19 +2,6 @@
 #include <cmath>
 #include <algorithm>
 
-// return true or false from proba (0 returns always false)
-bool Hand::get_bool(float proba) {
-    return ((float)std::rand() / (float)RAND_MAX) < proba;
-}
-unsigned int Hand::get_rand_index(unsigned int max) {
-    return (unsigned int)std::rand() % max;
-}
-unsigned int Hand::get_rand_index(unsigned int max, std::vector<unsigned int> blacklist) {
-    unsigned int i = get_rand_index(max);
-    while (std::find(blacklist.begin(), blacklist.end(), i) != blacklist.end()) i = get_rand_index(max);
-    return i;
-}
-
 Hand::Hand(std::shared_ptr<Deck> deck): deck(deck), peoples{0,1,2,3,4,5,6,7}, sanctuaries{0,1,2,3,4,5,6} {}
 Hand::Hand(const Hand& h): deck(h.deck), peoples(h.peoples), sanctuaries(h.sanctuaries) {}
 
@@ -104,23 +91,23 @@ int Hand::nb_args() const {
 void Hand::mutate_arg(int index) {
     stored_score = NAN;
     if (index == 8) {
-        unsigned int replaced_index = get_rand_index(nb_sanctuary());
+        unsigned int replaced_index = RandomUtils::get_index(nb_sanctuary());
         std::vector<unsigned int> black_list = sanctuaries;
         for (unsigned int i = 0; i <= replaced_index; i++) black_list[i] = deck->get_sanctuary_count();
         
-        sanctuaries[replaced_index] = get_rand_index(deck->get_sanctuary_count(), black_list);
+        sanctuaries[replaced_index] = RandomUtils::get_index(deck->get_sanctuary_count(), black_list);
         black_list = sanctuaries;
         for (unsigned int i = replaced_index; i <= 7; i++) if (sanctuaries[i] == sanctuaries[replaced_index]) {
-            sanctuaries[i] = get_rand_index(deck->get_sanctuary_count(), black_list);
+            sanctuaries[i] = RandomUtils::get_index(deck->get_sanctuary_count(), black_list);
             black_list[i] = sanctuaries[i];
         }
     }
     else {
-        peoples[index] = get_rand_index(deck->get_people_count(), peoples);
+        peoples[index] = RandomUtils::get_index(deck->get_people_count(), peoples);
     }
 }
 void Hand::mutate_arg(int index, float probability) {
-    if (get_bool(probability)) mutate_arg(index);
+    if (RandomUtils::get_bool(probability)) mutate_arg(index);
 }
 
 std::unique_ptr<Instance> Hand::breed(const std::unique_ptr<Instance>& other_inst) {
@@ -165,8 +152,8 @@ Hand& Hand::randomize() {
     peoples.clear();
     sanctuaries.clear();
     
-    for (int i = 0; i < 8; i++) peoples.push_back(get_rand_index(deck->get_people_count(), peoples));
-    for (int i = 0; i < 7; i++) sanctuaries.push_back(get_rand_index(deck->get_sanctuary_count(), sanctuaries));
+    for (int i = 0; i < 8; i++) peoples.push_back(RandomUtils::get_index(deck->get_people_count(), peoples));
+    for (int i = 0; i < 7; i++) sanctuaries.push_back(RandomUtils::get_index(deck->get_sanctuary_count(), sanctuaries));
     
     stored_score = NAN;
     return *this;

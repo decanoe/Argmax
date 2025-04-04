@@ -5,6 +5,7 @@
 #include <string>
 #include "formule.h"
 #include "../source/instance.h"
+#include "../source/random_utils.h"
 
 class Solution: public Instance {
 protected:

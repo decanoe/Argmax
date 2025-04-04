@@ -1,11 +1,6 @@
 #include "solution.h"
 #include <cmath>
 
-// return true or false from proba (0 returns always false)
-bool get_bool(float proba = .5) {
-    return ((float)std::rand() / (float)RAND_MAX) < proba;
-}
-
 Solution::Solution(const Solution& s): Solution(s.formule, s.assignation) {}
 Solution::Solution(std::shared_ptr<Formule> f, BitString assignation): assignation(assignation), formule(f) {}
 Solution::Solution(std::shared_ptr<Formule> f): assignation(f->get_nb_variables(), f->get_nb_variables()), formule(f) {}
@@ -74,7 +69,7 @@ void Solution::mutate_arg(int index) {
     this->stored_score = NAN;
 }
 void Solution::mutate_arg(int index, float probability) {
-    if (get_bool(probability)) mutate_arg(index);
+    if (RandomUtils::get_bool(probability)) mutate_arg(index);
 }
 
 std::vector<float> Solution::to_point() const {

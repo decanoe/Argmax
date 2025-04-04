@@ -3,6 +3,7 @@
 #include "card.h"
 #include <iostream>
 #include "../source/instance.h"
+#include "../source/random_utils.h"
 
 class Hand: public Instance {
 protected:
@@ -10,9 +11,6 @@ protected:
     std::vector<unsigned int> peoples;
     std::vector<unsigned int> sanctuaries;
 
-    bool get_bool(float proba = .5);
-    unsigned int get_rand_index(unsigned int max);
-    unsigned int get_rand_index(unsigned int max, std::vector<unsigned int> blacklist);
     static std::string to_str_2(unsigned int value);
 public:
     Hand(std::shared_ptr<Deck> deck);

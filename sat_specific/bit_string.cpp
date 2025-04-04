@@ -22,23 +22,15 @@ void BitString::switch_bit(unsigned int index) {
     while ((index >> 6) >= string.size()) string.push_back(0);
     string[index >> 6] ^= (1ULL << (index % (1 << 6)));
 }
-std::uint64_t rand64(void)
-{
-    return rand() ^
-        ((std::uint64_t)rand() << 15) ^
-        ((std::uint64_t)rand() << 30) ^
-        ((std::uint64_t)rand() << 45) ^
-        ((std::uint64_t)rand() << 60);
-}
 BitString& BitString::randomize() {
     for (unsigned int i = 0; i < string.size(); i++)
-        string[i] = rand64();
+        string[i] = RandomUtils::get_uint64();
     return *this;
 }
 BitString BitString::randomize_clone() const {
     BitString result = BitString(*this);
     for (unsigned int i = 0; i < result.string.size(); i++)
-        result.string[i] = rand64();
+        result.string[i] = RandomUtils::get_uint64();
     return result;
 }
 

@@ -75,7 +75,7 @@ float Argmax::standard_derivation(std::vector<InstanceGenWrapper> &population)
     return sqrtf(variance / population.size());
 }
 
-/// @brief changes <instance> to its best scoring neighbor
+/// @brief changes <instance> to its best scoring neighbor if it is better than itself
 /// @param instance
 /// @return true if a better neighbor was found
 bool change_to_better_neighbor(std::unique_ptr<Instance> &instance)
@@ -112,7 +112,8 @@ std::unique_ptr<Instance> Argmax::hill_climb(const std::unique_ptr<Instance> sta
 
 /// @brief changes <instance> to its best scoring neighbor
 /// @param instance
-/// @return index of the argument changed (-1 if max was reach)
+/// @param black_list a list of the index of arguments not allowed to change
+/// @return index of the argument changed (-1 if no neighbor exists)
 int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list<int> &black_list)
 {
     std::unique_ptr<Instance> best = nullptr;
@@ -167,97 +168,8 @@ std::unique_ptr<Instance> Argmax::tabu_search(const std::unique_ptr<Instance> st
     return best;
 }
 
-std::unique_ptr<Instance> Argmax::simple_evolution(std::function<std::unique_ptr<Instance>()> spawner, simple_evolution_parameters parameters, bool show_best)
-{
-    std::vector<std::unique_ptr<Instance>> population = std::vector<std::unique_ptr<Instance>>();
-    population.reserve(parameters.population_size);
-    for (unsigned int i = 0; i < parameters.population_size; i++)
-        population.push_back(spawner());
-
-    std::cout << "\n";
-
-    std::unique_ptr<Instance> best = nullptr;
-    float best_score = 0;
-    int progress_percent = -1;
-    for (unsigned int g = 0; g < parameters.generation_count; g++)
-    {
-        std::unique_ptr<Instance> parent_1 = nullptr;
-        float score_1 = 0;
-        std::unique_ptr<Instance> parent_2 = nullptr;
-        float score_2 = 0;
-
-        // get parents
-        for (std::unique_ptr<Instance> &instance : population)
-        {
-            float score = instance->score();
-
-            if (score > best_score || best == nullptr)
-            {
-                best_score = score;
-                best = instance->clone();
-                if (best->is_max_score(best_score))
-                {
-                    std::cout << "\r                                                                                         \r";
-                    return best;
-                }
-            }
-
-            if (score > score_1 || parent_1 == nullptr)
-            {
-                score_1 = score;
-                parent_1 = std::move(instance);
-            }
-            else if (score > score_2 || parent_2 == nullptr)
-            {
-                score_2 = score;
-                parent_2 = std::move(instance);
-            }
-        }
-
-        if (parent_1 == nullptr || parent_2 == nullptr)
-        {
-            std::cerr << "\033[1;31mNot enough instances in the population, can't find parents !\033[0m";
-            exit(-1);
-        }
-
-        // make new population
-        for (unsigned int i = 0; i < parameters.population_size; i++)
-        {
-            population[i] = parent_1->breed(parent_2);
-
-            // mutate offspring
-            for (int arg = 0; arg < population[i]->nb_args(); arg++)
-                population[i]->mutate_arg(arg, parameters.mutation_probability);
-        }
-
-        // pretty print to wait
-        int p = 100 * (float)g / parameters.generation_count;
-        if (p != progress_percent)
-        {
-            progress_percent = p;
-            std::string t = "\033[A\r\033[Kprogress: " + std::to_string(progress_percent);
-            if (p < 10)
-                t += " ";
-            t += "% [";
-            for (int i = 0; i < p / 10; i++)
-                t += "="; //"▆";
-            for (int i = p / 10; i < 10; i++)
-                t += " ";
-
-            std::cout << t + "] best in generation: " + std::to_string(score_1) + "\t overall best: " + std::to_string(best_score) + "\n\033[Kbest instance of gen: ";
-            if (show_best)
-                parent_1->cout(std::cout);
-        }
-    }
-
-    std::cout << "\r\033[K\033[A\r\033[K\r";
-    // std::cout << "population:\n";
-    // for (std::unique_ptr<Instance> &instance : population)
-    // {
-    //     instance->cout(std::cout) << "\n";
-    // }
-
-    return best;
+std::unique_ptr<Instance> one_lambda_search(const std::unique_ptr<Instance> start, unsigned int nb_mutation_to_test, unsigned int max_iter = 1024) {
+    return start->clone();
 }
 
 Argmax::evolution_parameters::evolution_parameters(const FileData &file_data)

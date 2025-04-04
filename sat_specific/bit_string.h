@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <iostream>
+#include "../source/random_utils.h"
 
 class BitString
 {

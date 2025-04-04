@@ -5,14 +5,6 @@
 #include <functional>
 
 namespace Argmax {
-    struct simple_evolution_parameters
-    {
-        unsigned int generation_count = 1024;
-
-        float mutation_probability = 0.1f;
-
-        unsigned int population_size = 256;
-    };
     struct evolution_parameters
     {
         unsigned int generation_count = 1024;
@@ -63,6 +55,6 @@ namespace Argmax {
 
     std::unique_ptr<Instance> hill_climb(const std::unique_ptr<Instance> start, unsigned int max_iter = 1024);
     std::unique_ptr<Instance> tabu_search(const std::unique_ptr<Instance> start, size_t black_list_size = 3, unsigned int max_iter = 1024);
-    std::unique_ptr<Instance> simple_evolution(std::function<std::unique_ptr<Instance>()> spawner, simple_evolution_parameters parameters, bool show_best = false);
+    std::unique_ptr<Instance> one_lambda_search(const std::unique_ptr<Instance> start, unsigned int nb_mutation_to_test, unsigned int max_iter = 1024);
     std::unique_ptr<Instance> evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters);
 }
