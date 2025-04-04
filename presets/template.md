@@ -1,7 +1,7 @@
 # ====================================== problem to run and how to run it ======================================
 # FA / SAT
 str     problem = FA
-# hill_climb / hill_climb_ban / evolution
+# hill_climb / tabu_search / evolution
 str     algorithm = evolution
 
 # ====================================== files containing data to run ======================================
@@ -12,7 +12,7 @@ str     instance = ./instances/BMS_k3_n100_m429/BMS_k3_n100_m429_0.cnf
 # ====================================== hill_climb parameters ======================================
 int     nb_iteration_max = 512
 
-# ====================================== hill_climb_ban parameters ======================================
+# ====================================== tabu_search parameters ======================================
 int     nb_iteration_max = 2048
 int     ban_list_size = 25
 # not implemented
@@ -33,11 +33,11 @@ int     competition_goup_size = 2
 # probability of mutating each args
 float   mutation_probability = 0.1
 # run a local search algorithm on childs when spawned
-# none / hill_climb / hill_climb_ban / lambda_mutation
+# none / hill_climb / tabu_search / lambda_mutation
 str     run_algo_on_child = none
 # budget for running the local search algorithm on childs (1 mutation checked = 1 budget)
 int     child_algo_budget = 128
-# lambda for running lambda_mutation or ban_list_length for running hill_climb_ban
+# lambda for running lambda_mutation or ban_list_length for running tabu_search
 int     child_algo_parameter = 8
 # makes it impossible for newly spawned instances to be despawned
 bool    protect_child_from_despawn = true

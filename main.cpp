@@ -25,7 +25,7 @@ void run_on_sat(const FileData& file_data) {
         temp = Argmax::hill_climb(solution.clone(), file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "hill_climb_ban") {
-        temp = Argmax::hill_climb_tab(solution.clone(), file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
+        temp = Argmax::tabu_search(solution.clone(), file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "evolution") {
         temp = Argmax::evolution([solution]() -> std::unique_ptr<Instance> { return solution.randomize_clone(); }, Argmax::evolution_parameters(file_data));
@@ -45,7 +45,7 @@ void run_on_fa(const FileData& file_data) {
         temp = Argmax::hill_climb(h.clone(), file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "hill_climb_ban") {
-        temp = Argmax::hill_climb_tab(h.clone(), file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
+        temp = Argmax::tabu_search(h.clone(), file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "evolution") {
         temp = Argmax::evolution([h]() -> std::unique_ptr<Instance> { return h.randomize_clone(); }, Argmax::evolution_parameters(file_data));

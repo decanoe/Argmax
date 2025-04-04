@@ -145,7 +145,7 @@ int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list
     instance = std::move(best);
     return index;
 }
-std::unique_ptr<Instance> Argmax::hill_climb_tab(const std::unique_ptr<Instance> start, size_t black_list_size, unsigned int max_iter)
+std::unique_ptr<Instance> Argmax::tabu_search(const std::unique_ptr<Instance> start, size_t black_list_size, unsigned int max_iter)
 {
     std::list<int> black_list;
     std::unique_ptr<Instance> result = start->clone();
@@ -275,7 +275,7 @@ Argmax::evolution_parameters::evolution_parameters(const FileData &file_data)
     /* #region run_algo_on_child */
     std::string algo = file_data.get_string("run_algo_on_child", "");
          if (algo == "hill_climb")      run_algo_on_child = ChildAlgo::hill_climb;
-    else if (algo == "hill_climb_ban")  run_algo_on_child = ChildAlgo::hill_climb_ban;
+    else if (algo == "tabu_search")  run_algo_on_child = ChildAlgo::tabu_search;
     else if (algo == "lambda_mutation") run_algo_on_child = ChildAlgo::lambda_mutation;
     else                                run_algo_on_child = ChildAlgo::none;
     /* #endregion */
@@ -403,8 +403,8 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 case evolution_parameters::ChildAlgo::hill_climb:
                     instance = hill_climb(std::move(instance), instance->nb_args() / parameters.child_algo_budget);
                     break;
-                case evolution_parameters::ChildAlgo::hill_climb_ban:
-                    instance = hill_climb_tab(std::move(instance), parameters.child_algo_parameter, instance->nb_args() / parameters.child_algo_budget);
+                case evolution_parameters::ChildAlgo::tabu_search:
+                    instance = tabu_search(std::move(instance), parameters.child_algo_parameter, instance->nb_args() / parameters.child_algo_budget);
                     break;
                 case evolution_parameters::ChildAlgo::lambda_mutation:
                     // instance = hill_climb(std::move(instance), parameters.child_algo_parameter, parameters.child_algo_budget);
