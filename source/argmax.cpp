@@ -168,8 +168,42 @@ std::unique_ptr<Instance> Argmax::tabu_search(const std::unique_ptr<Instance> st
     return best;
 }
 
-std::unique_ptr<Instance> one_lambda_search(const std::unique_ptr<Instance> start, unsigned int nb_mutation_to_test, unsigned int max_iter = 1024) {
-    return start->clone();
+std::unique_ptr<Instance> Argmax::one_lambda_search(const std::unique_ptr<Instance> start, unsigned int nb_mutation_to_test, unsigned int max_iter) {
+    std::vector<unsigned int> black_list;
+    std::unique_ptr<Instance> current = start->clone();
+    std::unique_ptr<Instance> best = start->clone();
+    float best_score = best->score();
+
+    for (size_t i = 0; i < max_iter; i++)
+    {
+        std::unique_ptr<Instance> iter_best = nullptr;
+        float score = 0;
+
+        black_list.clear();
+        black_list.reserve(nb_mutation_to_test);
+        for (size_t j = 0; j < nb_mutation_to_test && j < current->nb_args(); j++)
+        {
+            black_list.push_back(RandomUtils::get_index(current->nb_args(), black_list));
+            std::unique_ptr<Instance> temp = current->clone();
+            temp->mutate_arg(black_list.back());
+            float temp_score = temp->score();
+
+            if (temp_score > score || iter_best == nullptr) {
+                iter_best = std::move(temp);
+                score = temp_score;
+
+                if (iter_best->is_max_score(score)) return iter_best;
+            }
+        }
+        
+        current = std::move(iter_best);
+        if (score > best_score) {
+            best = std::move(current);
+            best_score = score;
+        }
+    }
+
+    return best;
 }
 
 Argmax::evolution_parameters::evolution_parameters(const FileData &file_data)
@@ -313,13 +347,13 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 switch (parameters.run_algo_on_child)
                 {
                 case evolution_parameters::ChildAlgo::hill_climb:
-                    instance = hill_climb(std::move(instance), instance->nb_args() / parameters.child_algo_budget);
+                    instance = hill_climb(std::move(instance), parameters.child_algo_budget / instance->nb_args());
                     break;
                 case evolution_parameters::ChildAlgo::tabu_search:
-                    instance = tabu_search(std::move(instance), parameters.child_algo_parameter, instance->nb_args() / parameters.child_algo_budget);
+                    instance = tabu_search(std::move(instance), parameters.child_algo_parameter, parameters.child_algo_budget / instance->nb_args());
                     break;
                 case evolution_parameters::ChildAlgo::lambda_mutation:
-                    // instance = hill_climb(std::move(instance), parameters.child_algo_parameter, parameters.child_algo_budget);
+                    instance = one_lambda_search(std::move(instance), parameters.child_algo_parameter, parameters.child_algo_budget / instance->nb_args());
                     break;
                 default:
                     break;

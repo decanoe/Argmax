@@ -1,6 +1,7 @@
 #pragma once
 #include "file_data.h"
 #include "instance.h"
+#include "random_utils.h"
 #include <iostream>
 #include <functional>
 
