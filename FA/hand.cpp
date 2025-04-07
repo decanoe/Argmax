@@ -85,10 +85,10 @@ float Hand::score_const() const {
 bool Hand::is_max_score(float score) const {
     return false;
 }
-int Hand::nb_args() const {
+unsigned int Hand::nb_args() const {
     return 9;
 }
-void Hand::mutate_arg(int index) {
+void Hand::mutate_arg(unsigned int index) {
     stored_score = NAN;
     if (index == 8) {
         unsigned int replaced_index = RandomUtils::get_index(nb_sanctuary());
@@ -106,7 +106,7 @@ void Hand::mutate_arg(int index) {
         peoples[index] = RandomUtils::get_index(deck->get_people_count(), peoples);
     }
 }
-void Hand::mutate_arg(int index, float probability) {
+void Hand::mutate_arg(unsigned int index, float probability) {
     if (RandomUtils::get_bool(probability)) mutate_arg(index);
 }
 

@@ -83,7 +83,7 @@ bool change_to_better_neighbor(std::unique_ptr<Instance> &instance)
     std::unique_ptr<Instance> best = nullptr;
     float score = instance->score();
 
-    for (int i = 0; i < instance->nb_args(); i++)
+    for (unsigned int i = 0; i < instance->nb_args(); i++)
     {
         std::unique_ptr<Instance> mutation = instance->clone();
         mutation->mutate_arg(i);
@@ -120,7 +120,7 @@ int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list
     float score = instance->score();
     int index = -1;
 
-    for (int i = 0; i < instance->nb_args(); i++)
+    for (unsigned int i = 0; i < instance->nb_args(); i++)
     {
         if (std::find(black_list.begin(), black_list.end(), i) != black_list.end())
             continue;
@@ -341,7 +341,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 std::unique_ptr<Instance> instance = population[parent_1].instance->breed(population[parent_2].instance);
 
                 // mutate offspring
-                for (int arg = 0; arg < instance->nb_args(); arg++)
+                for (unsigned int arg = 0; arg < instance->nb_args(); arg++)
                     instance->mutate_arg(arg, parameters.mutation_probability);
 
                 switch (parameters.run_algo_on_child)

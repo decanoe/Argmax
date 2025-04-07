@@ -20,9 +20,9 @@ public:
         return stored_score;
     }
     virtual bool is_max_score(float score) const { return false; }
-    virtual int nb_args() const = 0;
-    virtual void mutate_arg(int index) = 0;
-    virtual void mutate_arg(int index, float probability) = 0;
+    virtual unsigned int nb_args() const = 0;
+    virtual void mutate_arg(unsigned int index) = 0;
+    virtual void mutate_arg(unsigned int index, float probability) = 0;
 
     virtual std::unique_ptr<Instance> breed(const std::unique_ptr<Instance>& other) = 0;
     virtual std::unique_ptr<Instance> clone() const = 0;

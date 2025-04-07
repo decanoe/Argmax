@@ -61,14 +61,14 @@ float Solution::score_const() const {
 bool Solution::is_max_score(float score) const {
     return formule->get_nb_clauses() == score;
 }
-int Solution::nb_args() const {
+unsigned int Solution::nb_args() const {
     return get_nb_variables();
 }
-void Solution::mutate_arg(int index) {
+void Solution::mutate_arg(unsigned int index) {
     assignation.switch_bit(index);
     this->stored_score = NAN;
 }
-void Solution::mutate_arg(int index, float probability) {
+void Solution::mutate_arg(unsigned int index, float probability) {
     if (RandomUtils::get_bool(probability)) mutate_arg(index);
 }
 

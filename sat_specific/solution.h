@@ -38,9 +38,9 @@ public:
     // Instance specific
     float score_const() const override;
     bool is_max_score(float score) const override;
-    int nb_args() const override;
-    void mutate_arg(int index) override;
-    void mutate_arg(int index, float probability) override;
+    unsigned int nb_args() const override;
+    void mutate_arg(unsigned int index) override;
+    void mutate_arg(unsigned int index, float probability) override;
 
     std::vector<float> to_point() const override;
 
