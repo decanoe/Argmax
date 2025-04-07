@@ -17,7 +17,7 @@ unsigned int RandomUtils::get_index(unsigned int max, std::vector<unsigned int> 
     }
 
     unsigned int i = get_index(max - blacklist.size());
-    for (auto x : blacklist) if (i >= x) i++;
+    while (std::find(blacklist.begin(), blacklist.end(), i) != blacklist.end()) i++;
     return i;
 }
 std::uint64_t RandomUtils::get_uint64()
