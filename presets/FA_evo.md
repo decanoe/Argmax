@@ -22,7 +22,7 @@ int     competition_goup_size = 2
 float   mutation_probability = 0.1
 # run a local search algorithm on childs when spawned
 # none / hill_climb / tabu_search / lambda_mutation
-str     run_algo_on_child = hill_climb
+str     run_algo_on_child = lambda_mutation
 # budget for running the local search algorithm on childs (1 mutation checked = 1 budget)
 int     child_algo_budget = 128
 # lambda for running lambda_mutation or ban_list_length for running tabu_search
