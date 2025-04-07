@@ -54,6 +54,8 @@ void run_on_fa(const FileData& file_data) {
 
     std::cout << "max score: " << int(result.score()) << " points with hand\n";
     result.pretty_cout(std::cout);
+
+    if (file_data.get_bool("debug_screen", false)) system("python ./python/data_visualizer.py");
 }
 
 int main(int argc, char *args[]) {

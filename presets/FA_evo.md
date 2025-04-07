@@ -1,6 +1,7 @@
 # ====================================== problem to run and how to run it ======================================
 str     problem = FA
 str     algorithm = evolution
+bool    debug_screen = true
 
 # ====================================== files containing data to run ======================================
 str     cards = ./FA/data/cards.txt

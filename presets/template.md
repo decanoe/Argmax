@@ -3,6 +3,8 @@
 str     problem = FA
 # hill_climb / tabu_search / evolution
 str     algorithm = evolution
+# whether or not to launch the Python viewer
+bool    debug_screen = true
 
 # ====================================== files containing data to run ======================================
 str     cards = ./FA/data/cards.txt
