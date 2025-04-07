@@ -169,7 +169,6 @@ std::unique_ptr<Instance> Argmax::tabu_search(const std::unique_ptr<Instance> st
 }
 
 std::unique_ptr<Instance> Argmax::one_lambda_search(const std::unique_ptr<Instance> start, unsigned int nb_mutation_to_test, unsigned int max_iter) {
-    std::vector<unsigned int> black_list;
     std::unique_ptr<Instance> current = start->clone();
     std::unique_ptr<Instance> best = start->clone();
     float best_score = best->score();
@@ -178,14 +177,11 @@ std::unique_ptr<Instance> Argmax::one_lambda_search(const std::unique_ptr<Instan
     {
         std::unique_ptr<Instance> iter_best = nullptr;
         float score = 0;
-
-        black_list.clear();
-        black_list.reserve(nb_mutation_to_test);
+        
         for (size_t j = 0; j < nb_mutation_to_test && j < current->nb_args(); j++)
         {
-            black_list.push_back(RandomUtils::get_index(current->nb_args(), black_list));
             std::unique_ptr<Instance> temp = current->clone();
-            temp->mutate_arg(black_list.back());
+            temp->mutate_arg(RandomUtils::get_index(current->nb_args()));
             float temp_score = temp->score();
 
             if (temp_score > score || iter_best == nullptr) {
@@ -198,7 +194,7 @@ std::unique_ptr<Instance> Argmax::one_lambda_search(const std::unique_ptr<Instan
         
         current = std::move(iter_best);
         if (score > best_score) {
-            best = std::move(current);
+            best = current->clone();
             best_score = score;
         }
     }
