@@ -6,6 +6,7 @@
 #include <string>
 #include <math.h>
 #include <random>
+#include <sstream>
 
 float get_time_from(std::chrono::system_clock::time_point point)
 {
@@ -278,13 +279,28 @@ void erase_lines(unsigned int &line_count)
 }
 std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, std::ofstream *out)
 {
-    if (out) *out << "generation\tbest_score\tgen_best_score\tstd\tpopulation" << "\n";
-
     auto rng = std::default_random_engine{};
     std::vector<InstanceGenWrapper> population = std::vector<InstanceGenWrapper>();
     population.reserve(parameters.population_start_size + parameters.population_spawn_size);
     for (unsigned int i = 0; i < parameters.population_start_size; i++)
         population.push_back(InstanceGenWrapper(spawner(), 0));
+
+    /* #region output initialization */
+    std::stringstream *score_out = nullptr;
+    std::stringstream *population_out = nullptr;
+    if (out)
+    {
+        score_out = new std::stringstream();
+        *score_out << "generation\tbest_score\tgen_best_score\tstd\tpopulation" << "\n";
+
+        population_out = new std::stringstream();
+        *population_out << "generation\tage\tnb_args";
+
+        for (unsigned int i = 0; i < population[0].instance->nb_args_max(); i++)
+            *population_out << "\t" << population[0].instance->get_arg_labels(i);
+        *population_out << "\n";
+    }
+    /* #endregion */
 
     unsigned int line_count = 0;
 
@@ -423,23 +439,26 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
 
         /* #region fill output file */
         float gen_standard_derivation = standard_derivation(population);
-        if (out) {
-            *out << g;
-            *out << "\t" << best_score;
-            *out << "\t" << best_score_in_gen;
-            *out << "\t" << gen_standard_derivation;
-            
-            *out << "\t[";
-            for (InstanceGenWrapper &instance : population) {
-                *out << "[";
-                for (float v: instance.instance->to_point()) {
-                    *out << v << ",";
-                }
-                *out << "],";
+        if (out)
+        {
+            *score_out << g;
+            *score_out << "\t" << best_score;
+            *score_out << "\t" << best_score_in_gen;
+            *score_out << "\t" << gen_standard_derivation;
+            *score_out << "\n";
+
+            for (InstanceGenWrapper &instance : population)
+            {
+                *population_out << g;
+                *population_out << "\t" << g - instance.generation;
+                
+                auto point = instance.instance->to_debug_point();
+                *population_out << "\t" << point.size();
+                for (const std::string& v : point) *population_out << "\t" << v;
+                
+                for (unsigned int i = point.size(); i < instance.instance->nb_args_max(); i++) *population_out << "\t";
+                *population_out << "\n";
             }
-            *out << "]";
-            
-            *out << "\n";
         }
         /* #endregion */
 
@@ -483,5 +502,6 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
 
     erase_lines(line_count);
 
+    if (out) *out << score_out->str() << "/*populations*/\n" << population_out->str();
     return best;
 }

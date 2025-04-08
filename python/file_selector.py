@@ -28,10 +28,11 @@ def file_selector() -> str:
         return_value.set(value)
         plt.close(fig)
     
-    buttons_axes: Ptr = Ptr()
-    buttons_axes.set([])
-    buttons: Ptr = Ptr()
-    buttons.set([])
+    buttons_axes: list[plt.Axes] = []
+    buttons: list[ButtonProcessor] = []
+    for f in all_data_files:
+        buttons_axes.append(fig.add_axes([0.15, 0, 0.7, 0.18]))
+        buttons.append(ButtonProcessor(buttons_axes[-1], f, buttons_callback, f))
 
     ax_slider = fig.add_axes([0.1, 0.1, 0.05, 0.8])
     slider = Slider(
@@ -43,18 +44,13 @@ def file_selector() -> str:
         orientation="vertical"
     )
     def update(event):
-        for b in buttons.get():
-            b.delete()
-        for a in buttons_axes.get():
-            fig.delaxes(a)
-        
-        temp_axes = []
-        temp_buttons = []
-        for f in all_data_files:
-            temp_axes.append(fig.add_axes([0.15, 0.8 - (slider.val - len(temp_buttons)) * 0.2, 0.7, 0.18]))
-            temp_buttons.append(ButtonProcessor(temp_axes[-1], f, buttons_callback, f))
-        buttons.set(temp_buttons)
-        buttons_axes.set(temp_axes)
+        i = 0
+        for a in buttons_axes:
+            pos = a.get_position()
+            pos.y0 = 0.5 - (slider.val - i) * 0.2
+            pos.y1 = 0.68 - (slider.val - i) * 0.2
+            i += 1
+            a.set_position(pos)
         
         fig.canvas.draw_idle()
     slider.on_changed(update)

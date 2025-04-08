@@ -38,12 +38,12 @@ public:
     // Instance specific
     float score_const() const override;
     bool is_max_score(float score) const override;
-    unsigned int nb_args() const override;
+    unsigned int nb_args_max() const override;
     void mutate_arg(unsigned int index) override;
     void mutate_arg(unsigned int index, float probability) override;
 
     std::vector<float> to_normalized_point() const override;
-    std::vector<float> to_point() const override;
+    std::vector<std::string> to_debug_point() const override;
 
     std::unique_ptr<Instance> breed(const std::unique_ptr<Instance>& other) override;
     std::unique_ptr<Instance> clone() const override;

@@ -85,6 +85,9 @@ float Hand::score_const() const {
 bool Hand::is_max_score(float score) const {
     return false;
 }
+unsigned int Hand::nb_args_max() const {
+    return 8+7;
+}
 unsigned int Hand::nb_args() const {
     return 9;
 }
@@ -168,12 +171,12 @@ std::vector<float> Hand::to_normalized_point() const {
 
     return result;
 }
-std::vector<float> Hand::to_point() const {
-    std::vector<float> result = std::vector<float>();
+std::vector<std::string> Hand::to_debug_point() const {
+    std::vector<std::string> result = std::vector<std::string>();
     result.reserve(8+nb_sanctuary());
 
-    for (auto i : peoples) result.push_back(deck->get_people(i)->get_index());
-    for (size_t i = 0; i < nb_sanctuary(); i++) result.push_back(sanctuaries[i]);
+    for (auto i : peoples) result.push_back(std::to_string(deck->get_people(i)->get_index()));
+    for (size_t i = 0; i < nb_sanctuary(); i++) result.push_back("s" + std::to_string(sanctuaries[i]));
 
     return result;
 }

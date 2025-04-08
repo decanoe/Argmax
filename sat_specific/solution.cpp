@@ -61,7 +61,7 @@ float Solution::score_const() const {
 bool Solution::is_max_score(float score) const {
     return formule->get_nb_clauses() == score;
 }
-unsigned int Solution::nb_args() const {
+unsigned int Solution::nb_args_max() const {
     return get_nb_variables();
 }
 void Solution::mutate_arg(unsigned int index) {
@@ -72,12 +72,16 @@ void Solution::mutate_arg(unsigned int index, float probability) {
     if (RandomUtils::get_bool(probability)) mutate_arg(index);
 }
 
-std::vector<float> Solution::to_point() const {
+std::vector<std::string> Solution::to_debug_point() const {
+    std::vector<std::string> result = std::vector<std::string>(get_nb_variables(), "0");
+    for (size_t i = 0; i < get_nb_variables(); i++) result[i] = get(i)?"1":"0";
+    return result;
+}
+std::vector<float> Solution::to_normalized_point() const {
     std::vector<float> result = std::vector<float>(get_nb_variables(), 0);
     for (size_t i = 0; i < get_nb_variables(); i++) result[i] = get(i);
     return result;
 }
-std::vector<float> Solution::to_normalized_point() const { return to_point(); }
 
 std::unique_ptr<Instance> Solution::breed(const std::unique_ptr<Instance>& other_inst) {
     Solution* other = dynamic_cast<Solution*>(other_inst.get());
