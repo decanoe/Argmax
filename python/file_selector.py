@@ -39,7 +39,7 @@ def file_selector() -> str:
         ax=ax_slider,
         label="slider",
         valmin=0,
-        valmax=len(all_data_files) - 1,
+        valmax=len(all_data_files) - 1 + 0.0001,
         valinit=len(all_data_files) - 1,
         orientation="vertical"
     )
