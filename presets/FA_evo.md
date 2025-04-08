@@ -11,8 +11,8 @@ str     sanctuaries = ./FA/data/sanctuary.txt
 int     generation_count = 256
 
 int     population_start_size = 256
-int     population_spawn_size = 64
-int     population_despawn_size = 64
+int     population_spawn_size = 1
+int     population_despawn_size = 1
 
 
 # nb of childs sawned per 2 parent

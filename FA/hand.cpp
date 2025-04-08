@@ -159,12 +159,26 @@ Hand& Hand::randomize() {
     return *this;
 }
 
-std::vector<float> Hand::to_point() const {
+std::vector<float> Hand::to_normalized_point() const {
     std::vector<float> result = std::vector<float>();
     result.reserve(8+nb_sanctuary());
 
-    for (auto i : peoples) result.push_back((float)i / deck->get_people_count());
+    for (auto i : peoples) result.push_back((float)deck->get_people(i)->get_index() / deck->get_people_count());
     for (size_t i = 0; i < nb_sanctuary(); i++) result.push_back((float)sanctuaries[i] / deck->get_sanctuary_count());
 
     return result;
 }
+std::vector<float> Hand::to_point() const {
+    std::vector<float> result = std::vector<float>();
+    result.reserve(8+nb_sanctuary());
+
+    for (auto i : peoples) result.push_back(deck->get_people(i)->get_index());
+    for (size_t i = 0; i < nb_sanctuary(); i++) result.push_back(sanctuaries[i]);
+
+    return result;
+}
+std::string Hand::get_arg_labels(unsigned int index) const {
+    if (index < 8) return "people" + std::to_string(index + 1);
+    return "sanct" + std::to_string(index - 7);
+}
+

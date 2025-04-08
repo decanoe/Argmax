@@ -3,6 +3,7 @@
 #include "instance.h"
 #include "random_utils.h"
 #include <iostream>
+#include <fstream>
 #include <functional>
 
 namespace Argmax {
@@ -57,5 +58,5 @@ namespace Argmax {
     std::unique_ptr<Instance> hill_climb(const std::unique_ptr<Instance> start, unsigned int max_iter = 1024);
     std::unique_ptr<Instance> tabu_search(const std::unique_ptr<Instance> start, size_t black_list_size = 3, unsigned int max_iter = 1024);
     std::unique_ptr<Instance> one_lambda_search(const std::unique_ptr<Instance> start, unsigned int nb_mutation_to_test, unsigned int max_iter = 1024);
-    std::unique_ptr<Instance> evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters);
+    std::unique_ptr<Instance> evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, std::ofstream* out = nullptr);
 }

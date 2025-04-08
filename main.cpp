@@ -1,12 +1,21 @@
 #include "source/argmax.h"
 #include "source/file_data.h"
-#include <time.h>
+#include <ctime>
 
 #include "sat_specific/formule.h"
 #include "sat_specific/solution.h"
 
 #include "FA/deck.h"
 #include "FA/hand.h"
+
+std::string timestamp() {
+    time_t rawtime;
+    time(&rawtime);
+    struct tm *timeinfo = localtime(&rawtime);
+    char buffer[80];
+    strftime(buffer, sizeof (buffer), "%Hh%M_%d_%m_%Y", timeinfo);
+    return std::string (buffer);
+}
 
 void path_message() {
     std::cerr << "\033[1;31mYou need to put a path to a file with informations to run\n\033[0m";
@@ -37,6 +46,16 @@ void run_on_sat(const FileData& file_data) {
 void run_on_fa(const FileData& file_data) {
     std::cout << "reading files..." << std::endl;
     std::shared_ptr<Deck> deck = std::make_shared<Deck>(file_data.get_string("cards"), file_data.get_string("sanctuaries"));
+
+    std::string output_file_path = "./python/data/FA_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
+    std::ofstream* output_file = nullptr;
+    if (file_data.get_bool("debug_screen", false)) {
+        output_file = new std::ofstream(output_file_path);
+        if (!(*output_file).is_open()) {
+            std::cerr << "\033[1;31mERROR: cannot open output file at \"" << output_file_path << "\" !\033[0m\n";
+            exit(1);
+        }
+    }
     
     Hand h(deck);
     h.randomize();
@@ -48,14 +67,19 @@ void run_on_fa(const FileData& file_data) {
         temp = Argmax::tabu_search(h.clone(), file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "evolution") {
-        temp = Argmax::evolution([h]() -> std::unique_ptr<Instance> { return h.randomize_clone(); }, Argmax::evolution_parameters(file_data));
+        temp = Argmax::evolution([h]() -> std::unique_ptr<Instance> { return h.randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file);
     }
     Hand result = *dynamic_cast<Hand*>(temp.get());
 
     std::cout << "max score: " << int(result.score()) << " points with hand\n";
     result.pretty_cout(std::cout);
 
-    if (file_data.get_bool("debug_screen", false)) system("python ./python/data_visualizer.py");
+    if ((*output_file).is_open()) {
+        (*output_file).close();
+        delete output_file;
+        std::cout << "data saved in " << output_file_path << std::endl;
+        system(("python ./python/data_visualizer.py " + output_file_path).c_str());
+    }
 }
 
 int main(int argc, char *args[]) {

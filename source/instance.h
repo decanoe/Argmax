@@ -12,7 +12,9 @@ public:
     Instance() = default;
     Instance(const Instance&) = default;
 
+    virtual std::vector<float> to_normalized_point() const { return std::vector<float>(); }
     virtual std::vector<float> to_point() const { return std::vector<float>(); }
+    virtual std::string get_arg_labels(unsigned int index) const { return "var"+std::to_string(index); }
 
     virtual float score_const() const = 0;
     virtual float score() {

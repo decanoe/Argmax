@@ -31,6 +31,8 @@ public:
     Hand& randomize();
 
     std::vector<float> to_point() const override;
+    std::vector<float> to_normalized_point() const override;
+    std::string get_arg_labels(unsigned int index) const override;
     
     std::ostream& pretty_cout(std::ostream& c) const;
     std::ostream& cout(std::ostream& c) const override;

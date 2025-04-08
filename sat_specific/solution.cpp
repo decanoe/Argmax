@@ -77,6 +77,7 @@ std::vector<float> Solution::to_point() const {
     for (size_t i = 0; i < get_nb_variables(); i++) result[i] = get(i);
     return result;
 }
+std::vector<float> Solution::to_normalized_point() const { return to_point(); }
 
 std::unique_ptr<Instance> Solution::breed(const std::unique_ptr<Instance>& other_inst) {
     Solution* other = dynamic_cast<Solution*>(other_inst.get());

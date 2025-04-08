@@ -24,7 +24,7 @@ float Argmax::standard_derivation(std::vector<std::unique_ptr<Instance>> &popula
 
     for (const auto &temp : population)
     {
-        std::vector<float> vect = temp->to_point();
+        std::vector<float> vect = temp->to_normalized_point();
         while (centroid.size() < vect.size())
             centroid.push_back(0);
 
@@ -37,7 +37,7 @@ float Argmax::standard_derivation(std::vector<std::unique_ptr<Instance>> &popula
     float variance = 0;
     for (const auto &temp : population)
     {
-        std::vector<float> vect = temp->to_point();
+        std::vector<float> vect = temp->to_normalized_point();
 
         for (size_t i = 0; i < vect.size(); i++)
         {
@@ -52,7 +52,7 @@ float Argmax::standard_derivation(std::vector<InstanceGenWrapper> &population)
 
     for (const auto &temp : population)
     {
-        std::vector<float> vect = temp.instance->to_point();
+        std::vector<float> vect = temp.instance->to_normalized_point();
         while (centroid.size() < vect.size())
             centroid.push_back(0);
 
@@ -65,7 +65,7 @@ float Argmax::standard_derivation(std::vector<InstanceGenWrapper> &population)
     float variance = 0;
     for (const auto &temp : population)
     {
-        std::vector<float> vect = temp.instance->to_point();
+        std::vector<float> vect = temp.instance->to_normalized_point();
 
         for (size_t i = 0; i < vect.size(); i++)
         {
@@ -168,7 +168,8 @@ std::unique_ptr<Instance> Argmax::tabu_search(const std::unique_ptr<Instance> st
     return best;
 }
 
-std::unique_ptr<Instance> Argmax::one_lambda_search(const std::unique_ptr<Instance> start, unsigned int nb_mutation_to_test, unsigned int max_iter) {
+std::unique_ptr<Instance> Argmax::one_lambda_search(const std::unique_ptr<Instance> start, unsigned int nb_mutation_to_test, unsigned int max_iter)
+{
     std::unique_ptr<Instance> current = start->clone();
     std::unique_ptr<Instance> best = start->clone();
     float best_score = best->score();
@@ -177,23 +178,26 @@ std::unique_ptr<Instance> Argmax::one_lambda_search(const std::unique_ptr<Instan
     {
         std::unique_ptr<Instance> iter_best = nullptr;
         float score = 0;
-        
+
         for (size_t j = 0; j < nb_mutation_to_test && j < current->nb_args(); j++)
         {
             std::unique_ptr<Instance> temp = current->clone();
             temp->mutate_arg(RandomUtils::get_index(current->nb_args()));
             float temp_score = temp->score();
 
-            if (temp_score > score || iter_best == nullptr) {
+            if (temp_score > score || iter_best == nullptr)
+            {
                 iter_best = std::move(temp);
                 score = temp_score;
 
-                if (iter_best->is_max_score(score)) return iter_best;
+                if (iter_best->is_max_score(score))
+                    return iter_best;
             }
         }
-        
+
         current = std::move(iter_best);
-        if (score > best_score) {
+        if (score > best_score)
+        {
             best = current->clone();
             best_score = score;
         }
@@ -216,10 +220,14 @@ Argmax::evolution_parameters::evolution_parameters(const FileData &file_data)
 
     /* #region run_algo_on_child */
     std::string algo = file_data.get_string("run_algo_on_child", "");
-         if (algo == "hill_climb")      run_algo_on_child = ChildAlgo::hill_climb;
-    else if (algo == "tabu_search")  run_algo_on_child = ChildAlgo::tabu_search;
-    else if (algo == "lambda_mutation") run_algo_on_child = ChildAlgo::lambda_mutation;
-    else                                run_algo_on_child = ChildAlgo::none;
+    if (algo == "hill_climb")
+        run_algo_on_child = ChildAlgo::hill_climb;
+    else if (algo == "tabu_search")
+        run_algo_on_child = ChildAlgo::tabu_search;
+    else if (algo == "lambda_mutation")
+        run_algo_on_child = ChildAlgo::lambda_mutation;
+    else
+        run_algo_on_child = ChildAlgo::none;
     /* #endregion */
     child_algo_budget = file_data.get_int("child_algo_budget", child_algo_budget);
     child_algo_parameter = file_data.get_int("child_algo_parameter", child_algo_parameter);
@@ -268,8 +276,10 @@ void erase_lines(unsigned int &line_count)
         std::cout << "\r\033[1A\033[K";
     line_count = 0;
 }
-std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters)
+std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, std::ofstream *out)
 {
+    if (out) *out << "generation\tbest_score\tgen_best_score\tstd\tpopulation" << "\n";
+
     auto rng = std::default_random_engine{};
     std::vector<InstanceGenWrapper> population = std::vector<InstanceGenWrapper>();
     population.reserve(parameters.population_start_size + parameters.population_spawn_size);
@@ -411,6 +421,28 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         }
         /* #endregion */
 
+        /* #region fill output file */
+        float gen_standard_derivation = standard_derivation(population);
+        if (out) {
+            *out << g;
+            *out << "\t" << best_score;
+            *out << "\t" << best_score_in_gen;
+            *out << "\t" << gen_standard_derivation;
+            
+            *out << "\t[";
+            for (InstanceGenWrapper &instance : population) {
+                *out << "[";
+                for (float v: instance.instance->to_point()) {
+                    *out << v << ",";
+                }
+                *out << "],";
+            }
+            *out << "]";
+            
+            *out << "\n";
+        }
+        /* #endregion */
+
         /* #region pretty print to wait */
         int p = 100 * (float)g / parameters.generation_count;
         if (p != progress_percent)
@@ -443,7 +475,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 line_count++;
             }
 
-            std::cout << "standard deviation: " + std::to_string(standard_derivation(population)) + "\n";
+            std::cout << "standard deviation: " + std::to_string(gen_standard_derivation) + "\n";
             line_count++;
         }
         /* #endregion */
