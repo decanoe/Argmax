@@ -89,26 +89,44 @@ unsigned int Hand::nb_args_max() const {
     return 8+7;
 }
 unsigned int Hand::nb_args() const {
-    return 9;
+    return 8+nb_sanctuary();
 }
 void Hand::mutate_arg(unsigned int index) {
     stored_score = NAN;
-    if (index == 8) {
-        unsigned int replaced_index = RandomUtils::get_index(nb_sanctuary());
-        std::vector<unsigned int> black_list = sanctuaries;
-        for (unsigned int i = 0; i <= replaced_index; i++) black_list[i] = deck->get_sanctuary_count();
-        
-        sanctuaries[replaced_index] = RandomUtils::get_index(deck->get_sanctuary_count(), black_list);
-        black_list = sanctuaries;
-        for (unsigned int i = replaced_index; i <= 7; i++) if (sanctuaries[i] == sanctuaries[replaced_index]) {
-            sanctuaries[i] = RandomUtils::get_index(deck->get_sanctuary_count(), black_list);
-            black_list[i] = sanctuaries[i];
-        }
+    if (index < 8) {
+        unsigned int old = peoples[index];
+        peoples[index] = RandomUtils::get_index(deck->get_people_count());
+        for (unsigned int i = 0; i < 8; i++)
+            if (i != index && peoples[i] == peoples[index])
+                peoples[i] = old;
     }
     else {
-        peoples[index] = RandomUtils::get_index(deck->get_people_count(), peoples);
+        index -= 8;
+        unsigned int old = sanctuaries[index];
+        sanctuaries[index] = RandomUtils::get_index(deck->get_sanctuary_count());
+        for (unsigned int i = 0; i < 7; i++)
+            if (i != index && sanctuaries[i] == sanctuaries[index])
+                sanctuaries[i] = old;
     }
 }
+// void Hand::mutate_arg(unsigned int index) {
+//     stored_score = NAN;
+//     if (index == 8) {
+//         unsigned int replaced_index = RandomUtils::get_index(nb_sanctuary());
+//         std::vector<unsigned int> black_list = sanctuaries;
+//         for (unsigned int i = 0; i <= replaced_index; i++) black_list[i] = deck->get_sanctuary_count();
+//        
+//         sanctuaries[replaced_index] = RandomUtils::get_index(deck->get_sanctuary_count(), black_list);
+//         black_list = sanctuaries;
+//         for (unsigned int i = replaced_index; i <= 7; i++) if (sanctuaries[i] == sanctuaries[replaced_index]) {
+//             sanctuaries[i] = RandomUtils::get_index(deck->get_sanctuary_count(), black_list);
+//             black_list[i] = sanctuaries[i];
+//         }
+//     }
+//     else {
+//         peoples[index] = RandomUtils::get_index(deck->get_people_count(), peoples);
+//     }
+// }
 void Hand::mutate_arg(unsigned int index, float probability) {
     if (RandomUtils::get_bool(probability)) mutate_arg(index);
 }
