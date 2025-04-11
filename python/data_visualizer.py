@@ -5,6 +5,8 @@ import pandas as pd
 import numpy as np
 import io
 
+BUTTON_WIDTH: int = 0.2
+
 if __name__ != "__main__":
     exit()
     
@@ -146,8 +148,8 @@ def local_slider_update(event):
     i = 0
     for a in local_buttons_axes:
         pos = a.get_position()
-        pos.x0 = 0.1 - (local_slider.val - i) * 0.35
-        pos.x1 = 0.4 - (local_slider.val - i) * 0.35
+        pos.x0 = 0.1 - (local_slider.val - i) * (BUTTON_WIDTH + 0.025)
+        pos.x1 = 0.1 + BUTTON_WIDTH - (local_slider.val - i) * (BUTTON_WIDTH + 0.025)
         i += 1
         a.set_position(pos)
     
@@ -180,8 +182,8 @@ def global_slider_update(event):
     i = 0
     for a in global_buttons_axes:
         pos = a.get_position()
-        pos.x0 = 0.1 - (global_slider.val - i) * 0.35
-        pos.x1 = 0.4 - (global_slider.val - i) * 0.35
+        pos.x0 = 0.1 - (global_slider.val - i) * (BUTTON_WIDTH + 0.025)
+        pos.x1 = 0.1 + BUTTON_WIDTH - (global_slider.val - i) * (BUTTON_WIDTH + 0.025)
         i += 1
         a.set_position(pos)
     
