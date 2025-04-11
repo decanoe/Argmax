@@ -31,6 +31,7 @@ public:
     std::unique_ptr<Instance> randomize_clone() const;
     Hand& randomize();
 
+    float get_coord(unsigned int index) const override;
     std::vector<std::string> to_debug_point() const override;
     std::vector<float> to_normalized_point() const override;
     std::string get_arg_labels(unsigned int index) const override;

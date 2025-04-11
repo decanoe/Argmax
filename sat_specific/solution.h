@@ -42,6 +42,7 @@ public:
     void mutate_arg(unsigned int index) override;
     void mutate_arg(unsigned int index, float probability) override;
 
+    float get_coord(unsigned int index) const override;
     std::vector<float> to_normalized_point() const override;
     std::vector<std::string> to_debug_point() const override;
 

@@ -2,18 +2,18 @@
 str     problem = FA
 str     algorithm = evolution
 bool    debug_screen = true
-int     debug_generation_spacing = 128
+int     debug_generation_spacing = 4
 
 # ====================================== files containing data to run ======================================
 str     cards = ./FA/data/cards.txt
 str     sanctuaries = ./FA/data/sanctuary.txt
 
 # ====================================== evolution parameters ======================================
-int     generation_count = 8096
+int     generation_count = 512
 
 int     population_start_size = 256
-int     population_spawn_size = 1
-int     population_despawn_size = 1
+int     population_spawn_size = 64
+int     population_despawn_size = 64
 
 
 # nb of childs sawned per 2 parent
@@ -34,9 +34,9 @@ bool    protect_child_from_despawn = true
 
 
 # removes age * multiplier from the score when searching individuals to despawn
-float   despawn_criteria_age_multiplier = 1
+float   despawn_criteria_age_multiplier = 0
 # removes diversity * multiplier from the score when searching individuals to despawn
-float   despawn_criteria_diversity_multiplier = 0
+float   despawn_criteria_diversity_multiplier = 20
 
 # islands not implemented yet
 int     nb_islands = 1

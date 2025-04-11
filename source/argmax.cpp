@@ -279,6 +279,16 @@ void erase_lines(unsigned int &line_count)
         std::cout << "\r\033[1A\033[K";
     line_count = 0;
 }
+float get_frequency_score(Instance* instance, const std::unique_ptr<std::vector<std::map<float, unsigned int>>>& arg_frequency_map, unsigned int population_size) {
+    if (arg_frequency_map == nullptr) return 0;
+    float result = 0;
+    for (unsigned int i = 0; i < instance->nb_args(); i++)
+    {
+        float v = (*arg_frequency_map)[i][instance->get_coord(i)] / (float)population_size;
+        result += v*v;
+    }
+    return result;
+}
 std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, std::ofstream *out)
 {
     auto rng = std::default_random_engine{};
@@ -287,17 +297,33 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
     for (unsigned int i = 0; i < parameters.population_start_size; i++)
         population.push_back(InstanceGenWrapper(spawner(), 0));
 
+    std::unique_ptr<std::vector<std::map<float, unsigned int>>> arg_frequency_map = nullptr;
+    if (parameters.despawn_criteria_diversity_multiplier != 0) {
+        arg_frequency_map = std::make_unique<std::vector<std::map<float, unsigned int>>>(population[0].instance->nb_args_max(), std::map<float, unsigned int>());
+        for (const auto &individual : population)
+        {
+            for (unsigned int i = 0; i < individual.instance->nb_args(); i++)
+            {
+                float v = individual.instance->get_coord(i);
+                if ((*arg_frequency_map)[i].count(v) == 0)
+                    (*arg_frequency_map)[i][v] = 1;
+                else
+                    (*arg_frequency_map)[i][v]++;
+            }
+        }
+    }
+
     /* #region output initialization */
-    std::stringstream *score_out = nullptr;
-    std::stringstream *population_out = nullptr;
+    std::unique_ptr<std::stringstream> score_out = nullptr;
+    std::unique_ptr<std::stringstream> population_out = nullptr;
     if (out)
     {
         *out << parameters << "\n/*scores*/\n";
 
-        score_out = new std::stringstream();
+        score_out = std::make_unique<std::stringstream>();
         *score_out << "generation\tbest_score\tgen_best_score\tstd" << "\n";
 
-        population_out = new std::stringstream();
+        population_out = std::make_unique<std::stringstream>();
         *population_out << "generation\tage\tnb_args";
 
         for (unsigned int i = 0; i < population[0].instance->nb_args_max(); i++)
@@ -399,17 +425,37 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 }
                 /* #endregion */
 
+                /* #region add instance to arg_frequency_map */
+                if (arg_frequency_map) {
+                    for (unsigned int i = 0; i < instance->nb_args(); i++)
+                    {
+                        float v = instance->get_coord(i);
+                        if ((*arg_frequency_map)[i].count(v) == 0)
+                            (*arg_frequency_map)[i][v] = 1;
+                        else
+                            (*arg_frequency_map)[i][v]++;
+                    }
+                }
+                /* #endregion */
+
                 population.push_back(InstanceGenWrapper(std::move(instance), g));
                 current_spawn_count++;
             }
         }
         /* #endregion */
-
+        
         /* #region despawning part of the population */
         float gen_mult = parameters.despawn_criteria_age_multiplier;
-        float freq_mult = parameters.despawn_criteria_diversity_multiplier;
-        std::sort(population.begin(), population.end(), [g, gen_mult, freq_mult](InstanceGenWrapper &a, InstanceGenWrapper &b)
-                  { return a.instance->score() + a.generation * gen_mult < b.instance->score() + b.generation * gen_mult; });
+        float freq_mult = -parameters.despawn_criteria_diversity_multiplier;
+        std::sort(population.begin(), population.end(), [g, gen_mult, freq_mult, &arg_frequency_map, &population](InstanceGenWrapper &a, InstanceGenWrapper &b)
+                  { return
+                    a.instance->score() +
+                    a.generation * gen_mult +
+                    get_frequency_score(a.instance.get(), arg_frequency_map, population.size()) * freq_mult
+                    <
+                    b.instance->score() +
+                    b.generation * gen_mult + get_frequency_score(b.instance.get(), arg_frequency_map, population.size())
+                    * freq_mult; });
 
         unsigned int despawned_count = 0;
         auto it = population.begin();
@@ -420,12 +466,18 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 it++;
             else
             {
+                /* #region remove instance to arg_frequency_map */
+                if (arg_frequency_map) {
+                    for (unsigned int i = 0; i < it->instance->nb_args(); i++)
+                        (*arg_frequency_map)[i][it->instance->get_coord(i)]--;
+                }
+                /* #endregion */
                 it = population.erase(it);
                 despawned_count++;
             }
         }
         /* #endregion */
-
+        
         /* #region get best instance in gen */
         unsigned int best_in_gen = 0;
         float best_score_in_gen = 0;
@@ -440,7 +492,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             }
         }
         /* #endregion */
-
+        
         /* #region fill output file */
         float gen_standard_derivation = standard_derivation(population);
         if (out && (g % parameters.debug_generation_spacing == 0))
@@ -455,17 +507,19 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             {
                 *population_out << g;
                 *population_out << "\t" << g - instance.generation;
-                
+
                 auto point = instance.instance->to_debug_point();
                 *population_out << "\t" << point.size();
-                for (const std::string& v : point) *population_out << "\t" << v;
-                
-                for (unsigned int i = point.size(); i < instance.instance->nb_args_max(); i++) *population_out << "\t";
+                for (const std::string &v : point)
+                    *population_out << "\t" << v;
+
+                for (unsigned int i = point.size(); i < instance.instance->nb_args_max(); i++)
+                    *population_out << "\t";
                 *population_out << "\n";
             }
         }
         /* #endregion */
-
+        
         /* #region pretty print to wait */
         int p = 100 * (float)g / parameters.generation_count;
         if (p != progress_percent)
@@ -506,6 +560,8 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
 
     erase_lines(line_count);
 
-    if (out) *out << score_out->str() << "/*populations*/\n" << population_out->str();
+    if (out)
+        *out << score_out->str() << "/*populations*/\n"
+             << population_out->str();
     return best;
 }

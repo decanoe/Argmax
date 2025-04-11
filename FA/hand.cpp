@@ -180,6 +180,10 @@ Hand& Hand::randomize() {
     return *this;
 }
 
+float Hand::get_coord(unsigned int index) const {
+    if (index < 8) return peoples[index];
+    return sanctuaries[index - 8];
+}
 std::vector<float> Hand::to_normalized_point() const {
     std::vector<float> result = std::vector<float>();
     result.reserve(8+nb_sanctuary());

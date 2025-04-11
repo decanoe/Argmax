@@ -72,6 +72,9 @@ void Solution::mutate_arg(unsigned int index, float probability) {
     if (RandomUtils::get_bool(probability)) mutate_arg(index);
 }
 
+float Solution::get_coord(unsigned int index) const {
+    return get(index);
+}
 std::vector<std::string> Solution::to_debug_point() const {
     std::vector<std::string> result = std::vector<std::string>(get_nb_variables(), "0");
     for (size_t i = 0; i < get_nb_variables(); i++) result[i] = get(i)?"1":"0";

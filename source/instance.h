@@ -13,6 +13,7 @@ public:
     Instance(const Instance&) = default;
 
     virtual std::vector<float> to_normalized_point() const { return std::vector<float>(); }
+    virtual float get_coord(unsigned int index) const = 0;
     virtual std::vector<std::string> to_debug_point() const { return std::vector<std::string>(); }
     virtual std::string get_arg_labels(unsigned int index) const { return "var"+std::to_string(index); }
 
