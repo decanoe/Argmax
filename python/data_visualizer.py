@@ -25,7 +25,7 @@ file_content = file_content.split("\n/*scores*/\n")[1]
 data = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[0]), sep = "\t", index_col = "generation")
 populations = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[1]), sep = "\t")
 
-global_labels = ["best_score", "gen_best_score", "std", "age"]
+global_labels = ["best_score", "gen_best_score", "mean_score", "std", "age"]
 local_labels = ["all_args"]
 args_labels = []
 

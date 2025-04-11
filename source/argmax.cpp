@@ -321,7 +321,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         *out << parameters << "\n/*scores*/\n";
 
         score_out = std::make_unique<std::stringstream>();
-        *score_out << "generation\tbest_score\tgen_best_score\tstd" << "\n";
+        *score_out << "generation\tbest_score\tgen_best_score\tmean_score\tstd" << "\n";
 
         population_out = std::make_unique<std::stringstream>();
         *population_out << "generation\tage\tnb_args";
@@ -481,16 +481,18 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         /* #region get best instance in gen */
         unsigned int best_in_gen = 0;
         float best_score_in_gen = 0;
+        float mean_score = 0;
         for (size_t i = 0; i < population.size(); i++)
         {
             float score = population[i].instance->score();
-
+            mean_score += score;
             if (score > best_score_in_gen || best == nullptr)
             {
                 best_score_in_gen = score;
                 best_in_gen = i;
             }
         }
+        mean_score /= population.size();
         /* #endregion */
         
         /* #region fill output file */
@@ -500,6 +502,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             *score_out << g;
             *score_out << "\t" << best_score;
             *score_out << "\t" << best_score_in_gen;
+            *score_out << "\t" << mean_score;
             *score_out << "\t" << gen_standard_derivation;
             *score_out << "\n";
 
