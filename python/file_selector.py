@@ -54,6 +54,13 @@ def file_selector() -> str:
         fig.canvas.draw_idle()
     slider.on_changed(update)
     update(None)
+    
+    def on_scroll(event):
+        increment = 1 if event.button == 'up' else -1
+        slider.set_val(max(slider.valmin, min(slider.valmax, slider.val + increment * 0.5)))
+        update(None)
+
+    fig.canvas.mpl_connect('scroll_event', on_scroll)
 
     plt.show()
     return dir_path + "\\data\\" + return_value.get()

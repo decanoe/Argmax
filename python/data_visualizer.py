@@ -156,6 +156,14 @@ def local_slider_update(event):
     fig.canvas.draw_idle()
 local_slider.on_changed(local_slider_update)
 local_slider_update(None)
+
+def on_local_scroll(event):
+    if (local_slider_ax.get_visible()):
+        increment = 1 if event.button == 'up' else -1
+        local_slider.set_val(max(local_slider.valmin, min(local_slider.valmax, local_slider.val + increment * 0.5)))
+        local_slider_update(None)
+
+fig.canvas.mpl_connect('scroll_event', on_local_scroll)
 # endregion
 # region global buttons
 def global_buttons_callback(value: str):
@@ -190,6 +198,14 @@ def global_slider_update(event):
     fig.canvas.draw_idle()
 global_slider.on_changed(global_slider_update)
 global_slider_update(None)
+
+def on_global_scroll(event):
+    if (global_slider_ax.get_visible()):
+        increment = 1 if event.button == 'up' else -1
+        global_slider.set_val(max(global_slider.valmin, min(global_slider.valmax, global_slider.val + increment * 0.5)))
+        global_slider_update(None)
+
+fig.canvas.mpl_connect('scroll_event', on_global_scroll)
 # endregion
 
 # region category button
