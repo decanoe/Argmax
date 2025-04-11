@@ -5,6 +5,8 @@ str     problem = FA
 str     algorithm = evolution
 # whether or not to launch the Python viewer
 bool    debug_screen = true
+# if set, data will only be saved every <debug_generation_spacing> generation
+int     debug_generation_spacing = 64
 
 # ====================================== files containing data to run ======================================
 str     cards = ./FA/data/cards.txt

@@ -35,6 +35,7 @@ namespace Argmax {
         float percent_of_population_per_migrations = 0.05;
         
         bool debug_show_best = true;
+        int debug_generation_spacing = 1;
         
         evolution_parameters(const FileData&);
     };

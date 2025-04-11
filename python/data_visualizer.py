@@ -19,6 +19,8 @@ else:
 
 file_content: str = ""
 with open(data_file) as f: file_content = f.read()
+parameters = file_content.split("\n/*scores*/\n")[0]
+file_content = file_content.split("\n/*scores*/\n")[1]
 
 data = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[0]), sep = "\t", index_col = "generation")
 populations = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[1]), sep = "\t")

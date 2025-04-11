@@ -242,6 +242,7 @@ Argmax::evolution_parameters::evolution_parameters(const FileData &file_data)
     percent_of_population_per_migrations = file_data.get_float("percent_of_population_per_migrations", percent_of_population_per_migrations);
 
     debug_show_best = file_data.get_bool("debug_show_best", debug_show_best);
+    debug_generation_spacing = file_data.get_int("debug_generation_spacing", debug_generation_spacing);
 }
 std::ostream &Argmax::operator<<(std::ostream &c, const evolution_parameters &p)
 {
@@ -268,6 +269,7 @@ std::ostream &Argmax::operator<<(std::ostream &c, const evolution_parameters &p)
     c << "\npercent_of_population_per_migrations:     " << p.percent_of_population_per_migrations;
 
     c << "\ndebug_show_best:                          " << p.debug_show_best;
+    c << "\ndebug_generation_spacing:                  " << p.debug_generation_spacing;
     return c;
 }
 
@@ -290,8 +292,10 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
     std::stringstream *population_out = nullptr;
     if (out)
     {
+        *out << parameters << "\n/*scores*/\n";
+
         score_out = new std::stringstream();
-        *score_out << "generation\tbest_score\tgen_best_score\tstd\tpopulation" << "\n";
+        *score_out << "generation\tbest_score\tgen_best_score\tstd" << "\n";
 
         population_out = new std::stringstream();
         *population_out << "generation\tage\tnb_args";
@@ -439,7 +443,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
 
         /* #region fill output file */
         float gen_standard_derivation = standard_derivation(population);
-        if (out)
+        if (out && (g % parameters.debug_generation_spacing == 0))
         {
             *score_out << g;
             *score_out << "\t" << best_score;
