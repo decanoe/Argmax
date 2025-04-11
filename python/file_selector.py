@@ -10,7 +10,6 @@ def _sort_key(s: str)->str:
     l: list = os.path.basename(s).split("_")
     return l[5] + l[4] + l[3] + l[2]
 all_data_files.sort(key=_sort_key)
-print(all_data_files)
 
 class Ptr:
     def set(self, value):

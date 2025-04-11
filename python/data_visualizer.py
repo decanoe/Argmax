@@ -2,6 +2,7 @@ import os
 import sys
 import ast
 import pandas as pd
+import numpy as np
 import io
 
 if __name__ != "__main__":
@@ -14,23 +15,26 @@ if (len(sys.argv) < 2):
 else:
     data_file = sys.argv[1]
 
-problem: str = os.path.basename(data_file).split("_")[0]
-print(problem)
-
 file_content: str = ""
 with open(data_file) as f: file_content = f.read()
 
 data = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[0]), sep = "\t", index_col = "generation")
-populations = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[1]), sep = "\t", index_col = "generation")
+populations = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[1]), sep = "\t")
 
+global_labels = ["best_score", "gen_best_score", "std", "age"]
+local_labels = ["all_args"]
+args_labels = []
 
-
-
-
+for label in populations.columns.values:
+    if (label not in ["generation", "age", "nb_args"]):
+        args_labels.append(label)
+        local_labels.append(label)
+    
 # ===============================================================================================
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 from matplotlib.backend_bases import MouseEvent
+from matplotlib.text import Annotation
 from button import ButtonProcessor
 
 PLOT_CATEGORY = "global" # global / individual
@@ -39,20 +43,83 @@ PLOT_KEY = "best_score"
 
 fig, ax = plt.subplots()
 fig.subplots_adjust(left=0.1, right=0.9, bottom=0.35, top=0.95)
+lines: list = []
 
-global_labels = ["best_score", "gen_best_score", "std"]
-local_labels = ["all"]
-if (problem == "FA"):
-    local_labels += [f"people{i}" for i in range(1, 9)] + [f"sanct{i}" for i in range(1, 8)]
+annot: Annotation
 
 def update(event):
+    global lines, annot
+    lines = []
     ax.clear()
     
-    if (PLOT_KEY in global_labels):
+    annot = ax.annotate("", xy=(0,0), xytext=(-20,20),textcoords="offset points",
+                    bbox=dict(boxstyle="round", fc="w"),
+                    arrowprops=dict(arrowstyle="->"))
+    annot.set_visible(False)
+    
+    if (PLOT_KEY == "age"):
+        x = list(data.index)
+        vc = populations[["generation", PLOT_KEY]].groupby("generation").mean()
+        
+        vc.plot.line(ax=ax)
+    elif (PLOT_KEY in global_labels):
         data.plot.line(y=PLOT_KEY, use_index=True, ax=ax)
-    else:
-        pass
+    elif (PLOT_KEY in args_labels):
+        x = list(data.index)
+        vc = populations[["generation", PLOT_KEY]].groupby(PLOT_KEY).value_counts()
+        
+        if (len(vc) != 0):
+            args, _ = zip(*vc.index.tolist())
+            for arg in set(args):
+                y = np.array(list(vc[arg].reindex(x, fill_value=0)))
+                line, = ax.plot(x, y / np.array(populations[["generation"]].value_counts().tolist()), label=arg)
+                lines.append(line)
+    elif (PLOT_KEY == "all_args"):
+        x = list(data.index)
+        y = {}
+        
+        for key in local_labels:
+            if key == "all_args":
+                continue
+            
+            vc = populations[["generation", key]].groupby(key).value_counts()
+            if (len(vc) != 0):
+                args, _ = zip(*vc.index.tolist())
+                for arg in set(args):
+                    if (arg not in y):
+                        y[arg] = np.zeros(len(x))
+                    y[arg] += np.array(list(vc[arg].reindex(x, fill_value=0)))
+        
+        for arg in y.keys():
+            line, = ax.plot(x, y[arg] / np.array(populations[["generation"]].value_counts().tolist()), label=arg)
+            lines.append(line)
     fig.canvas.draw_idle()
+
+# region hovering hints
+def update_annot(line_index: int, ind):
+    x,y = lines[line_index].get_data()
+    annot.xy = (x[ind["ind"][0]], y[ind["ind"][0]])
+    annot.set_text(lines[line_index].get_label())
+    annot.get_bbox_patch().set_alpha(0.4)
+
+def hover(event):
+    vis = annot.get_visible()
+    if event.inaxes == ax:
+        found: bool = False
+        
+        for index in range(len(lines)):
+            cont, ind = lines[index].contains(event)
+            if cont:
+                found = True
+                update_annot(index, ind)
+                break
+
+        if found or vis:
+            annot.set_visible(found)
+            fig.canvas.draw_idle()
+
+fig.canvas.mpl_connect("motion_notify_event", hover)
+# endregion
 
 # region local buttons
 def local_buttons_callback(value: str):
@@ -123,40 +190,27 @@ global_slider.on_changed(global_slider_update)
 global_slider_update(None)
 # endregion
 
-# region arg_order button
-arg_order_ax = fig.add_axes([0.45, 0.2, 0.3, 0.05])
-arg_order_button = Button(arg_order_ax, "arg_order: on" if USE_ARG_ORDER else "arg_order: off")
-
-def switch_arg_order(event):
-    global USE_ARG_ORDER
-    USE_ARG_ORDER = not(USE_ARG_ORDER)
-    arg_order_button.label.set_text("arg_order: on" if USE_ARG_ORDER else "arg_order: off")
-    update(event)
-# endregion
-
 # region category button
 category_ax = fig.add_axes([0.1, 0.2, 0.3, 0.05])
 category_button = Button(category_ax, PLOT_CATEGORY)
 
 def update_visibility():
-    for a in local_buttons_axes + [arg_order_ax, local_slider_ax]:
+    for a in local_buttons_axes + [local_slider_ax]:
         a.set_visible(PLOT_CATEGORY == "individual")
     for a in global_buttons_axes + [global_slider_ax]:
         a.set_visible(PLOT_CATEGORY == "global")
+    fig.canvas.draw_idle()
 def switch_category(event):
     global PLOT_CATEGORY
     PLOT_CATEGORY = "global" if (PLOT_CATEGORY != "global") else "individual"
     category_button.label.set_text(PLOT_CATEGORY)
     
     update_visibility()
-    
-    update(event)
 update_visibility()
 # endregion
 
 # region button events
 category_button.on_clicked(switch_category)
-arg_order_button.on_clicked(switch_arg_order)
 # endregion
 
 update(None)
