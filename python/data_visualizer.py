@@ -19,21 +19,30 @@ else:
 
 file_content: str = ""
 with open(data_file) as f: file_content = f.read()
+
 parameters = file_content.split("\n/*scores*/\n")[0]
 file_content = file_content.split("\n/*scores*/\n")[1]
 
+file_times = file_content.split("\n/*times*/\n")[1]
+file_content = file_content.split("\n/*times*/\n")[0]
+
 data = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[0]), sep = "\t", index_col = "generation")
 populations = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[1]), sep = "\t")
+times = pd.read_csv(io.StringIO(file_times), sep = "\t", index_col = "generation")
 
 global_labels = ["best_score", "gen_best_score", "mean_score", "std", "age"]
 local_labels = ["all_args"]
+times_labels = []
 args_labels = []
 
 for label in populations.columns.values:
     if (label not in ["generation", "age", "nb_args"]):
         args_labels.append(label)
         local_labels.append(label)
-    
+for label in times.columns.values:
+    if (label != "generation"):
+        times_labels.append(label)
+ 
 # ===============================================================================================
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
@@ -41,8 +50,8 @@ from matplotlib.backend_bases import MouseEvent
 from matplotlib.text import Annotation
 from button import ButtonProcessor
 
-PLOT_CATEGORY = "global" # global / individual
-USE_ARG_ORDER = True
+PLOT_CATEGORY = "global" # global / individual / times
+NORMALIZE_TIMES = False
 PLOT_KEY = "best_score"
 
 fig, ax = plt.subplots()
@@ -68,6 +77,11 @@ def update(event):
         vc.plot.line(ax=ax)
     elif (PLOT_KEY in global_labels):
         data.plot.line(y=PLOT_KEY, use_index=True, ax=ax)
+    elif (PLOT_KEY in times_labels):
+        if (NORMALIZE_TIMES):
+            (times[PLOT_KEY] / times.total).plot.line(y=PLOT_KEY, use_index=True, ax=ax, ylim=(0.1, 1.1))
+        else:
+            times.plot.line(y=PLOT_KEY, use_index=True, ax=ax)
     elif (PLOT_KEY in args_labels):
         x = list(data.index)
         vc = populations[["generation", PLOT_KEY]].groupby(PLOT_KEY).value_counts()
@@ -125,17 +139,16 @@ def hover(event):
 fig.canvas.mpl_connect("motion_notify_event", hover)
 # endregion
 
-# region local buttons
-def local_buttons_callback(value: str):
+def plot_key_buttons_callback(value: str):
     global PLOT_KEY
     PLOT_KEY = value
     update(None)
-
+# region local buttons
 local_buttons_axes: list[plt.Axes] = []
 local_buttons: list[ButtonProcessor] = []
 for l in local_labels:
     local_buttons_axes.append(fig.add_axes([0, 0.1, 0, 0.05]))
-    local_buttons.append(ButtonProcessor(local_buttons_axes[-1], l, local_buttons_callback, l))
+    local_buttons.append(ButtonProcessor(local_buttons_axes[-1], l, plot_key_buttons_callback, l))
 
 local_slider_ax = fig.add_axes([0.1, 0, 0.8, 0.05])
 local_slider = Slider(
@@ -168,16 +181,11 @@ def on_local_scroll(event):
 fig.canvas.mpl_connect('scroll_event', on_local_scroll)
 # endregion
 # region global buttons
-def global_buttons_callback(value: str):
-    global PLOT_KEY
-    PLOT_KEY = value
-    update(None)
-
 global_buttons_axes: list[plt.Axes] = []
 global_buttons: list[ButtonProcessor] = []
 for l in global_labels:
     global_buttons_axes.append(fig.add_axes([0, 0.1, 0, 0.05]))
-    global_buttons.append(ButtonProcessor(global_buttons_axes[-1], l, global_buttons_callback, l))
+    global_buttons.append(ButtonProcessor(global_buttons_axes[-1], l, plot_key_buttons_callback, l))
 
 global_slider_ax = fig.add_axes([0.1, 0, 0.8, 0.05])
 global_slider = Slider(
@@ -209,6 +217,54 @@ def on_global_scroll(event):
 
 fig.canvas.mpl_connect('scroll_event', on_global_scroll)
 # endregion
+# region times buttons
+normalize_button_axe = fig.add_axes([0.45, 0.2, 0.3, 0.05])
+normalize_button = Button(normalize_button_axe, "normalize: false")
+def normalize_buttons_callback(event):
+    global NORMALIZE_TIMES
+    NORMALIZE_TIMES = not(NORMALIZE_TIMES)
+    
+    normalize_button.label.set_text("normalize: true" if NORMALIZE_TIMES else "normalize: false")
+    
+    update(None)
+normalize_button.on_clicked(normalize_buttons_callback)
+
+times_buttons_axes: list[plt.Axes] = []
+times_buttons: list[ButtonProcessor] = []
+for l in times_labels:
+    times_buttons_axes.append(fig.add_axes([0, 0.1, 0, 0.05]))
+    times_buttons.append(ButtonProcessor(times_buttons_axes[-1], l, plot_key_buttons_callback, l))
+
+times_slider_ax = fig.add_axes([0.1, 0, 0.8, 0.05])
+times_slider = Slider(
+    ax=times_slider_ax,
+    label="slider",
+    valmin=0,
+    valmax=len(times_labels) - 1,
+    valinit=0,
+    orientation="horizontal"
+)
+def times_slider_update(event):
+    i = 0
+    for a in times_buttons_axes:
+        pos = a.get_position()
+        pos.x0 = 0.1 - (times_slider.val - i) * (BUTTON_WIDTH + 0.025)
+        pos.x1 = 0.1 + BUTTON_WIDTH - (times_slider.val - i) * (BUTTON_WIDTH + 0.025)
+        i += 1
+        a.set_position(pos)
+    
+    fig.canvas.draw_idle()
+times_slider.on_changed(times_slider_update)
+times_slider_update(None)
+
+def on_times_scroll(event):
+    if (times_slider_ax.get_visible()):
+        increment = 1 if event.button == 'up' else -1
+        times_slider.set_val(max(times_slider.valmin, min(times_slider.valmax, times_slider.val + increment * 0.5)))
+        times_slider_update(None)
+
+fig.canvas.mpl_connect('scroll_event', on_times_scroll)
+# endregion
 
 # region category button
 category_ax = fig.add_axes([0.1, 0.2, 0.3, 0.05])
@@ -219,17 +275,16 @@ def update_visibility():
         a.set_visible(PLOT_CATEGORY == "individual")
     for a in global_buttons_axes + [global_slider_ax]:
         a.set_visible(PLOT_CATEGORY == "global")
+    for a in times_buttons_axes + [times_slider_ax, normalize_button_axe]:
+        a.set_visible(PLOT_CATEGORY == "times")
     fig.canvas.draw_idle()
 def switch_category(event):
     global PLOT_CATEGORY
-    PLOT_CATEGORY = "global" if (PLOT_CATEGORY != "global") else "individual"
+    PLOT_CATEGORY = "global" if (PLOT_CATEGORY == "times") else "individual" if (PLOT_CATEGORY == "global") else "times"
     category_button.label.set_text(PLOT_CATEGORY)
     
     update_visibility()
 update_visibility()
-# endregion
-
-# region button events
 category_button.on_clicked(switch_category)
 # endregion
 

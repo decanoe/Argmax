@@ -291,8 +291,35 @@ float get_frequency_score(Instance* instance, const std::unique_ptr<std::vector<
 }
 std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, std::ofstream *out)
 {
+    /* #region output initialization */
+    std::unique_ptr<std::stringstream> score_out = nullptr;
+    std::unique_ptr<std::stringstream> population_out = nullptr;
+    std::unique_ptr<std::stringstream> times_out = nullptr;
+    if (out)
+    {
+        *out << parameters << "\n/*scores*/\n";
+
+        score_out = std::make_unique<std::stringstream>();
+        *score_out << "generation\tbest_score\tgen_best_score\tmean_score\tstd" << "\n";
+
+        population_out = std::make_unique<std::stringstream>();
+        *population_out << "generation\tage\tnb_args";
+
+        std::unique_ptr<Instance> temp = spawner();
+
+        for (unsigned int i = 0; i < temp->nb_args_max(); i++)
+            *population_out << "\t" << temp->get_arg_labels(i);
+        *population_out << "\n";
+        
+        times_out = std::make_unique<std::stringstream>();
+        *times_out << "generation\tspawning\tdespawning\tfinding_best\ttotal" << "\n";
+    }
+    /* #endregion */
+
+    /* #region initialization */
     auto rng = std::default_random_engine{};
     std::vector<InstanceGenWrapper> population = std::vector<InstanceGenWrapper>();
+    
     population.reserve(parameters.population_start_size + parameters.population_spawn_size);
     for (unsigned int i = 0; i < parameters.population_start_size; i++)
         population.push_back(InstanceGenWrapper(spawner(), 0));
@@ -312,26 +339,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             }
         }
     }
-
-    /* #region output initialization */
-    std::unique_ptr<std::stringstream> score_out = nullptr;
-    std::unique_ptr<std::stringstream> population_out = nullptr;
-    if (out)
-    {
-        *out << parameters << "\n/*scores*/\n";
-
-        score_out = std::make_unique<std::stringstream>();
-        *score_out << "generation\tbest_score\tgen_best_score\tmean_score\tstd" << "\n";
-
-        population_out = std::make_unique<std::stringstream>();
-        *population_out << "generation\tage\tnb_args";
-
-        for (unsigned int i = 0; i < population[0].instance->nb_args_max(); i++)
-            *population_out << "\t" << population[0].instance->get_arg_labels(i);
-        *population_out << "\n";
-    }
-    /* #endregion */
-
+    
     unsigned int line_count = 0;
 
     /* #region get best instance */
@@ -350,11 +358,15 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         }
     }
     /* #endregion */
+    /* #endregion */
 
     int progress_percent = -1;
     for (unsigned int g = 1; g < parameters.generation_count; g++)
     {
+        auto start = std::chrono::system_clock::now();
+
         /* #region spawning new generation */
+        auto spawning_start = std::chrono::system_clock::now();
         unsigned int current_spawn_count = 0;
         while (current_spawn_count < parameters.population_spawn_size)
         {
@@ -442,9 +454,11 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 current_spawn_count++;
             }
         }
+        float spawning_elapsed = get_time_from(spawning_start);
         /* #endregion */
         
         /* #region despawning part of the population */
+        auto despawning_start = std::chrono::system_clock::now();
         float gen_mult = parameters.despawn_criteria_age_multiplier;
         float freq_mult = -parameters.despawn_criteria_diversity_multiplier;
         std::sort(population.begin(), population.end(), [g, gen_mult, freq_mult, &arg_frequency_map, &population](InstanceGenWrapper &a, InstanceGenWrapper &b)
@@ -476,9 +490,11 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 despawned_count++;
             }
         }
+        float despawning_elapsed = get_time_from(despawning_start);
         /* #endregion */
         
         /* #region get best instance in gen */
+        auto searching_start = std::chrono::system_clock::now();
         unsigned int best_in_gen = 0;
         float best_score_in_gen = 0;
         float mean_score = 0;
@@ -493,8 +509,11 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             }
         }
         mean_score /= population.size();
+        float searching_elapsed = get_time_from(searching_start);
         /* #endregion */
         
+        float elapsed = get_time_from(start);
+
         /* #region fill output file */
         float gen_standard_derivation = standard_derivation(population);
         if (out && (g % parameters.debug_generation_spacing == 0))
@@ -520,6 +539,13 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                     *population_out << "\t";
                 *population_out << "\n";
             }
+
+            *times_out << g;
+            *times_out << "\t" << spawning_elapsed;
+            *times_out << "\t" << despawning_elapsed;
+            *times_out << "\t" << searching_elapsed;
+            *times_out << "\t" << elapsed;
+            *times_out << "\n";
         }
         /* #endregion */
         
@@ -563,8 +589,9 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
 
     erase_lines(line_count);
 
-    if (out)
-        *out << score_out->str() << "/*populations*/\n"
-             << population_out->str();
+    if (out) *out
+            << score_out->str()         << "/*populations*/\n"
+            << population_out->str()    << "/*times*/\n"
+            << times_out->str()    << "/*times*/\n";
     return best;
 }
