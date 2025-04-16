@@ -312,7 +312,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         *population_out << "\n";
         
         times_out = std::make_unique<std::stringstream>();
-        *times_out << "generation\tspawning\tdespawning\tfinding_best\ttotal" << "\n";
+        *times_out << "generation\tfinding_parent\tspawning_child\trunning_child_algo\tsorting_population\tdespawning\tfinding_best\ttotal" << "\n";
     }
     /* #endregion */
 
@@ -366,10 +366,13 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         auto start = std::chrono::system_clock::now();
 
         /* #region spawning new generation */
-        auto spawning_start = std::chrono::system_clock::now();
+        float finding_parent_elapsed = 0;
+        float spawning_child_elapsed = 0;
+        float child_algo_elapsed = 0;
         unsigned int current_spawn_count = 0;
         while (current_spawn_count < parameters.population_spawn_size)
         {
+            auto finding_parents_start = std::chrono::system_clock::now();
             std::shuffle(population.begin(), population.end(), rng);
             unsigned int parent_1 = 0;
             float score_1 = 0;
@@ -398,16 +401,20 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                     parent_2 = index;
                 }
             }
+            finding_parent_elapsed += get_time_from(finding_parents_start);
 
             // add child(s)
             for (unsigned int i = 0; i < parameters.spawn_per_parent && current_spawn_count < parameters.population_spawn_size; i++)
             {
+                auto spawning_child_start = std::chrono::system_clock::now();
                 std::unique_ptr<Instance> instance = population[parent_1].instance->breed(population[parent_2].instance);
 
                 // mutate offspring
                 for (unsigned int arg = 0; arg < instance->nb_args(); arg++)
                     instance->mutate_arg(arg, parameters.mutation_probability);
-
+                spawning_child_elapsed += get_time_from(spawning_child_start);
+                
+                auto child_algo_start = std::chrono::system_clock::now();
                 switch (parameters.run_algo_on_child)
                 {
                 case evolution_parameters::ChildAlgo::hill_climb:
@@ -417,12 +424,14 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                     instance = tabu_search(std::move(instance), parameters.child_algo_parameter, parameters.child_algo_budget / instance->nb_args());
                     break;
                 case evolution_parameters::ChildAlgo::lambda_mutation:
-                    instance = one_lambda_search(std::move(instance), parameters.child_algo_parameter, parameters.child_algo_budget / instance->nb_args());
+                    instance = one_lambda_search(std::move(instance), parameters.child_algo_parameter, parameters.child_algo_budget / parameters.child_algo_parameter);
                     break;
                 default:
                     break;
                 }
+                child_algo_elapsed += get_time_from(child_algo_start);
 
+                auto adding_child_start = std::chrono::system_clock::now();
                 /* #region test for best instance */
                 float score = instance->score();
                 if (score > best_score)
@@ -452,43 +461,62 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
 
                 population.push_back(InstanceGenWrapper(std::move(instance), g));
                 current_spawn_count++;
+                spawning_child_elapsed += get_time_from(adding_child_start);
             }
         }
-        float spawning_elapsed = get_time_from(spawning_start);
         /* #endregion */
         
         /* #region despawning part of the population */
-        auto despawning_start = std::chrono::system_clock::now();
+        auto sorting_start = std::chrono::system_clock::now();
+        std::vector<unsigned int> remove_indices = std::vector<unsigned int>();
+        std::vector<float> remove_scores = std::vector<float>();
+        remove_indices.reserve(parameters.population_despawn_size);
+        remove_scores.reserve(parameters.population_despawn_size);
+
         float gen_mult = parameters.despawn_criteria_age_multiplier;
         float freq_mult = -parameters.despawn_criteria_diversity_multiplier;
-        std::sort(population.begin(), population.end(), [g, gen_mult, freq_mult, &arg_frequency_map, &population](InstanceGenWrapper &a, InstanceGenWrapper &b)
-                  { return
-                    a.instance->score() +
-                    a.generation * gen_mult +
-                    get_frequency_score(a.instance.get(), arg_frequency_map, population.size()) * freq_mult
-                    <
-                    b.instance->score() +
-                    b.generation * gen_mult + get_frequency_score(b.instance.get(), arg_frequency_map, population.size())
-                    * freq_mult; });
-
-        unsigned int despawned_count = 0;
-        auto it = population.begin();
-
-        while (it != population.end() && (despawned_count < parameters.population_despawn_size || population.size() > parameters.population_start_size))
+        for (unsigned int i = 0; i < population.size(); i++)
         {
-            if (parameters.protect_child_from_despawn && it->generation == g)
-                it++;
-            else
-            {
-                /* #region remove instance to arg_frequency_map */
-                if (arg_frequency_map) {
-                    for (unsigned int i = 0; i < it->instance->nb_args(); i++)
-                        (*arg_frequency_map)[i][it->instance->get_coord(i)]--;
+            if (parameters.protect_child_from_despawn && population[i].generation == g) continue;
+
+            float score = population[i].instance->score();
+            score += get_frequency_score(population[i].instance.get(), arg_frequency_map, population.size()) * freq_mult;
+            score += population[i].generation * gen_mult;
+
+            auto score_iter = remove_scores.begin();
+            auto iter = remove_indices.begin();
+            while (iter != remove_indices.end()) {
+                if (score < *score_iter) {
+                    remove_indices.insert(iter, i);
+                    remove_scores.insert(score_iter, score);
+                    break;
                 }
-                /* #endregion */
-                it = population.erase(it);
-                despawned_count++;
+                score_iter++;
+                iter++;
             }
+
+            if (remove_indices.size() < parameters.population_despawn_size) {
+                remove_indices.push_back(i);
+                remove_scores.push_back(score);
+            }
+            else if (remove_indices.size() > parameters.population_despawn_size) {
+                remove_indices.pop_back();
+                remove_scores.pop_back();
+            }
+        }
+        
+        float sorting_elapsed = get_time_from(sorting_start);
+
+        auto despawning_start = std::chrono::system_clock::now();
+        for (unsigned int index : remove_indices)
+        {
+            /* #region remove instance to arg_frequency_map */
+            if (arg_frequency_map) {
+                for (unsigned int i = 0; i < population[index].instance->nb_args(); i++)
+                    (*arg_frequency_map)[i][population[index].instance->get_coord(i)]--;
+            }
+            /* #endregion */
+            population.erase(population.begin() + index);
         }
         float despawning_elapsed = get_time_from(despawning_start);
         /* #endregion */
@@ -541,7 +569,10 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             }
 
             *times_out << g;
-            *times_out << "\t" << spawning_elapsed;
+            *times_out << "\t" << finding_parent_elapsed;
+            *times_out << "\t" << spawning_child_elapsed;
+            *times_out << "\t" << child_algo_elapsed;
+            *times_out << "\t" << sorting_elapsed;
             *times_out << "\t" << despawning_elapsed;
             *times_out << "\t" << searching_elapsed;
             *times_out << "\t" << elapsed;
