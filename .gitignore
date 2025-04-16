@@ -34,6 +34,7 @@
 # other
 out
 .vscode
+temp.rundata
 results
 python/data/*
 python/__pycache__
