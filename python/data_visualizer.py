@@ -79,7 +79,7 @@ def update(event):
         data.plot.line(y=PLOT_KEY, use_index=True, ax=ax)
     elif (PLOT_KEY in times_labels):
         if (NORMALIZE_TIMES):
-            (times[PLOT_KEY] / times.total).plot.line(y=PLOT_KEY, use_index=True, ax=ax, ylim=(0.1, 1.1))
+            (times[PLOT_KEY] / times.total).plot.line(y=PLOT_KEY, use_index=True, ax=ax, ylim=(-0.1, 1.1))
         else:
             times.plot.line(y=PLOT_KEY, use_index=True, ax=ax)
     elif (PLOT_KEY in args_labels):
