@@ -70,14 +70,15 @@ int main(int argc, char *args[]) {
     std::cout << "\033[1A\r\033[K";
     if (argc < 2) path_message();
 
-    if (args[1] == "-visualize" || args[1] == "-v") {
+    std::string arg1 = args[1];
+    if (arg1 == "-visualize" || arg1 == "-v") {
         system("python ./python/data_visualizer.py");
         return 0;
     }
 
     srand(time(NULL));
     
-    FileData file_data = FileData(args[1]);
+    FileData file_data = FileData(arg1);
 
     std::ofstream* output_file = nullptr;
     if (file_data.get_bool("debug_screen", false)) {
