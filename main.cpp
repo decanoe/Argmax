@@ -18,7 +18,7 @@ std::string timestamp() {
 }
 
 void path_message() {
-    std::cerr << "\033[1;31mYou need to put a path to a file with informations to run\n\033[0m";
+    std::cerr << "\033[1;31mIf you want to run an algorithm you need to put a path to a file with all the informations\nIf you want to launch the visualizer please use -visualize or -v\n\033[0m";
     exit(1);
 }
 
@@ -69,6 +69,11 @@ int main(int argc, char *args[]) {
     system("chcp 65001");
     std::cout << "\033[1A\r\033[K";
     if (argc < 2) path_message();
+
+    if (args[1] == "-visualize" || args[1] == "-v") {
+        system("python ./python/data_visualizer.py");
+        return 0;
+    }
 
     srand(time(NULL));
     
