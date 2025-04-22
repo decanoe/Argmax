@@ -21,9 +21,6 @@ def file_selector() -> str:
     plt.rcParams["font.family"] = "monospace"
     fig, ax = plt.subplots()
     fig.subplots_adjust(left=0.99, right=1, bottom=0.99, top=1)
-    
-    bbox = fig.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    canvas_width, canvas_height = bbox.width*fig.dpi, bbox.height*fig.dpi
 
     return_value: Ptr = Ptr()
     return_value.set(None)
@@ -97,6 +94,9 @@ def file_selector() -> str:
     update(None)
     
     def on_scroll(event):
+        bbox = fig.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        canvas_width = bbox.width*fig.dpi
+    
         increment = 1 if event.button == 'up' else -1
         if (event.x + event.x < canvas_width):
             slider.set_val(max(slider.valmin, min(slider.valmax, slider.val + increment * 0.5)))
