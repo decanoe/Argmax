@@ -52,6 +52,7 @@ from button import ButtonProcessor
 
 PLOT_CATEGORY = "global" # global / individual / times
 NORMALIZE_TIMES = False
+RANGE_0 = False
 PLOT_KEY = "best_score"
 
 fig, ax = plt.subplots()
@@ -75,6 +76,8 @@ def update(event):
         vc = populations[["generation", PLOT_KEY]].groupby("generation").mean()
         
         vc.plot.line(ax=ax)
+    elif (PLOT_KEY == "std" and RANGE_0):
+        data.plot.line(y=PLOT_KEY, use_index=True, ax=ax, ylim=(-0.05, data["std"].max() + 0.1))
     elif (PLOT_KEY in global_labels):
         data.plot.line(y=PLOT_KEY, use_index=True, ax=ax)
     elif (PLOT_KEY in times_labels):
@@ -181,6 +184,17 @@ def on_local_scroll(event):
 fig.canvas.mpl_connect('scroll_event', on_local_scroll)
 # endregion
 # region global buttons
+range_0_button_axe = fig.add_axes([0.45, 0.2, 0.3, 0.05])
+range_0_button = Button(range_0_button_axe, "start y at 0: false")
+def range_0_buttons_callback(event):
+    global RANGE_0
+    RANGE_0 = not(RANGE_0)
+    
+    range_0_button.label.set_text("start y at 0: true" if RANGE_0 else "start y at 0: false")
+    
+    update(None)
+range_0_button.on_clicked(range_0_buttons_callback)
+
 global_buttons_axes: list[plt.Axes] = []
 global_buttons: list[ButtonProcessor] = []
 for l in global_labels:
@@ -273,7 +287,7 @@ category_button = Button(category_ax, PLOT_CATEGORY)
 def update_visibility():
     for a in local_buttons_axes + [local_slider_ax]:
         a.set_visible(PLOT_CATEGORY == "individual")
-    for a in global_buttons_axes + [global_slider_ax]:
+    for a in global_buttons_axes + [global_slider_ax, range_0_button_axe]:
         a.set_visible(PLOT_CATEGORY == "global")
     for a in times_buttons_axes + [times_slider_ax, normalize_button_axe]:
         a.set_visible(PLOT_CATEGORY == "times")
