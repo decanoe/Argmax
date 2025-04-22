@@ -96,7 +96,7 @@ int main(int argc, char *args[]) {
         (*output_file).close();
         delete output_file;
 
-        std::string output_file_path = "./python/data/FA_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
+        std::string output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
         std::ofstream final_file = std::ofstream(output_file_path);
         if (!final_file.is_open()) {
             std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
