@@ -4,6 +4,9 @@ str     algorithm = evolution
 bool    debug_screen = true
 int     debug_generation_spacing = 16
 
+# start of the debug file name (will be followed by the date)
+str     label = FA_evo
+
 # ====================================== files containing data to run ======================================
 str     cards = ./FA/data/cards.txt
 str     sanctuaries = ./FA/data/sanctuary.txt

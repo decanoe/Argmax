@@ -4,6 +4,9 @@ str     algorithm = evolution
 bool    debug_screen = true
 int     debug_generation_spacing = 16
 
+# start of the debug file name (will be followed by the date)
+str     label = SAT_evo
+
 # ====================================== files containing data to run ======================================
 str     instance = ./sat_specific/instances/BMS_k3_n100_m429/BMS_k3_n100_m429_0.cnf
 
@@ -23,11 +26,11 @@ int     competition_goup_size = 2
 float   mutation_probability = 0.02
 # run a local search algorithm on childs when spawned
 # none / hill_climb / tabu_search / lambda_mutation
-str     run_algo_on_child = tabu_search
+str     run_algo_on_child = hill_climb
 # budget for running the local search algorithm on childs (1 mutation checked = 1 budget)
-int     child_algo_budget = 1000
+int     child_algo_budget = 200
 # lambda for running lambda_mutation or ban_list_length for running tabu_search
-int     child_algo_parameter = 10
+# int     child_algo_parameter = 10
 # makes it impossible for newly spawned instances to be despawned
 bool    protect_child_from_despawn = true
 

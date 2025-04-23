@@ -1,6 +1,7 @@
 #include "source/argmax.h"
 #include "source/file_data.h"
 #include <ctime>
+#include <chrono>
 
 #include "sat_specific/formule.h"
 #include "sat_specific/solution.h"
@@ -48,6 +49,26 @@ void run_on_fa(const FileData& file_data, std::ofstream* output_file = nullptr) 
     std::shared_ptr<Deck> deck = std::make_shared<Deck>(file_data.get_string("cards"), file_data.get_string("sanctuaries"));
     
     Hand h(deck);
+
+    // double t = 0;
+    // int count = 0;
+    // for (size_t i = 0; i < 1024; i++)
+    // {
+    //     auto start = std::chrono::system_clock::now();
+
+    //     h.randomize();
+    //     h.score();
+
+    //     auto end = std::chrono::system_clock::now();
+    //     std::chrono::duration<double> elapsed_time = end - start;
+    //     double elapsed_seconds = elapsed_time.count();
+    //     t += elapsed_seconds;
+    //     count++;
+    // }
+    // std::cout << "avg time per hand: " << t / count << std::endl;
+    // exit(-1);
+    
+
     h.randomize();
     std::unique_ptr<Instance> temp;
     if (file_data.get_string("algorithm") == "hill_climb") {
@@ -96,7 +117,9 @@ int main(int argc, char *args[]) {
         (*output_file).close();
         delete output_file;
 
-        std::string output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
+        std::string output_file_path = "";
+        if (file_data.contains_string("label")) output_file_path = "./python/data/" + file_data.get_string("label") + "_" + timestamp() + ".rundata";
+        else                                    output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
         std::ofstream final_file = std::ofstream(output_file_path);
         if (!final_file.is_open()) {
             std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";

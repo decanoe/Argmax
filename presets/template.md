@@ -8,6 +8,9 @@ bool    debug_screen = true
 # if set, data will only be saved every <debug_generation_spacing> generation
 int     debug_generation_spacing = 64
 
+# start of the debug file name (will be followed by the date)
+str     label = template
+
 # ====================================== files containing data to run ======================================
 str     cards = ./FA/data/cards.txt
 str     sanctuaries = ./FA/data/sanctuary.txt
