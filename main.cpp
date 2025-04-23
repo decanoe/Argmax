@@ -113,7 +113,7 @@ int main(int argc, char *args[]) {
     if (file_data.get_string("problem") == "SAT") run_on_sat(file_data, output_file);
     if (file_data.get_string("problem") == "FA") run_on_fa(file_data, output_file);
     
-    if ((*output_file).is_open()) {
+    if (output_file != nullptr) {
         (*output_file).close();
         delete output_file;
 
