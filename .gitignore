@@ -38,3 +38,6 @@ temp.rundata
 results
 python/data/*
 python/__pycache__
+
+presets/*
+!presets/template.md
