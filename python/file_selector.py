@@ -8,7 +8,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 all_data_files = [f for f in os.listdir(dir_path+"\\data")]
 def _sort_key(s: str)->str:
     l: list = os.path.basename(s).split("_")
-    return l[5] + l[4] + l[3] + l[2]
+    return "_".join(l[:-4] + [l[-1], l[-2], l[-3], l[-4]])
 all_data_files.sort(key=_sort_key)
 
 class Ptr:
