@@ -508,29 +508,31 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         float sorting_elapsed = get_time_from(sorting_start);
 
         auto despawning_start = std::chrono::system_clock::now();
-        for (unsigned int index : remove_indices)
+        for (unsigned int index = 0; index < remove_indices.size(); index++)
         {
             /* #region remove instance to arg_frequency_map */
             if (arg_frequency_map) {
-                for (unsigned int i = 0; i < population[index].instance->nb_args(); i++)
-                    (*arg_frequency_map)[i][population[index].instance->get_coord(i)]--;
+                for (unsigned int i = 0; i < population[remove_indices[index]].instance->nb_args(); i++)
+                    (*arg_frequency_map)[i][population[remove_indices[index]].instance->get_coord(i)]--;
             }
             /* #endregion */
-            population.erase(population.begin() + index);
+            population.erase(population.begin() + remove_indices[index]);
+
+            for (unsigned int i = index + 1; i < remove_indices.size(); i++) if (remove_indices[i] > remove_indices[index]) remove_indices[i]--;
         }
         float despawning_elapsed = get_time_from(despawning_start);
         /* #endregion */
         
         /* #region get best instance in gen */
         auto searching_start = std::chrono::system_clock::now();
-        unsigned int best_in_gen = 0;
+        unsigned int best_in_gen = population.size();
         float best_score_in_gen = 0;
         float mean_score = 0;
         for (size_t i = 0; i < population.size(); i++)
         {
             float score = population[i].instance->score();
             mean_score += score;
-            if (score > best_score_in_gen || best == nullptr)
+            if (score > best_score_in_gen || best_in_gen == population.size())
             {
                 best_score_in_gen = score;
                 best_in_gen = i;
