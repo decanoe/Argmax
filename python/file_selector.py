@@ -17,13 +17,12 @@ class Ptr:
     def get(self):
         return self.value
 
-def file_selector() -> str:
+def file_selector() -> list[str]:
     plt.rcParams["font.family"] = "monospace"
     fig, ax = plt.subplots()
     fig.subplots_adjust(left=0.99, right=1, bottom=0.99, top=1)
 
-    return_value: Ptr = Ptr()
-    return_value.set(None)
+    return_values: list[str] = []
     
     buttons_axes: list[plt.Axes] = []
     buttons: list[ButtonProcessor] = []
@@ -43,17 +42,28 @@ def file_selector() -> str:
     text_slider_factor.set(0)
     
     def buttons_callback(value: str):
-        if (return_value.get() == value):
-            plt.close(fig)
+        if (value in return_values):
+            return_values.remove(value)
+            
+            for b in buttons:
+                if b.parameter in return_values:
+                    b.button.color = "#5a83c4"
+                    b.button.hovercolor = "#6491d9"
+                else:
+                    b.button.color = "0.85"
+                    b.button.hovercolor = "0.95"
         else:
             for b in buttons:
                 if b.parameter == value:
                     b.button.color = "#3a79de"
                     b.button.hovercolor = "#4287f5"
+                elif b.parameter in return_values:
+                    b.button.color = "#5a83c4"
+                    b.button.hovercolor = "#6491d9"
                 else:
                     b.button.color = "0.85"
                     b.button.hovercolor = "0.95"
-            return_value.set(value)
+            return_values.append(value)
             
             file_content: str = ""
             with open(dir_path + "\\data\\" + value) as f: file_content = f.read().split("\n/*scores*/\n")[0]
@@ -65,7 +75,7 @@ def file_selector() -> str:
     def text_update(event):
         text.set_position((0.55, 0.9 + (text_slider.valmax - text_slider.val) * text_slider_factor.get() * 0.1))
         fig.canvas.draw_idle()
-    text_slider.on_changed(text_update)  
+    text_slider.on_changed(text_update)
     
     for f in all_data_files:
         buttons_axes.append(fig.add_axes([0.05, 0, 0.4, 0.18]))
@@ -103,11 +113,16 @@ def file_selector() -> str:
         else:
             text_slider.set_val(max(text_slider.valmin, min(text_slider.valmax, text_slider.val + increment * 0.5 / max(text_slider_factor.get(), 0.01))))
         update(None)
-
     fig.canvas.mpl_connect('scroll_event', on_scroll)
 
+    def submit_callback(event):
+        plt.close(fig)
+    submit_axe = fig.add_axes([0.65, 0.05, 0.3, 0.05])
+    submit_button = Button(submit_axe, "submit")
+    submit_button.on_clicked(submit_callback)
+
     plt.show()
-    return dir_path + "\\data\\" + return_value.get()
+    return [dir_path + "\\data\\" + v for v in return_values]
 
 
 if __name__ == "__main__":
