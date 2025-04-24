@@ -1,48 +1,48 @@
 # sanctuaires
 #
 #day/night  color   map plant   beast   rock    reward_type         reward
-day         none    0   0       0       0       color2 red blue    1
-day         yellow  0   0       0       0       colorset            4
-day         none    0   0       0       0       resource beast      2
-night       none    0   0       1       0       none
-day         blue    0   0       0       0       color1 blue        1
-day         yellow  0   0       0       0       resource map        1
-day         none    0   0       0       0       color2 blue yellow 1
 day         none    0   0       0       1       resource rock       1
-night       red     0   0       0       0       none
-day         none    0   1       0       0       resource plant      1
-day         red     0   0       0       0       color1 red         1
-day         none    0   0       0       0       color2 yellow green 1
-day         none    0   0       0       0       fix                 5
-day         green   1   0       0       0       none
-day         none    0   0       0       0       color2 red yellow 1
-day         yellow  1   0       0       0       none
-day         none    0   0       0       0       resource plant      2
-day         yellow  0   0       0       0       color1 yellow      1
-day         none    1   1       0       0       none
-day         red     0   1       0       0       none
-day         none    1   0       1       0       none
-day         none    1   0       0       0       resource map        1
-day         blue    0   0       0       1       none
-night       none    0   1       0       0       none
-day         none    0   0       1       0       resource beast      1
-day         none    0   0       0       0       color2 green red   1
-day         yellow  0   0       0       1       none
-day         none    1   0       0       1       none
-day         blue    0   1       0       0       none
-day         green   0   0       1       0       none
-day         red     0   0       0       1       none
-day         none    0   0       0       1       night               1
-day         green   0   0       0       1       none
-day         none    0   0       0       1       resource map        1
-day         green   0   0       0       0       night               1
-day         green   0   0       0       0       color1 green       1
-day         blue    0   0       1       0       none
-day         none    1   0       0       0       colorset            4
-day         red     0   0       1       0       none
 day         none    0   0       0       0       resource rock       2
-day         none    0   0       0       0       resource map        2
-day         blue    1   0       0       0       none
+day         none    0   0       1       0       resource beast      1
+day         none    0   0       0       0       resource beast      2
+day         none    0   1       0       0       resource plant      1
+day         none    0   0       0       0       resource plant      2
+day         none    1   0       0       1       none
+day         none    1   0       1       0       none
+day         none    1   1       0       0       none
+day         none    0   0       0       1       resource map        1
 day         none    0   0       1       0       resource map        1
+day         none    1   0       0       0       resource map        1
+day         none    0   0       0       0       resource map        2
+day         none    0   0       0       0       color2 red blue     1
+day         none    0   0       0       0       color2 green red    1
+day         none    0   0       0       0       color2 red yellow   1
+day         none    0   0       0       0       color2 green blue   1
+day         none    0   0       0       0       color2 blue yellow  1
+day         none    0   0       0       0       color2 yellow green 1
+day         none    1   0       0       0       colorset            4
+day         none    0   0       0       0       fix                 5
+day         none    0   0       0       1       night               1
 night       none    0   0       0       1       none
-day         none    0   0       0       0       color2 green blue  1
+night       none    0   0       1       0       none
+night       none    0   1       0       0       none
+day         red     0   0       1       0       none
+day         red     0   0       0       1       none
+day         red     0   1       0       0       none
+day         red     0   0       0       0       color1 red          1
+night       red     0   0       0       0       none
+day         blue    1   0       0       0       none
+day         blue    0   0       1       0       none
+day         blue    0   1       0       0       none
+day         blue    0   0       0       0       color1 blue         1
+day         blue    0   0       0       1       none
+day         green   1   0       0       0       none
+day         green   0   0       0       0       night               1
+day         green   0   0       0       0       color1 green        1
+day         green   0   0       0       1       none
+day         green   0   0       1       0       none
+day         yellow  0   0       0       0       colorset            4
+day         yellow  0   0       0       1       none
+day         yellow  0   0       0       0       color1 yellow       1
+day         yellow  1   0       0       0       none
+day         yellow  0   0       0       0       resource map        1
