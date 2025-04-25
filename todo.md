@@ -1,11 +1,8 @@
 Argmax :
-    - implement frequency despawn criteria
     - implement ilands
-    - graphs (python ?)
 
 SAT :
+    - rework for linear complexity
 
 FA :
-    - correct nb args
     - sub sets
-    - find complexity of the problem
