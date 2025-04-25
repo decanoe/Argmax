@@ -35,6 +35,7 @@ std::ostream& Hand::pretty_cout(std::ostream& c) const {
         sanctuary_str.push_back(deck->get_sanctuary(sanctuaries[i])->get_string_display());
     }
 
+    c << *this << "\n";
     for (auto card_score : sanctuary_scores) c << "   +" << to_str_2(card_score) << "   ";
     c << "\n";
     for (size_t line = 0; line < sanctuary_str[0].size(); line++) {
