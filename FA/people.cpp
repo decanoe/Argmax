@@ -1,7 +1,7 @@
 #include "people.h"
 
 People::People(unsigned int index, Color color, bool night, unsigned int map_count, unsigned int plant_count, unsigned int beast_count, unsigned int rock_count):
-    Card(color, night, map_count, plant_count, beast_count, rock_count), index(index), plant_cost(0), beast_cost(0), rock_cost(0), type(Score_type::None),
+    Card(index, color, night, map_count, plant_count, beast_count, rock_count), plant_cost(0), beast_cost(0), rock_cost(0), type(Score_type::None),
     col1(Card::Color::None), col2(Card::Color::None) {}
 
 People& People::set_score_cost(unsigned int plant_cost, unsigned int beast_cost, unsigned int rock_cost) {
@@ -36,8 +36,6 @@ People& People::set_score_type(Score_type type, unsigned int score, Card::Color 
     this->col2 = color2;
     return *this;
 }
-
-unsigned int People::get_index() const { return index; }
 
 bool People::cost_paid(const HandInfo& info) const {
     return

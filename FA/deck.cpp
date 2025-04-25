@@ -109,11 +109,12 @@ Deck::Deck(const std::string& peoples_path, const std::string& sanctuaries_path)
         
         std::istringstream stream(line);
 
+        unsigned int index;
         std::string day;
         std::string _color;
         unsigned int map, plant, beast, rock;
         std::string _reward_type;
-        while (stream >> day >> _color >> map >> plant >> beast >> rock >> _reward_type) {
+        while (stream >> index >> day >> _color >> map >> plant >> beast >> rock >> _reward_type) {
             /* #region get color */
             Card::Color color =
                 (_color == "red"    ? Card::Color::Red :

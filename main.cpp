@@ -8,6 +8,7 @@
 
 #include "FA/deck.h"
 #include "FA/hand.h"
+#include "FA/people.h"
 
 std::string timestamp() {
     time_t rawtime;
@@ -84,6 +85,47 @@ void run_on_fa(const FileData& file_data, std::ofstream* output_file = nullptr) 
 
     std::cout << "max score: " << int(result.score()) << " points with hand\n";
     result.pretty_cout(std::cout);
+}
+
+void create_valid_FA_subset(unsigned int max_tries = 1024) {
+    std::shared_ptr<Deck> deck = std::make_shared<Deck>("./FA/data/cards.txt", "./FA/data/sanctuary.txt");
+
+    unsigned int people_count = 8;
+    unsigned int sanct_count = 7;
+
+    std::vector<unsigned int> peoples = std::vector<unsigned int>();
+    std::vector<unsigned int> sancts = std::vector<unsigned int>();
+    
+    for (size_t i = 0; i < max_tries; i++)
+    {
+        Card::HandInfo hinfo = Card::HandInfo();
+        for (size_t i = 0; i < people_count; i++)
+        {
+            peoples.push_back(RandomUtils::get_index(deck->get_people_count(), peoples));
+            hinfo.add(*(deck->get_people(peoples.back())));
+        }
+        for (size_t i = 0; i < sanct_count; i++)
+        {
+            sancts.push_back(RandomUtils::get_index(deck->get_sanctuary_count(), sancts));
+            hinfo.add(*(deck->get_sanctuary(sancts.back())));
+        }
+
+        bool valid = true;
+        for (unsigned int index : peoples)
+        {
+            if (((People*)deck->get_people(index).get())->cost_paid(hinfo)) continue;
+            valid = false;
+            break;
+        }
+        if (valid) {
+            for (unsigned int index : peoples) std::cout << deck->get_people(index)->get_index() << " ";
+            for (unsigned int index : sancts) std::cout << deck->get_sanctuary(index)->get_index() << " ";
+            std::cout << "\n";
+            return;
+        }
+    }
+    std::cout << "No subset found\n";
+    return;
 }
 
 int main(int argc, char *args[]) {

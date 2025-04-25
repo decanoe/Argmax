@@ -9,7 +9,7 @@ public:
     enum Color { Red, Green, Yellow, Blue, None };
     enum ResourceType { Map, Plant, Beast, Rock };
     
-    Card(Color color, bool night, unsigned int map_count, unsigned int plant_count, unsigned int beast_count, unsigned int rock_count);
+    Card(unsigned int index, Color color, bool night, unsigned int map_count, unsigned int plant_count, unsigned int beast_count, unsigned int rock_count);
 
     bool is_night() const;
     Color get_color() const;
@@ -17,7 +17,7 @@ public:
     unsigned int get_plant_count() const;
     unsigned int get_beast_count() const;
     unsigned int get_rock_count() const;
-    virtual unsigned int get_index() const;
+    unsigned int get_index() const;
 
     struct HandInfo
     {
@@ -43,6 +43,7 @@ public:
     virtual unsigned int score(const HandInfo&) const = 0;
     virtual std::vector<std::string> get_string_display() const = 0;
 protected:
+    unsigned int index;
     Color color;
     bool night = false;
     unsigned int map_count = 0, plant_count = 0, beast_count = 0, rock_count = 0;

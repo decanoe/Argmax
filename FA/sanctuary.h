@@ -13,7 +13,7 @@ private:
 
     static std::string to_str_2(unsigned int value);
 public:
-    Sanctuary(Color color, bool night, unsigned int map_count, unsigned int plant_count, unsigned int beast_count, unsigned int rock_count);
+    Sanctuary(unsigned int index, Color color, bool night, unsigned int map_count, unsigned int plant_count, unsigned int beast_count, unsigned int rock_count);
     
     Sanctuary& set_score_type(Score_type type, unsigned int score);
     Sanctuary& set_score_type(Score_type type, unsigned int score, Card::ResourceType resource);

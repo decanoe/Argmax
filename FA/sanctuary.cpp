@@ -1,7 +1,7 @@
 #include "sanctuary.h"
 
-Sanctuary::Sanctuary(Color color, bool night, unsigned int map_count, unsigned int plant_count, unsigned int beast_count, unsigned int rock_count):
-    Card(color, night, map_count, plant_count, beast_count, rock_count), type(Score_type::None), col1(Card::Color::None), col2(Card::Color::None) {}
+Sanctuary::Sanctuary(unsigned int index, Color color, bool night, unsigned int map_count, unsigned int plant_count, unsigned int beast_count, unsigned int rock_count):
+    Card(index, color, night, map_count, plant_count, beast_count, rock_count), type(Score_type::None), col1(Card::Color::None), col2(Card::Color::None) {}
 
 Sanctuary& Sanctuary::set_score_type(Score_type type, unsigned int score) {
     this->type = type;
