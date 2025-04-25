@@ -65,7 +65,7 @@ std::ostream& operator<<(std::ostream& c, const Hand& h) {
     for (unsigned int s : h.sanctuaries)
     {
         if (temp == 0) break;
-        c << s << ", ";
+        c << h.deck->get_sanctuary(s)->get_index() << ", ";
         temp--;
     }
     return c << "\b\b)";

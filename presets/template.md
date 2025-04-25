@@ -14,6 +14,7 @@ str     label = template
 # ====================================== files containing data to run ======================================
 str     cards = ./FA/data/cards.txt
 str     sanctuaries = ./FA/data/sanctuary.txt
+str     subset = ./FA/subsets/8_7_1.txt
 str     instance = ./sat_specific/instances/BMS_k3_n100_m429/BMS_k3_n100_m429_0.cnf
 
 # ====================================== hill_climb parameters ======================================

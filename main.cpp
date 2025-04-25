@@ -48,27 +48,29 @@ void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr)
 void run_on_fa(const FileData& file_data, std::ofstream* output_file = nullptr) {
     std::cout << "reading files..." << std::endl;
     std::shared_ptr<Deck> deck = std::make_shared<Deck>(file_data.get_string("cards"), file_data.get_string("sanctuaries"));
+
+    if (file_data.contains_string("subset")) deck->keep_only_subset(Deck::read_subset_file(file_data.get_string("subset")));
+    deck->display_deck(std::cout);
     
     Hand h(deck);
 
-    // double t = 0;
-    // int count = 0;
-    // for (size_t i = 0; i < 1024; i++)
-    // {
-    //     auto start = std::chrono::system_clock::now();
+    /*double t = 0;
+    int count = 0;
+    for (size_t i = 0; i < 1024; i++)
+    {
+        auto start = std::chrono::system_clock::now();
 
-    //     h.randomize();
-    //     h.score();
+        h.randomize();
+        h.score();
 
-    //     auto end = std::chrono::system_clock::now();
-    //     std::chrono::duration<double> elapsed_time = end - start;
-    //     double elapsed_seconds = elapsed_time.count();
-    //     t += elapsed_seconds;
-    //     count++;
-    // }
-    // std::cout << "avg time per hand: " << t / count << std::endl;
-    // exit(-1);
-    
+        auto end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_time = end - start;
+        double elapsed_seconds = elapsed_time.count();
+        t += elapsed_seconds;
+        count++;
+    }
+    std::cout << "avg time per hand: " << t / count << std::endl;
+    exit(-1);*/
 
     h.randomize();
     std::unique_ptr<Instance> temp;
