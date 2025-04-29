@@ -26,23 +26,23 @@
 123 night       none    0   0       0       1       none
 124 night       none    0   0       1       0       none
 125 night       none    0   1       0       0       none
-126 day         red     0   0       1       0       none
-127 day         red     0   0       0       1       none
+126 day         red     0   0       0       1       none
+127 day         red     0   0       1       0       none
 128 day         red     0   1       0       0       none
-129 day         red     0   0       0       0       color1 red          1
-130 night       red     0   0       0       0       none
-131 day         blue    1   0       0       0       none
+129 night       red     0   0       0       0       none
+130 day         red     0   0       0       0       color1 red          1
+131 day         blue    0   0       0       1       none
 132 day         blue    0   0       1       0       none
 133 day         blue    0   1       0       0       none
-134 day         blue    0   0       0       0       color1 blue         1
-135 day         blue    0   0       0       1       none
-136 day         green   1   0       0       0       none
-137 day         green   0   0       0       0       night               1
-138 day         green   0   0       0       0       color1 green        1
-139 day         green   0   0       0       1       none
-140 day         green   0   0       1       0       none
-141 day         yellow  0   0       0       0       colorset            4
-142 day         yellow  0   0       0       1       none
-143 day         yellow  0   0       0       0       color1 yellow       1
-144 day         yellow  1   0       0       0       none
-145 day         yellow  0   0       0       0       resource map        1
+134 day         blue    1   0       0       0       none
+135 day         blue    0   0       0       0       color1 blue         1
+136 day         green   0   0       0       1       none
+137 day         green   0   0       1       0       none
+138 day         green   1   0       0       0       none
+139 day         green   0   0       0       0       night               1
+140 day         green   0   0       0       0       color1 green        1
+141 day         yellow  0   0       0       1       none
+142 day         yellow  1   0       0       0       none
+143 day         yellow  0   0       0       0       colorset            4
+144 day         yellow  0   0       0       0       resource map        1
+145 day         yellow  0   0       0       0       color1 yellow       1
