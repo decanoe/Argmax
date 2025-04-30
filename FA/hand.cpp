@@ -62,16 +62,12 @@ std::ostream& operator<<(std::ostream& c, const Hand& h) {
         c << h.deck->get_people(people)->get_index() << ", ";
     }
     c << "\b\b\t | Sanct : ";
-    unsigned int temp = h.nb_sanctuary();
-    for (unsigned int s : h.sanctuaries)
+    for (unsigned int i = 0; i < h.nb_sanctuary(); i++)
     {
-        if (temp == 0) break;
-        c << h.deck->get_sanctuary(s)->get_index() << ", ";
-        temp--;
+        c << h.deck->get_sanctuary(h.sanctuaries[i])->get_index() << ", ";
     }
     return c << "\b\b)";
 }
-
 
 // instance specific
 float Hand::score_const() const {
@@ -98,16 +94,24 @@ void Hand::mutate_arg(unsigned int index) {
         unsigned int old = peoples[index];
         peoples[index] = RandomUtils::get_index(deck->get_people_count());
         for (unsigned int i = 0; i < 8; i++)
-            if (i != index && peoples[i] == peoples[index])
+            if (i != index && peoples[i] == peoples[index]) {
                 peoples[i] = old;
+                break;
+            }
+        
+        std::sort(sanctuaries.begin(), sanctuaries.begin() + nb_sanctuary());
     }
     else {
         index -= 8;
         unsigned int old = sanctuaries[index];
         sanctuaries[index] = RandomUtils::get_index(deck->get_sanctuary_count());
         for (unsigned int i = 0; i < 7; i++)
-            if (i != index && sanctuaries[i] == sanctuaries[index])
+            if (i != index && sanctuaries[i] == sanctuaries[index]) {
                 sanctuaries[i] = old;
+                break;
+            }
+
+        std::sort(sanctuaries.begin(), sanctuaries.begin() + nb_sanctuary());
     }
 }
 // void Hand::mutate_arg(unsigned int index) {
