@@ -35,7 +35,7 @@ void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr)
     if (file_data.get_string("algorithm") == "hill_climb") {
         temp = Argmax::hill_climb(solution.clone(), file_data.get_int("nb_iteration_max"));
     }
-    else if (file_data.get_string("algorithm") == "hill_climb_ban") {
+    else if (file_data.get_string("algorithm") == "tabu_search") {
         temp = Argmax::tabu_search(solution.clone(), file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "evolution") {
@@ -77,7 +77,7 @@ void run_on_fa(const FileData& file_data, std::ofstream* output_file = nullptr) 
     if (file_data.get_string("algorithm") == "hill_climb") {
         temp = Argmax::hill_climb(h.clone(), file_data.get_int("nb_iteration_max"));
     }
-    else if (file_data.get_string("algorithm") == "hill_climb_ban") {
+    else if (file_data.get_string("algorithm") == "tabu_search") {
         temp = Argmax::tabu_search(h.clone(), file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "evolution") {
