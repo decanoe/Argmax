@@ -166,7 +166,7 @@ int main(int argc, char *args[]) {
         else                                    output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
         std::ofstream final_file = std::ofstream(output_file_path);
         if (!final_file.is_open()) {
-            std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
+            std::cerr << "\033[1;31mERROR: cannot open output file at \"" + output_file_path + "\" !\033[0m\n";
             exit(1);
         }
 
