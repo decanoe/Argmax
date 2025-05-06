@@ -3,6 +3,7 @@
 #include <algorithm>
 
 Hand::Hand(std::shared_ptr<Deck> deck): deck(deck), peoples{0,1,2,3,4,5,6,7}, sanctuaries{0,1,2,3,4,5,6} {}
+Hand::Hand(std::shared_ptr<Deck> deck, std::vector<unsigned int> peoples, std::vector<unsigned int> sanctuaries): deck(deck), peoples(peoples), sanctuaries(sanctuaries) {}
 Hand::Hand(const Hand& h): deck(h.deck), peoples(h.peoples), sanctuaries(h.sanctuaries) {}
 
 unsigned int Hand::nb_sanctuary() const {
