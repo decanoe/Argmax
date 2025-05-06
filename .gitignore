@@ -41,3 +41,5 @@ python/__pycache__
 
 presets/*
 !presets/template.md
+
+FA/subsets/notes.txt
