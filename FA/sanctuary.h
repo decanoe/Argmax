@@ -4,7 +4,7 @@
 class Sanctuary: public Card
 {
 public:
-    enum Score_type { None, Fix, Night, Resource, Color1, Color2, Colorset };
+    enum Score_type { None, Fix, Night, Resource, ResourceSet, Color1, Color2, Colorset };
 private:
     Score_type type;
     Card::Color col1, col2;

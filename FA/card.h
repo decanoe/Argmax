@@ -37,10 +37,13 @@ public:
         unsigned int night_count() const;
         unsigned int color_count(Color color) const;
         unsigned int colorset() const;
+        unsigned int resourceset() const;
         unsigned int resource_count(ResourceType resource) const;
     };
     
     virtual unsigned int score(const HandInfo&) const = 0;
+    std::string color_code(Color c) const;
+    std::string color_back_code(Color c) const;
     virtual std::vector<std::string> get_string_display() const = 0;
 protected:
     unsigned int index;

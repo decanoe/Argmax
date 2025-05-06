@@ -78,3 +78,13 @@
 66  day     blue    0   0       0       0       fix                 20      0   0   4
 67  day     green   1   0       0       0       fix                 19      2   2   0
 68  day     blue    0   0       0       0       fix                 24      0   0   5
+# extension:
+69  day     red     1   0       0       0       resourceset         7       0   0   0
+70  day     none    1   0       0       0       fix                 6       0   0   0
+71  night   green   0   0       0       1       resourceset         7       0   0   0
+72  night   none    1   0       0       0       fix                 26      0   5   0
+73  night   yellow  0   0       1       0       color1 none         5       4   0   0
+74  night   none    0   1       0       0       resourceset         7       0   0   0
+75  night   blue    1   0       0       0       fix                 28      0   0   6
+76  night   none    0   0       0       0       color1 none         4       2   2   2
+0   day     none    0   1       1       1       none

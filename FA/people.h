@@ -4,7 +4,7 @@
 class People: public Card
 {
 public:
-    enum Score_type { None, Fix, Night, Resource, Color1, Color2, Colorset };
+    enum Score_type { None, Fix, Night, Resource, ResourceSet, Color1, Color2, Colorset };
 private:
     unsigned int plant_cost = 0, beast_cost = 0, rock_cost = 0;
     Score_type type;

@@ -40,6 +40,7 @@ unsigned int Card::HandInfo::color_count(Color color) const {
     }
 }
 unsigned int Card::HandInfo::colorset() const { return std::min(std::min(red, green), std::min(yellow, blue)); }
+unsigned int Card::HandInfo::resourceset() const { return std::min(std::min(plant, beast), rock); }
 unsigned int Card::HandInfo::resource_count(ResourceType resource) const {
     switch (resource)
     {
@@ -50,3 +51,6 @@ unsigned int Card::HandInfo::resource_count(ResourceType resource) const {
     default:                    return 0;
     }
 }
+
+std::string Card::color_code(Color c) const { return (c==Color::None)? "30;1" : std::to_string(31 + c); }
+std::string Card::color_back_code(Color c) const { return (c==Color::None)? "40;1" : std::to_string(41 + c); }

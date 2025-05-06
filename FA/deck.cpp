@@ -46,9 +46,10 @@ Deck::Deck(const std::string& peoples_path, const std::string& sanctuaries_path)
                 (_reward_type == "fix"        ? People::Score_type::Fix :
                 (_reward_type == "night"      ? People::Score_type::Night :
                 (_reward_type == "resource"   ? People::Score_type::Resource :
+                (_reward_type == "resourceset"? People::Score_type::ResourceSet :
                 (_reward_type == "color1"     ? People::Score_type::Color1 :
                 (_reward_type == "color2"     ? People::Score_type::Color2 :
-                People::Score_type::Colorset))))));
+                People::Score_type::Colorset)))))));
             /* #endregion */
             
             /* #region get additional parameters */
@@ -130,9 +131,10 @@ Deck::Deck(const std::string& peoples_path, const std::string& sanctuaries_path)
                 (_reward_type == "fix"        ? Sanctuary::Score_type::Fix :
                 (_reward_type == "night"      ? Sanctuary::Score_type::Night :
                 (_reward_type == "resource"   ? Sanctuary::Score_type::Resource :
+                (_reward_type == "resourceset"? Sanctuary::Score_type::ResourceSet :
                 (_reward_type == "color1"     ? Sanctuary::Score_type::Color1 :
                 (_reward_type == "color2"     ? Sanctuary::Score_type::Color2 :
-                Sanctuary::Score_type::Colorset))))));
+                Sanctuary::Score_type::Colorset)))))));
             /* #endregion */
             
             /* #region get additional parameters */

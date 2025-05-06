@@ -37,7 +37,7 @@ std::ostream& Hand::pretty_cout(std::ostream& c) const {
     }
 
     c << *this << "\n";
-    for (auto card_score : sanctuary_scores) c << "   +" << to_str_2(card_score) << "   ";
+    for (auto card_score : sanctuary_scores) c << "   +" << to_str_2(card_score) << "    ";
     c << "\n";
     for (size_t line = 0; line < sanctuary_str[0].size(); line++) {
         for (auto card : sanctuary_str)
