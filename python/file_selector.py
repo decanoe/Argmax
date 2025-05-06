@@ -2,14 +2,30 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 from matplotlib.backend_bases import MouseEvent
-from button import ButtonProcessor
+from button import ButtonProcessor, ButtonToggle
+
+BUTTON_HEIGHT: int = 0.1
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-all_data_files = [f for f in os.listdir(dir_path+"\\data")]
+
 def _sort_key(s: str)->str:
     l: list = os.path.basename(s).split("_")
     return "_".join(l[:-4] + [l[-1], l[-2], l[-3], l[-4]])
-all_data_files.sort(key=_sort_key)
+class DirInfos:
+    current_dir: str
+    next_dir: list[str]
+    files: list[str]
+    def __init__(self, current_dir, next_dir, files):
+        self.current_dir: str = current_dir
+        self.next_dir: list[str] = next_dir
+        self.files: list[str] = files
+        files.sort(key=_sort_key)
+    def __repr__(self):
+        return "(" + self.current_dir + ", " + str(self.next_dir) + ", " + str(self.files) + ")"
+
+files = list(os.walk(dir_path+"\\data"))
+files: list[DirInfos] = [DirInfos(f[0].removeprefix(dir_path+"\\data"), f[1], f[2]) for f in files]
+files: dict[str, DirInfos] = { d.current_dir : d for d in files }
 
 class Ptr:
     def set(self, value):
@@ -22,10 +38,10 @@ def file_selector() -> list[str]:
     fig, ax = plt.subplots()
     fig.subplots_adjust(left=0.99, right=1, bottom=0.99, top=1)
 
-    return_values: list[str] = []
-    
     buttons_axes: list[plt.Axes] = []
-    buttons: list[ButtonProcessor] = []
+    buttons: list[ButtonToggle] = []
+    
+    dir_states: dict[str, bool] = {'': True}
     
     text = fig.text(0.55, 0.9, 'select a file', verticalalignment='top')
     
@@ -41,66 +57,81 @@ def file_selector() -> list[str]:
     text_slider_factor: Ptr = Ptr()
     text_slider_factor.set(0)
     
-    def buttons_callback(value: str):
-        if (value in return_values):
-            return_values.remove(value)
-            
-            for b in buttons:
-                if b.parameter in return_values:
-                    b.button.color = "#5a83c4"
-                    b.button.hovercolor = "#6491d9"
-                else:
-                    b.button.color = "0.85"
-                    b.button.hovercolor = "0.95"
-        else:
-            for b in buttons:
-                if b.parameter == value:
-                    b.button.color = "#3a79de"
-                    b.button.hovercolor = "#4287f5"
-                elif b.parameter in return_values:
-                    b.button.color = "#5a83c4"
-                    b.button.hovercolor = "#6491d9"
-                else:
-                    b.button.color = "0.85"
-                    b.button.hovercolor = "0.95"
-            return_values.append(value)
-            
-            file_content: str = ""
-            with open(dir_path + "\\data\\" + value) as f: file_content = f.read().split("\n/*scores*/\n")[0]
-            text.set_text(file_content)
-            text_slider_factor.set(file_content.count("\n") * 0.1)
-            text_slider.set_val(1)
-            
-            fig.canvas.draw_idle()
     def text_update(event):
         text.set_position((0.55, 0.9 + (text_slider.valmax - text_slider.val) * text_slider_factor.get() * 0.1))
         fig.canvas.draw_idle()
     text_slider.on_changed(text_update)
-    
-    for f in all_data_files:
-        buttons_axes.append(fig.add_axes([0.05, 0, 0.4, 0.18]))
-        buttons.append(ButtonProcessor(buttons_axes[-1], f.removesuffix(".rundata"), buttons_callback, f))
 
     ax_slider = fig.add_axes([0.005, 0.1, 0.05, 0.8])
     slider = Slider(
         ax=ax_slider,
         label="",
         valmin=0,
-        valmax=len(all_data_files) - 1 + 0.0001,
-        valinit=len(all_data_files) - 1,
+        valmax=1,
+        valinit=0,
         orientation="vertical"
     )
     def update(event):
         i = 0
-        for a in buttons_axes:
-            pos = a.get_position()
-            pos.y0 = 0.5 - (slider.val - i) * 0.2
-            pos.y1 = 0.68 - (slider.val - i) * 0.2
-            i += 1
-            a.set_position(pos)
+        for index in range(len(buttons_axes)):
+            current_dir = buttons[index].parent_dir
+            buttons_axes[index].set_visible(dir_states[current_dir])
+            if (dir_states[current_dir]):
+                pos = buttons_axes[index].get_position()
+                pos.y0 = 0.5 - (i - (slider.valmax - slider.val)) * (BUTTON_HEIGHT + 0.01)
+                pos.y1 = 0.5 + BUTTON_HEIGHT - (i - (slider.valmax - slider.val)) * (BUTTON_HEIGHT + 0.01)
+                pos.x0 = 0.05 + buttons[index].indent * 0.02
+                pos.x1 = 0.45 + buttons[index].indent * 0.02
+                i += 1
+                buttons_axes[index].set_position(pos)
+        
+        val = slider.val - slider.valmax
+        slider.valmax = i - 1 + 0.0001
+        slider.val = val + slider.valmax
+        slider.ax.set_xlim(0, slider.valmax)
+        
+        for b in buttons:
+            if b.state and b.path == None:
+                b.button.color = "#d6ab2b"
+                b.button.hovercolor = "#f5c842"
+            elif b.state:
+                b.button.color = "#5a83c4"
+                b.button.hovercolor = "#6491d9"
+            else:
+                b.button.color = "0.85"
+                b.button.hovercolor = "0.95"
         
         fig.canvas.draw_idle()
-    slider.on_changed(update)  
+    slider.on_changed(update)
+    
+    def update_text(path: str):
+        file_content: str = ""
+        with open(dir_path + "\\data\\" + path.removeprefix("\\")) as f: file_content = f.read().split("\n/*scores*/\n")[0]
+        text.set_text(file_content)
+        text_slider_factor.set(file_content.count("\n") * 0.1)
+        text_slider.set_val(1)
+        update(None)
+    
+    def switch_dir_update(dir: str):
+        dir_states[dir] = not(dir_states[dir])
+        update(None)
+    def add_buttons(current_dir: str = '', indent: int = 0):
+        for dir in files[current_dir].next_dir:
+            buttons_axes.append(fig.add_axes([0.05, 0, 0.4, 0.18]))
+            buttons.append(ButtonToggle(buttons_axes[-1], dir, switch_dir_update, current_dir + "\\" + dir))
+            buttons[-1].parent_dir = current_dir
+            buttons[-1].path = None
+            buttons[-1].indent = indent
+            dir_states[current_dir + "\\" + dir] = False
+            add_buttons(current_dir + "\\" + dir, indent + 1)
+        for f in files[current_dir].files:
+            buttons_axes.append(fig.add_axes([0.05, 0, 0.4, 0.18]))
+            buttons.append(ButtonToggle(buttons_axes[-1], f.removesuffix(".rundata"), update_text, current_dir+"\\"+f))
+            buttons[-1].parent_dir = current_dir
+            buttons[-1].path = current_dir+"\\"+f
+            buttons[-1].indent = indent
+    add_buttons()
+    
     update(None)
     
     def on_scroll(event):
@@ -122,8 +153,12 @@ def file_selector() -> list[str]:
     submit_button.on_clicked(submit_callback)
 
     plt.show()
-    return [dir_path + "\\data\\" + v for v in return_values]
-
+    
+    result = []
+    for b in buttons:
+        if (b.state and b.path != None):
+            result.append(dir_path + "\\data\\" + b.path.removeprefix("\\"))
+    return result
 
 if __name__ == "__main__":
-    file_selector()
+    print(file_selector())
