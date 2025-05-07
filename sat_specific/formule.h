@@ -19,13 +19,14 @@ public:
 
     /// @brief returns the number of true clauses
     /// @param assignation the assignation of each variables
-    unsigned int count_valid_clauses(const BitString& assignation) const;
+    unsigned int count_valid_clauses(const std::vector<bool>& assignation) const;
 
     // @returns Number of clauses
     unsigned int get_nb_clauses() const;
     /// @brief returns the clause at this index
     /// @param index the index of the clause
-    const Clause& get_clauses(unsigned int index) const;
+    const Clause& get_clause(unsigned int index) const;
+    const std::vector<Clause>& get_clauses() const;
     /// @brief returns a list of the clauses containing the variable of index <variable_index>
     /// @param variable_index the index of the variable
     const std::list<unsigned int>& get_affected_clauses(unsigned int variable_index) const;

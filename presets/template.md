@@ -1,7 +1,7 @@
 # ====================================== problem to run and how to run it ======================================
 # FA / SAT
 str     problem = FA
-# hill_climb / tabu_search / evolution
+# hill_climb / tabu_search / one_lambda_search / evolution
 str     algorithm = evolution
 # whether or not to launch the Python viewer
 bool    debug_screen = true
@@ -25,6 +25,10 @@ int     nb_iteration_max = 2048
 int     ban_list_size = 25
 # not implemented
 int     ban_list_random_added_size = 5
+
+# ====================================== one_lambda_search parameters ================================
+int     nb_mutation_to_test = 16
+int     nb_iteration_max = 512
 
 # ====================================== evolution parameters ======================================
 int     generation_count = 1024

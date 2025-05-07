@@ -4,15 +4,19 @@
 #include <iostream>
 #include <string>
 #include "formule.h"
-#include "../source/instance.h"
+#include "../source/reversible_instance.h"
 #include "../source/random_utils.h"
 
-class Solution: public Instance {
+class Solution: public ReversibleInstance {
 protected:
-    BitString assignation;
+    std::vector<bool> assignation;
+    std::vector<bool> valid_clauses;
     std::shared_ptr<Formule> formule;
+    unsigned int last_mutation = -1;
+
+    void reset_valid_clauses();
 public:
-    Solution(std::shared_ptr<Formule> f, BitString assignation);
+    Solution(std::shared_ptr<Formule> f, std::vector<bool> assignation);
     Solution(std::shared_ptr<Formule> f);
     Solution(const Solution&);
     
@@ -37,10 +41,12 @@ public:
 
     // Instance specific
     float score_const() const override;
+    float score() override;
     bool is_max_score(float score) const override;
     unsigned int nb_args_max() const override;
     void mutate_arg(unsigned int index) override;
     void mutate_arg(unsigned int index, float probability) override;
+    bool revert_last_mutation() override;
 
     float get_coord(unsigned int index) const override;
     std::vector<float> to_normalized_point() const override;

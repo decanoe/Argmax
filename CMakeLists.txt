@@ -14,7 +14,6 @@ add_executable(${CMAKE_PROJECT_NAME}
     sat_specific/clause.cpp
     sat_specific/formule.cpp
     sat_specific/solution.cpp
-    sat_specific/bit_string.cpp
 
     FA/card.cpp
     FA/deck.cpp

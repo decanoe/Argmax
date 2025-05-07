@@ -1,6 +1,6 @@
 #pragma once
 #include "file_data.h"
-#include "instance.h"
+#include "reversible_instance.h"
 #include "random_utils.h"
 #include <iostream>
 #include <fstream>

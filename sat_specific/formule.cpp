@@ -40,11 +40,11 @@ Formule::Formule(const std::string& path) {
     int v1, v2, v3;
     while (file >> v1 >> v2 >> v3)
     {
-        clauses.push_back(Clause(v1, v2, v3, nb_variables));
+        clauses.push_back(Clause(v1, v2, v3));
 
-        if (v1 != 0) clauses_containing_var[__abs(v1) - 1].push_back(index);
-        if (v2 != 0) clauses_containing_var[__abs(v2) - 1].push_back(index);
-        if (v3 != 0) clauses_containing_var[__abs(v3) - 1].push_back(index);
+        if (v1 != 0) clauses_containing_var[clauses.back().var1].push_back(index);
+        if (v2 != 0) clauses_containing_var[clauses.back().var2].push_back(index);
+        if (v3 != 0) clauses_containing_var[clauses.back().var3].push_back(index);
 
         index++;
         std::getline(file, w); // skip end of line
@@ -57,7 +57,7 @@ Formule::Formule(const std::string& path) {
     file.close();
 }
 
-unsigned int Formule:: count_valid_clauses(const BitString& assignation) const {
+unsigned int Formule::count_valid_clauses(const std::vector<bool>& assignation) const {
     unsigned int count = 0;
     for (const Clause& clause : clauses)
         count += clause.evaluate(assignation);
@@ -68,13 +68,14 @@ unsigned int Formule:: count_valid_clauses(const BitString& assignation) const {
 unsigned int Formule::get_nb_clauses() const {
     return clauses.size();
 }
-const Clause& Formule::get_clauses(unsigned int index) const {
+const Clause& Formule::get_clause(unsigned int index) const {
     if (index >= clauses.size()) {
         std::cerr << "index out of range: asking for clause " << index << " out of " << clauses.size() << "\n";
         exit(1);
     }
     return clauses[index];
 }
+const std::vector<Clause>& Formule::get_clauses() const { return clauses; }
 const std::list<unsigned int>& Formule::get_affected_clauses(unsigned int variable_index) const {
     if (variable_index >= clauses_containing_var.size()) {
         std::cerr << "index out of range: asking for clause contining variable " << variable_index << " out of " << nb_variables << "\n";

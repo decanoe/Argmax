@@ -38,6 +38,9 @@ void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr)
     else if (file_data.get_string("algorithm") == "tabu_search") {
         temp = Argmax::tabu_search(solution.clone(), file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
     }
+    else if (file_data.get_string("algorithm") == "one_lambda_search") {
+        temp = Argmax::one_lambda_search(solution.clone(), file_data.get_int("nb_mutation_to_test"), file_data.get_int("nb_iteration_max"));
+    }
     else if (file_data.get_string("algorithm") == "evolution") {
         temp = Argmax::evolution([solution]() -> std::unique_ptr<Instance> { return solution.randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file);
     }
