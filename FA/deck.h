@@ -17,6 +17,8 @@ public:
 
     std::shared_ptr<Card> get_people(unsigned int index) const;
     std::shared_ptr<Card> get_sanctuary(unsigned int index) const;
+    unsigned int get_people_index_by_index(unsigned int written_index) const;
+    unsigned int get_sanctuary_index_by_index(unsigned int written_index) const;
 
     unsigned int get_people_count() const;
     unsigned int get_sanctuary_count() const;

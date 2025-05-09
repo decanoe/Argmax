@@ -227,6 +227,16 @@ std::vector<unsigned int> Deck::read_subset_file(const std::string& path) {
 
 CardPTR Deck::get_people(unsigned int index) const { return this->peoples[index]; }
 CardPTR Deck::get_sanctuary(unsigned int index) const { return this->sanctuaries[index]; }
+unsigned int Deck::get_people_index_by_index(unsigned int written_index) const {
+    for (size_t i = 0; i < get_people_count(); i++)
+        if (peoples[i]->get_index() == written_index) return i;
+    return -1U;
+}
+unsigned int Deck::get_sanctuary_index_by_index(unsigned int written_index) const {
+    for (size_t i = 0; i < get_sanctuary_count(); i++)
+        if (sanctuaries[i]->get_index() == written_index) return i;
+    return -1U;
+}
     
 unsigned int Deck::get_people_count() const { return this->peoples.size(); }
 unsigned int Deck::get_sanctuary_count() const { return this->sanctuaries.size(); }
