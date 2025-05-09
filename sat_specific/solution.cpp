@@ -129,13 +129,13 @@ std::unique_ptr<Instance> Solution::breed(const std::unique_ptr<Instance>& other
     Solution* other = dynamic_cast<Solution*>(other_inst.get());
     if (other == nullptr) { std::cerr << "Instance is of wrong type, expected Solution !"; exit(-1); }
 
-    Solution result = Solution(*this);
+    Solution* result = new Solution(*this);
     for (size_t i = 0; i < assignation.size(); i++)
-        if (other->assignation[i] == assignation[i])    result.assignation[i] = assignation[i];
-        else                                            result.assignation[i] = RandomUtils::get_bool(0.5f);
+        if (other->assignation[i] == assignation[i])    result->assignation[i] = assignation[i];
+        else                                            result->assignation[i] = RandomUtils::get_bool(0.5f);
     
-    result.reset_valid_clauses();
-    return std::unique_ptr<Solution>(&result);
+    result->reset_valid_clauses();
+    return std::unique_ptr<Solution>(result);
 }
 std::unique_ptr<Instance> Solution::clone() const {
     return std::unique_ptr<Solution>(new Solution(*this));

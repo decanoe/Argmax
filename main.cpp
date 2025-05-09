@@ -30,16 +30,16 @@ void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr)
     
     Solution solution(f);
     solution.randomize();
-    std::unique_ptr<Instance> temp;
+    std::unique_ptr<Instance> temp = solution.clone();
     
     if (file_data.get_string("algorithm") == "hill_climb") {
-        temp = Argmax::hill_climb(solution.clone(), file_data.get_int("nb_iteration_max"));
+        Argmax::hill_climb(temp, file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "tabu_search") {
-        temp = Argmax::tabu_search(solution.clone(), file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
+        Argmax::tabu_search(temp, file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "one_lambda_search") {
-        temp = Argmax::one_lambda_search(solution.clone(), file_data.get_int("nb_mutation_to_test"), file_data.get_int("nb_iteration_max"));
+        Argmax::one_lambda_search(temp, file_data.get_int("nb_mutation_to_test"), file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "evolution") {
         temp = Argmax::evolution([solution]() -> std::unique_ptr<Instance> { return solution.randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file);
@@ -76,12 +76,15 @@ void run_on_fa(const FileData& file_data, std::ofstream* output_file = nullptr) 
     exit(-1);*/
 
     h.randomize();
-    std::unique_ptr<Instance> temp;
+    std::unique_ptr<Instance> temp = h.clone();
     if (file_data.get_string("algorithm") == "hill_climb") {
-        temp = Argmax::hill_climb(h.clone(), file_data.get_int("nb_iteration_max"));
+        Argmax::hill_climb(temp, file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "tabu_search") {
-        temp = Argmax::tabu_search(h.clone(), file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
+        Argmax::tabu_search(temp, file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
+    }
+    else if (file_data.get_string("algorithm") == "one_lambda_search") {
+        Argmax::one_lambda_search(temp, file_data.get_int("nb_mutation_to_test"), file_data.get_int("nb_iteration_max"));
     }
     else if (file_data.get_string("algorithm") == "evolution") {
         temp = Argmax::evolution([h]() -> std::unique_ptr<Instance> { return h.randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file);

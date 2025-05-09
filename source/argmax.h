@@ -56,8 +56,8 @@ namespace Argmax {
     float standard_derivation(std::vector<std::unique_ptr<Instance>>& population);
     float standard_derivation(std::vector<InstanceGenWrapper>& population);
 
-    std::unique_ptr<Instance> hill_climb(const std::unique_ptr<Instance> start, unsigned int max_iter = 1024);
-    std::unique_ptr<Instance> tabu_search(const std::unique_ptr<Instance> start, size_t black_list_size = 3, unsigned int max_iter = 1024);
-    std::unique_ptr<Instance> one_lambda_search(const std::unique_ptr<Instance> start, unsigned int nb_mutation_to_test, unsigned int max_iter = 1024);
+    void hill_climb(std::unique_ptr<Instance>& instance, unsigned int max_iter = 1024);
+    void tabu_search(std::unique_ptr<Instance>& instance, size_t black_list_size = 3, unsigned int max_iter = 1024);
+    void one_lambda_search(std::unique_ptr<Instance>& instance, unsigned int nb_mutation_to_test, unsigned int max_iter = 1024);
     std::unique_ptr<Instance> evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, std::ofstream* out = nullptr);
 }

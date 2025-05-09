@@ -77,15 +77,12 @@ bool change_to_better_neighbor(ReversibleInstance* instance)
     instance->mutate_arg(best);
     return true;
 }
-std::unique_ptr<Instance> Argmax::hill_climb(const std::unique_ptr<Instance> start, unsigned int max_iter)
+void Argmax::hill_climb(std::unique_ptr<Instance>& instance, unsigned int max_iter)
 {
-    std::unique_ptr<Instance> result = start->clone();
     unsigned int i = 0;
-
-    ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(result.get());
+    ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(instance.get());
     if (r_instance != nullptr)  while (change_to_better_neighbor(r_instance)    && ++i < max_iter);
-    else                        while (change_to_better_neighbor(result)        && ++i < max_iter);
-    return result;
+    else                        while (change_to_better_neighbor(instance)        && ++i < max_iter);
 }
 /* #endregion */
 
@@ -128,7 +125,7 @@ int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list
 }
 int change_to_best_neighbor(ReversibleInstance* instance, const std::list<int> &black_list)
 {
-    int index = -1U;
+    int index = -1;
     float score = 0;
 
     for (unsigned int i = 0; i < instance->nb_args(); i++)
@@ -151,111 +148,103 @@ int change_to_best_neighbor(ReversibleInstance* instance, const std::list<int> &
     if (index != -1) instance->mutate_arg(index);
     return index;
 }
-std::unique_ptr<Instance> Argmax::tabu_search(const std::unique_ptr<Instance> start, size_t black_list_size, unsigned int max_iter)
+void Argmax::tabu_search(std::unique_ptr<Instance>& instance, size_t black_list_size, unsigned int max_iter)
 {
     std::list<int> black_list;
-    std::unique_ptr<Instance> result = start->clone();
-    std::unique_ptr<Instance> best = result->clone();
-
-    ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(result.get());
+    std::unique_ptr<Instance> best = instance->clone();
+    ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(instance.get());
 
     for (size_t i = 0; i < max_iter; i++)
     {
         int index = 0;
-        if (r_instance != nullptr)  change_to_best_neighbor(r_instance, black_list);
-        else                        change_to_best_neighbor(result, black_list);
+        if (r_instance != nullptr)  index = change_to_best_neighbor(r_instance, black_list);
+        else                        index = change_to_best_neighbor(instance, black_list);
 
+        if (instance->score() > best->score())
+            best = instance->clone();
+        
         if (index == -1)
-            return result;
-
-        if (result->score() > best->score())
-            best = result->clone();
+            break;
 
         black_list.push_front(index);
         if (black_list.size() > black_list_size)
             black_list.pop_back();
     }
 
-    return best;
+    instance = std::move(best);
 }
 /* #endregion */
 
 /* #region LAMBDA_SEARCH */
-std::unique_ptr<Instance> one_lambda_search(ReversibleInstance* instance, unsigned int nb_mutation_to_test, unsigned int max_iter)
+void change_to_best_neighbor(std::unique_ptr<Instance> &instance, unsigned int nb_mutation_to_test)
+{
+    std::unique_ptr<Instance> best = nullptr;
+    float score = 0;
+
+    for (unsigned int i = 0; i < nb_mutation_to_test; i++)
+    {
+        std::unique_ptr<Instance> mutation = instance->clone();
+        unsigned int tested_index = RandomUtils::get_index(instance->nb_args());
+        mutation->mutate_arg(tested_index);
+        float mutation_score = mutation->score();
+
+        if (mutation_score > score || best == nullptr)
+        {
+            best = std::move(mutation);
+            score = mutation_score;
+
+            if (best->is_max_score(score))
+            {
+                instance = std::move(best);
+                return;
+            }
+        }
+    }
+
+    instance = std::move(best);
+    return;
+}
+void change_to_best_neighbor(ReversibleInstance* instance, unsigned int nb_mutation_to_test)
+{
+    int index = -1;
+    float score = 0;
+
+    for (unsigned int i = 0; i < nb_mutation_to_test; i++)
+    {
+        unsigned int tested_index = RandomUtils::get_index(instance->nb_args());
+        instance->mutate_arg(tested_index);
+        float mutation_score = instance->score();
+        
+        if (mutation_score > score || index == -1)
+        {
+            index = tested_index;
+            score = mutation_score;
+            if (instance->is_max_score(score)) return;
+        }
+
+        instance->revert_last_mutation();
+    }
+
+    instance->mutate_arg(index);
+    return;
+}
+void Argmax::one_lambda_search(std::unique_ptr<Instance>& instance, unsigned int nb_mutation_to_test, unsigned int max_iter)
 {
     std::unique_ptr<Instance> best = instance->clone();
-    float best_score = best->score();
 
+    ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(instance.get());
     for (size_t i = 0; i < max_iter; i++)
     {
-        unsigned int iter_best = -1U;
-        float score = 0;
+        if (r_instance != nullptr)  change_to_best_neighbor(r_instance, nb_mutation_to_test);
+        else                        change_to_best_neighbor(instance, nb_mutation_to_test);
 
-        for (size_t j = 0; j < nb_mutation_to_test && j < instance->nb_args(); j++)
-        {
-            unsigned int index = RandomUtils::get_index(instance->nb_args());
-            instance->mutate_arg(index);
-            float temp_score = instance->score();
-
-            if (temp_score > score || iter_best == -1U)
-            {
-                iter_best = index;
-                score = temp_score;
-
-                if (instance->is_max_score(score)) return instance->clone();
-            }
-            instance->revert_last_mutation();
-        }
-        instance->mutate_arg(iter_best);
-
-        if (score > best_score)
-        {
+        if (instance->score() > best->score())
             best = instance->clone();
-            best_score = score;
-        }
+        if (best->is_max_score(best->score()))
+            break;
     }
 
-    return best;
-}
-std::unique_ptr<Instance> Argmax::one_lambda_search(const std::unique_ptr<Instance> start, unsigned int nb_mutation_to_test, unsigned int max_iter)
-{
-    std::unique_ptr<Instance> current = start->clone();
-    ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(current.get());
-    if (r_instance) return one_lambda_search(r_instance, nb_mutation_to_test, max_iter);
-
-    std::unique_ptr<Instance> best = start->clone();
-    float best_score = best->score();
-
-    for (size_t i = 0; i < max_iter; i++)
-    {
-        std::unique_ptr<Instance> iter_best = nullptr;
-        float score = 0;
-
-        for (size_t j = 0; j < nb_mutation_to_test && j < current->nb_args(); j++)
-        {
-            std::unique_ptr<Instance> temp = current->clone();
-            temp->mutate_arg(RandomUtils::get_index(current->nb_args()));
-            float temp_score = temp->score();
-
-            if (temp_score > score || iter_best == nullptr)
-            {
-                iter_best = std::move(temp);
-                score = temp_score;
-
-                if (iter_best->is_max_score(score))
-                    return iter_best;
-            }
-        }
-
-        current = std::move(iter_best);
-        if (score > best_score)
-        {
-            best = current->clone();
-            best_score = score;
-        }
-    }
-
-    return best;
+    instance = std::move(best);
 }
 /* #endregion */
 
@@ -528,13 +517,13 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 switch (parameters.run_algo_on_child)
                 {
                 case evolution_parameters::ChildAlgo::hill_climb:
-                    instance = hill_climb(std::move(instance), parameters.child_algo_budget / instance->nb_args());
+                    hill_climb(instance, parameters.child_algo_budget / instance->nb_args());
                     break;
                 case evolution_parameters::ChildAlgo::tabu_search:
-                    instance = tabu_search(std::move(instance), parameters.child_algo_parameter, parameters.child_algo_budget / instance->nb_args());
+                    tabu_search(instance, parameters.child_algo_parameter, parameters.child_algo_budget / instance->nb_args());
                     break;
                 case evolution_parameters::ChildAlgo::lambda_mutation:
-                    instance = one_lambda_search(std::move(instance), parameters.child_algo_parameter, parameters.child_algo_budget / parameters.child_algo_parameter);
+                    one_lambda_search(instance, parameters.child_algo_parameter, parameters.child_algo_budget / parameters.child_algo_parameter);
                     break;
                 default:
                     break;
