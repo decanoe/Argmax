@@ -414,7 +414,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         *times_out << "generation\tfinding_parent\tspawning_child\trunning_child_algo\tsorting_population\tdespawning\tfinding_best\ttotal" << "\n";
     }
     /* #endregion */
-
+    
     /* #region initialization */
     auto rng = std::default_random_engine{};
     std::vector<InstanceGenWrapper> population = std::vector<InstanceGenWrapper>();
@@ -458,10 +458,12 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
     }
     /* #endregion */
     /* #endregion */
-
+    
+    bool max_found = false;
     int progress_percent = -1;
     for (unsigned int g = 1; g < parameters.generation_count; g++)
     {
+        if (max_found && out == nullptr) { break; }
         auto start = std::chrono::system_clock::now();
 
         /* #region spawning new generation */
@@ -538,10 +540,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                     best_score = score;
                     best = instance->clone();
                     if (best->is_max_score(best_score))
-                    {
-                        erase_lines(line_count);
-                        return best;
-                    }
+                        max_found = true;
                 }
                 /* #endregion */
 
