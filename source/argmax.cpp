@@ -372,6 +372,8 @@ float Argmax::standard_derivation(std::vector<InstanceGenWrapper> &population)
     return sqrtf(variance / population.size());
 }
 
+const char* CHAR_BLOCS[] = {" ", "▏", "▎", "▍", "▌", "▋" , "▊", "▉"};
+
 void erase_lines(unsigned int &line_count)
 {
     for (size_t i = 0; i < line_count; i++)
@@ -686,16 +688,16 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         {
             erase_lines(line_count);
             progress_percent = p;
-            std::string t = "progress: " + std::to_string(progress_percent);
-            if (p < 10)
-                t += " ";
-            t += "% [";
-            for (int i = 0; i < p / 10; i++)
-                t += "="; //"▆";
-            for (int i = p / 10; i < 10; i++)
+            std::string t = "progress: " + std::to_string(progress_percent) + "%";
+            if (p < 10) t += " ";
+            t += " \033[32;100m";
+            for (int i = 0; i < p / 8; i++)
+                t += "█";
+            t += CHAR_BLOCS[p%8];
+            for (int i = p / 8; i < 100/8; i++)
                 t += " ";
 
-            t += "] it: " + std::to_string(g) + "/" + std::to_string(parameters.generation_count) + "\n";
+            t += "\033[0m it: " + std::to_string(g) + "/" + std::to_string(parameters.generation_count) + "\n";
             std::cout << t;
             line_count++;
 
