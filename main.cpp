@@ -3,8 +3,8 @@
 #include <ctime>
 #include <chrono>
 
-#include "sat_specific/formule.h"
-#include "sat_specific/solution.h"
+#include "SAT/formule.h"
+#include "SAT/solution.h"
 
 #include "FA/deck.h"
 #include "FA/hand.h"

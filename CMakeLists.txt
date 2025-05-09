@@ -11,9 +11,9 @@ add_executable(${CMAKE_PROJECT_NAME}
     source/file_data.cpp
     source/random_utils.cpp
 
-    sat_specific/clause.cpp
-    sat_specific/formule.cpp
-    sat_specific/solution.cpp
+    SAT/clause.cpp
+    SAT/formule.cpp
+    SAT/solution.cpp
 
     FA/card.cpp
     FA/deck.cpp
