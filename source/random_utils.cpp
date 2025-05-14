@@ -20,6 +20,16 @@ unsigned int RandomUtils::get_index(unsigned int max, std::vector<unsigned int> 
     while (std::find(blacklist.begin(), blacklist.end(), i) != blacklist.end()) i++;
     return i;
 }
+unsigned int RandomUtils::get_index(unsigned int max, std::set<unsigned int> blacklist) {
+    if (blacklist.size() >= max) {
+        std::cerr << "\033[1;31mERROR: more value in the blacklist than in the range [0;"<< max <<"[.\nWhile generating a random index\033[0m\n";
+        exit(1);
+    }
+
+    unsigned int i = get_index(max - blacklist.size());
+    for (unsigned int v : blacklist) if (i == v) i++;
+    return i;
+}
 std::uint64_t RandomUtils::get_uint64()
 {
     return rand() ^
