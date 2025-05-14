@@ -140,12 +140,12 @@ void test_FA_hand(int argc, int first_card, char *args[]) {
     std::shared_ptr<Deck> deck = std::make_shared<Deck>("./FA/data/cards.txt", "./FA/data/sanctuary.txt");
 
     std::vector<unsigned int> peoples = std::vector<unsigned int>();
-    std::vector<unsigned int> sanctuaries = std::vector<unsigned int>();
+    std::set<unsigned int> sanctuaries = std::set<unsigned int>();
 
     for (int i = first_card; i < argc; i++)
     {
         unsigned int index = std::stoi(args[i]);
-        if (index > 100) sanctuaries.push_back(deck->get_sanctuary_index_by_index(index));
+        if (index > 100) sanctuaries.insert(deck->get_sanctuary_index_by_index(index));
         else             peoples.push_back(deck->get_people_index_by_index(index));
     }
 

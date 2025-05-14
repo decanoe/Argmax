@@ -9,14 +9,15 @@ class Hand: public Instance {
 protected:
     std::shared_ptr<Deck> deck;
     std::vector<unsigned int> peoples;
-    std::vector<unsigned int> sanctuaries;
+    std::set<unsigned int> sanctuaries;
 
     static std::string to_str_2(unsigned int value);
 public:
     Hand(std::shared_ptr<Deck> deck);
-    Hand(std::shared_ptr<Deck> deck, std::vector<unsigned int> peoples, std::vector<unsigned int> sanctuaries);
+    Hand(std::shared_ptr<Deck> deck, std::vector<unsigned int> peoples, std::set<unsigned int> sanctuaries);
     Hand(const Hand&);
 
+    unsigned int compute_nb_sanctuary() const;
     unsigned int nb_sanctuary() const;
     
     // Instance specific

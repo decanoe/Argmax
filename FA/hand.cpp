@@ -3,15 +3,16 @@
 #include <algorithm>
 
 Hand::Hand(std::shared_ptr<Deck> deck): deck(deck), peoples{0,1,2,3,4,5,6,7}, sanctuaries{0,1,2,3,4,5,6} {}
-Hand::Hand(std::shared_ptr<Deck> deck, std::vector<unsigned int> peoples, std::vector<unsigned int> sanctuaries): deck(deck), peoples(peoples), sanctuaries(sanctuaries) {}
+Hand::Hand(std::shared_ptr<Deck> deck, std::vector<unsigned int> peoples, std::set<unsigned int> sanctuaries): deck(deck), peoples(peoples), sanctuaries(sanctuaries) {}
 Hand::Hand(const Hand& h): deck(h.deck), peoples(h.peoples), sanctuaries(h.sanctuaries) {}
 
-unsigned int Hand::nb_sanctuary() const {
+unsigned int Hand::compute_nb_sanctuary() const {
     unsigned int count = 0;
     for (unsigned int i = 0; i < peoples.size() - 1; ++i)
         count += deck->get_people(peoples[i])->get_index() < deck->get_people(peoples[i+1])->get_index();
     return count;
 }
+unsigned int Hand::nb_sanctuary() const { return sanctuaries.size(); }
 
 std::string Hand::to_str_2(unsigned int value) {
     if (value < 10) return std::to_string(value) + " ";
@@ -24,16 +25,16 @@ std::ostream& Hand::pretty_cout(std::ostream& c) const {
     std::vector<unsigned int> sanctuary_scores = std::vector<unsigned int>();
 
     Card::HandInfo info = Card::HandInfo();
-    for (unsigned int i = 0; i < nb_sanctuary(); ++i) info.add(*deck->get_sanctuary(sanctuaries[i]));
+    for (unsigned int s : sanctuaries) info.add(*deck->get_sanctuary(s));
     for (auto p = peoples.rbegin(); p != peoples.rend(); ++p)
     {
         people_scores.push_back(deck->get_people(*p)->score(info.add(*deck->get_people(*p))));
         people_str.push_back(deck->get_people(*p)->get_string_display());
     }
-    for (unsigned int i = 0; i < nb_sanctuary(); ++i)
+    for (unsigned int s : sanctuaries)
     {
-        sanctuary_scores.push_back(deck->get_sanctuary(sanctuaries[i])->score(info));
-        sanctuary_str.push_back(deck->get_sanctuary(sanctuaries[i])->get_string_display());
+        sanctuary_scores.push_back(deck->get_sanctuary(s)->score(info));
+        sanctuary_str.push_back(deck->get_sanctuary(s)->get_string_display());
     }
 
     c << *this << "\n";
@@ -63,9 +64,9 @@ std::ostream& operator<<(std::ostream& c, const Hand& h) {
         c << h.deck->get_people(people)->get_index() << ", ";
     }
     c << "\b\b\t | Sanct : ";
-    for (unsigned int i = 0; i < h.nb_sanctuary(); i++)
+    for (unsigned int s : h.sanctuaries)
     {
-        c << h.deck->get_sanctuary(h.sanctuaries[i])->get_index() << ", ";
+        c << h.deck->get_sanctuary(s)->get_index() << ", ";
     }
     return c << "\b\b)";
 }
@@ -75,9 +76,9 @@ float Hand::score_const() const {
     if (!std::isnan(stored_score)) return stored_score;
     Card::HandInfo info = Card::HandInfo();
     unsigned int s = 0;
-    for (unsigned int i = 0; i < nb_sanctuary(); ++i) info.add(*deck->get_sanctuary(sanctuaries[i]));
+    for (unsigned int sanct : sanctuaries) info.add(*deck->get_sanctuary(sanct));
     for (auto p = peoples.rbegin(); p != peoples.rend(); ++p) s += deck->get_people(*p)->score(info.add(*deck->get_people(*p)));
-    for (unsigned int i = 0; i < nb_sanctuary(); ++i) s += deck->get_sanctuary(sanctuaries[i])->score(info);
+    for (unsigned int sanct : sanctuaries) s += deck->get_sanctuary(sanct)->score(info);
     return s;
 }
 bool Hand::is_max_score(float score) const {
@@ -100,39 +101,16 @@ void Hand::mutate_arg(unsigned int index) {
                 break;
             }
         
-        std::sort(sanctuaries.begin(), sanctuaries.begin() + nb_sanctuary());
+        unsigned int nb = compute_nb_sanctuary();
+        while (sanctuaries.size() < nb) sanctuaries.insert(RandomUtils::get_index(deck->get_sanctuary_count(), sanctuaries));
+        while (sanctuaries.size() > nb) sanctuaries.erase(std::next(sanctuaries.begin(), RandomUtils::get_index(sanctuaries.size())));
     }
     else {
         index -= 8;
-        unsigned int old = sanctuaries[index];
-        sanctuaries[index] = RandomUtils::get_index(deck->get_sanctuary_count());
-        for (unsigned int i = 0; i < 7; i++)
-            if (i != index && sanctuaries[i] == sanctuaries[index]) {
-                sanctuaries[i] = old;
-                break;
-            }
-
-        std::sort(sanctuaries.begin(), sanctuaries.begin() + nb_sanctuary());
+        sanctuaries.erase(std::next(sanctuaries.begin(), index));
+        sanctuaries.insert(RandomUtils::get_index(deck->get_sanctuary_count(), sanctuaries));
     }
 }
-// void Hand::mutate_arg(unsigned int index) {
-//     stored_score = NAN;
-//     if (index == 8) {
-//         unsigned int replaced_index = RandomUtils::get_index(nb_sanctuary());
-//         std::vector<unsigned int> black_list = sanctuaries;
-//         for (unsigned int i = 0; i <= replaced_index; i++) black_list[i] = deck->get_sanctuary_count();
-//        
-//         sanctuaries[replaced_index] = RandomUtils::get_index(deck->get_sanctuary_count(), black_list);
-//         black_list = sanctuaries;
-//         for (unsigned int i = replaced_index; i <= 7; i++) if (sanctuaries[i] == sanctuaries[replaced_index]) {
-//             sanctuaries[i] = RandomUtils::get_index(deck->get_sanctuary_count(), black_list);
-//             black_list[i] = sanctuaries[i];
-//         }
-//     }
-//     else {
-//         peoples[index] = RandomUtils::get_index(deck->get_people_count(), peoples);
-//     }
-// }
 void Hand::mutate_arg(unsigned int index, float probability) {
     if (RandomUtils::get_bool(probability)) mutate_arg(index);
 }
@@ -141,31 +119,39 @@ std::unique_ptr<Instance> Hand::breed(const std::unique_ptr<Instance>& other_ins
     Hand* other = dynamic_cast<Hand*>(other_inst.get());
     if (other == nullptr) { std::cerr << "Instance is of wrong type, expected Hand !"; exit(-1); }
 
-    std::unique_ptr<Hand> h = std::make_unique<Hand>(this->deck);
-    for (unsigned int i = 0; i < 8; ++i) {
-        if (other->peoples[i] == peoples[i]) h->peoples[i] = peoples[i];
-        else {
-            bool already_in = false;
-            for (unsigned int j = 0; j < i; ++j)
-            {
-                if (h->peoples[j] == peoples[i]) already_in = true;
-            }
-            if (already_in) h->peoples[i] = other->peoples[i];
-            else h->peoples[i] = peoples[i];
+    std::unique_ptr<Hand> h = std::make_unique<Hand>(this->deck, peoples, std::set<unsigned int>());
+    bool valid = false;
+    for (size_t i = 0; i < 1024 && !valid; i++)
+    {
+        valid = true;
+        for (unsigned int i = 0; i < 8; i++) h->peoples[i] = RandomUtils::get_bool(.5f) ? peoples[i] : other->peoples[i];
+
+        for (unsigned int i = 0; i < 8 && valid; i++)
+        for (unsigned int j = 0; j < i && valid; j++) {
+            if (h->peoples[i] == h->peoples[j]) valid = false;
         }
     }
-    for (unsigned int i = 0; i < 7; ++i) {
-        if (other->sanctuaries[i] == sanctuaries[i]) h->sanctuaries[i] = sanctuaries[i];
+    if (!valid) h->peoples = peoples;
+    
+    
+    unsigned int nb = compute_nb_sanctuary();
+    std::set<unsigned int> set1 = this->sanctuaries;
+    std::set<unsigned int> set2 = other->sanctuaries;
+    // fill with random sanctuaries from hands
+    while (sanctuaries.size() < nb && (set1.size() != 0 || set2.size() != 0)) {
+        if (set2.size() == 0 || (set1.size() != 0 && RandomUtils::get_bool(.5f))) {
+            auto it = std::next(set1.begin(), RandomUtils::get_index(set1.size()));
+            set1.erase(it);
+            sanctuaries.insert(*it);
+        }
         else {
-            bool already_in = false;
-            for (unsigned int j = 0; j < i; ++j)
-            {
-                if (h->sanctuaries[j] == sanctuaries[i]) already_in = true;
-            }
-            if (already_in) h->sanctuaries[i] = other->sanctuaries[i];
-            else h->sanctuaries[i] = sanctuaries[i];
+            auto it = std::next(set2.begin(), RandomUtils::get_index(set2.size()));
+            set2.erase(it);
+            sanctuaries.insert(*it);
         }
     }
+    // complete with random sanctuaries from deck
+    while (sanctuaries.size() < nb) sanctuaries.insert(RandomUtils::get_index(deck->get_sanctuary_count(), sanctuaries));
 
     return h;
 }
@@ -179,8 +165,9 @@ Hand& Hand::randomize() {
     peoples.clear();
     sanctuaries.clear();
     
-    for (int i = 0; i < 8; i++) peoples.push_back(RandomUtils::get_index(deck->get_people_count(), peoples));
-    for (int i = 0; i < 7; i++) sanctuaries.push_back(RandomUtils::get_index(deck->get_sanctuary_count(), sanctuaries));
+    for (unsigned int i = 0; i < 8; i++) peoples.push_back(RandomUtils::get_index(deck->get_people_count(), peoples));
+    unsigned int nb = compute_nb_sanctuary();
+    for (unsigned int i = 0; i < nb; i++) sanctuaries.insert(RandomUtils::get_index(deck->get_sanctuary_count(), sanctuaries));
     
     stored_score = NAN;
     return *this;
@@ -188,14 +175,14 @@ Hand& Hand::randomize() {
 
 float Hand::get_coord(unsigned int index) const {
     if (index < 8) return peoples[index];
-    return sanctuaries[index - 8];
+    return *std::next(sanctuaries.begin(), index - 8);
 }
 std::vector<float> Hand::to_normalized_point() const {
     std::vector<float> result = std::vector<float>();
     result.reserve(8+nb_sanctuary());
 
-    for (auto i : peoples) result.push_back((float)deck->get_people(i)->get_index() / deck->get_people_count());
-    for (size_t i = 0; i < nb_sanctuary(); i++) result.push_back((float)sanctuaries[i] / deck->get_sanctuary_count());
+    for (auto i : peoples)      result.push_back((float)deck->get_people(i)->get_index() / deck->get_people_count());
+    for (auto i : sanctuaries)  result.push_back((float)deck->get_sanctuary(i)->get_index() / deck->get_sanctuary_count());
 
     return result;
 }
@@ -203,8 +190,8 @@ std::vector<std::string> Hand::to_debug_point() const {
     std::vector<std::string> result = std::vector<std::string>();
     result.reserve(8+nb_sanctuary());
 
-    for (auto i : peoples) result.push_back(std::to_string(deck->get_people(i)->get_index()));
-    for (size_t i = 0; i < nb_sanctuary(); i++) result.push_back("s" + std::to_string(sanctuaries[i]));
+    for (auto i : peoples)      result.push_back(std::to_string(deck->get_people(i)->get_index()));
+    for (auto i : sanctuaries)  result.push_back("s" + std::to_string(deck->get_sanctuary(i)->get_index()));
 
     return result;
 }
