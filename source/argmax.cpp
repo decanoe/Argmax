@@ -291,7 +291,7 @@ void Argmax::one_lambda_search(std::unique_ptr<Instance>& instance, unsigned int
 }
 /* #endregion */
 
-/* #region LAMBDA_SEARCH */
+/* #region MIXED_LAMBDA_SEARCH */
 Argmax::mixed_lambda_parameters::mixed_lambda_parameters(const FileData &file_data)
 {
     nb_iteration_max = file_data.get_int("nb_iteration_max", nb_iteration_max);

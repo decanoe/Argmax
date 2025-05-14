@@ -134,24 +134,24 @@ std::unique_ptr<Instance> Hand::breed(const std::unique_ptr<Instance>& other_ins
     if (!valid) h->peoples = peoples;
     
     
-    unsigned int nb = compute_nb_sanctuary();
+    unsigned int nb = h->compute_nb_sanctuary();
     std::set<unsigned int> set1 = this->sanctuaries;
     std::set<unsigned int> set2 = other->sanctuaries;
     // fill with random sanctuaries from hands
-    while (sanctuaries.size() < nb && (set1.size() != 0 || set2.size() != 0)) {
+    while (h->sanctuaries.size() < nb && (set1.size() != 0 || set2.size() != 0)) {
         if (set2.size() == 0 || (set1.size() != 0 && RandomUtils::get_bool(.5f))) {
             auto it = std::next(set1.begin(), RandomUtils::get_index(set1.size()));
+            h->sanctuaries.insert(*it);
             set1.erase(it);
-            sanctuaries.insert(*it);
         }
         else {
             auto it = std::next(set2.begin(), RandomUtils::get_index(set2.size()));
+            h->sanctuaries.insert(*it);
             set2.erase(it);
-            sanctuaries.insert(*it);
         }
     }
     // complete with random sanctuaries from deck
-    while (sanctuaries.size() < nb) sanctuaries.insert(RandomUtils::get_index(deck->get_sanctuary_count(), sanctuaries));
+    while (h->sanctuaries.size() < nb) h->sanctuaries.insert(RandomUtils::get_index(deck->get_sanctuary_count(), sanctuaries));
 
     return h;
 }
