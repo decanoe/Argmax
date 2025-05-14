@@ -58,6 +58,6 @@ namespace Argmax {
 
     void hill_climb(std::unique_ptr<Instance>& instance, unsigned int max_iter = 1024);
     void tabu_search(std::unique_ptr<Instance>& instance, size_t black_list_size = 3, unsigned int max_iter = 1024);
-    void one_lambda_search(std::unique_ptr<Instance>& instance, unsigned int nb_mutation_to_test, unsigned int max_iter = 1024);
+    void one_lambda_search(std::unique_ptr<Instance>& instance, unsigned int nb_mutation_to_test, unsigned int max_iter = 1024, bool debug = false);
     std::unique_ptr<Instance> evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, std::ofstream* out = nullptr);
 }

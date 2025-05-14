@@ -18,6 +18,13 @@ float get_time_from(std::chrono::system_clock::time_point point)
     // auto start = std::chrono::system_clock::now();
     // float elapsed += get_time_from(start);
 }
+void erase_lines(unsigned int &line_count)
+{
+    for (size_t i = 0; i < line_count; i++)
+        std::cout << "\r\033[1A\033[K";
+    line_count = 0;
+}
+const char* CHAR_BLOCS[] = {" ", "▏", "▎", "▍", "▌", "▋" , "▊", "▉"};
 
 /* #region HILL_CLIMB */
 /// @brief changes <instance> to its best scoring neighbor if it is better than itself
@@ -228,10 +235,12 @@ void change_to_best_neighbor(ReversibleInstance* instance, unsigned int nb_mutat
     instance->mutate_arg(index);
     return;
 }
-void Argmax::one_lambda_search(std::unique_ptr<Instance>& instance, unsigned int nb_mutation_to_test, unsigned int max_iter)
+void Argmax::one_lambda_search(std::unique_ptr<Instance>& instance, unsigned int nb_mutation_to_test, unsigned int max_iter, bool debug)
 {
     std::unique_ptr<Instance> best = instance->clone();
 
+    unsigned int line_count = 0;
+    int progress_percent = -1;
     ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(instance.get());
     for (size_t i = 0; i < max_iter; i++)
     {
@@ -242,7 +251,41 @@ void Argmax::one_lambda_search(std::unique_ptr<Instance>& instance, unsigned int
             best = instance->clone();
         if (best->is_max_score(best->score()))
             break;
+        
+        /* #region pretty print to wait */
+        if (debug) {
+            int p = 100 * (float)i / max_iter;
+            if (p != progress_percent)
+            {
+                erase_lines(line_count);
+                progress_percent = p;
+                std::string t = "progress: " + std::to_string(progress_percent) + "%";
+                if (p < 10) t += " ";
+                t += " \033[32;100m";
+                for (int i = 0; i < p / 8; i++)
+                    t += "█";
+                t += CHAR_BLOCS[p%8];
+                for (int i = p / 8; i < 100/8; i++)
+                    t += " ";
+
+                t += "\033[0m it: " + std::to_string(i) + "/" + std::to_string(max_iter) + "\n";
+                std::cout << t;
+                line_count++;
+
+                std::cout << "current      ";
+                instance->cout(std::cout);
+                std::cout << "\t with score of " + std::to_string(instance->score()) + "\n";
+                line_count++;
+
+                std::cout << "overall best ";
+                best->cout(std::cout);
+                std::cout << "\t with score of " + std::to_string(best->score()) + "\n";
+                line_count++;
+            }
+        }
+        /* #endregion */
     }
+    erase_lines(line_count);
 
     instance = std::move(best);
 }
@@ -372,14 +415,6 @@ float Argmax::standard_derivation(std::vector<InstanceGenWrapper> &population)
     return sqrtf(variance / population.size());
 }
 
-const char* CHAR_BLOCS[] = {" ", "▏", "▎", "▍", "▌", "▋" , "▊", "▉"};
-
-void erase_lines(unsigned int &line_count)
-{
-    for (size_t i = 0; i < line_count; i++)
-        std::cout << "\r\033[1A\033[K";
-    line_count = 0;
-}
 float get_frequency_score(Instance* instance, const std::unique_ptr<std::vector<std::map<float, unsigned int>>>& arg_frequency_map, unsigned int population_size) {
     if (arg_frequency_map == nullptr) return 0;
     float result = 0;
