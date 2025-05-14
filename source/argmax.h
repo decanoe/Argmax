@@ -40,6 +40,19 @@ namespace Argmax {
         evolution_parameters(const FileData&);
     };
     std::ostream& operator<<(std::ostream&, const evolution_parameters&);
+    struct mixed_lambda_parameters
+    {
+        unsigned int nb_iteration_max = 10000;
+        unsigned int nb_mutation_to_test = 128;
+
+        unsigned int blacklist_size = 0;
+        
+        unsigned int time_between_mutation = 4000;
+        float mutation_probability = 0.1;
+        
+        mixed_lambda_parameters(const FileData&);
+    };
+    std::ostream& operator<<(std::ostream&, const mixed_lambda_parameters&);
 
     struct InstanceGenWrapper
     {
@@ -59,5 +72,6 @@ namespace Argmax {
     void hill_climb(std::unique_ptr<Instance>& instance, unsigned int max_iter = 1024);
     void tabu_search(std::unique_ptr<Instance>& instance, size_t black_list_size = 3, unsigned int max_iter = 1024);
     void one_lambda_search(std::unique_ptr<Instance>& instance, unsigned int nb_mutation_to_test, unsigned int max_iter = 1024, bool debug = false);
+    void mixed_one_lambda_search(std::unique_ptr<Instance>& instance, mixed_lambda_parameters parameters);
     std::unique_ptr<Instance> evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, std::ofstream* out = nullptr);
 }

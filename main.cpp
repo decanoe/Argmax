@@ -24,6 +24,23 @@ void path_message() {
     exit(1);
 }
 
+void run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::ofstream* output_file = nullptr) {
+    if (file_data.get_string("algorithm") == "hill_climb") {
+        Argmax::hill_climb(instance, file_data.get_int("nb_iteration_max"));
+    }
+    else if (file_data.get_string("algorithm") == "tabu_search") {
+        Argmax::tabu_search(instance, file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
+    }
+    else if (file_data.get_string("algorithm") == "one_lambda_search") {
+        Argmax::one_lambda_search(instance, file_data.get_int("nb_mutation_to_test"), file_data.get_int("nb_iteration_max"), true);
+    }
+    else if (file_data.get_string("algorithm") == "mixed_one_lambda_search") {
+        Argmax::mixed_one_lambda_search(instance, Argmax::mixed_lambda_parameters(file_data));
+    }
+    else if (file_data.get_string("algorithm") == "evolution") {
+        instance = std::move(Argmax::evolution([&instance]() -> std::unique_ptr<Instance> { return instance->randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file));
+    }
+}
 void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr) {
     std::cout << "reading file..." << std::endl;
     std::shared_ptr<Formule> f = std::shared_ptr<Formule>(new Formule(file_data.get_string("instance")));
@@ -31,19 +48,7 @@ void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr)
     Solution solution(f);
     solution.randomize();
     std::unique_ptr<Instance> temp = solution.clone();
-    
-    if (file_data.get_string("algorithm") == "hill_climb") {
-        Argmax::hill_climb(temp, file_data.get_int("nb_iteration_max"));
-    }
-    else if (file_data.get_string("algorithm") == "tabu_search") {
-        Argmax::tabu_search(temp, file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
-    }
-    else if (file_data.get_string("algorithm") == "one_lambda_search", true) {
-        Argmax::one_lambda_search(temp, file_data.get_int("nb_mutation_to_test"), file_data.get_int("nb_iteration_max"));
-    }
-    else if (file_data.get_string("algorithm") == "evolution") {
-        temp = Argmax::evolution([solution]() -> std::unique_ptr<Instance> { return solution.randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file);
-    }
+    run(file_data, temp, output_file);
     Solution result = *dynamic_cast<Solution*>(temp.get());
 
     std::cout << "max score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
@@ -77,18 +82,7 @@ void run_on_fa(const FileData& file_data, std::ofstream* output_file = nullptr) 
 
     h.randomize();
     std::unique_ptr<Instance> temp = h.clone();
-    if (file_data.get_string("algorithm") == "hill_climb") {
-        Argmax::hill_climb(temp, file_data.get_int("nb_iteration_max"));
-    }
-    else if (file_data.get_string("algorithm") == "tabu_search") {
-        Argmax::tabu_search(temp, file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
-    }
-    else if (file_data.get_string("algorithm") == "one_lambda_search") {
-        Argmax::one_lambda_search(temp, file_data.get_int("nb_mutation_to_test"), file_data.get_int("nb_iteration_max"), true);
-    }
-    else if (file_data.get_string("algorithm") == "evolution") {
-        temp = Argmax::evolution([h]() -> std::unique_ptr<Instance> { return h.randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file);
-    }
+    run(file_data, temp, output_file);
     Hand result = *dynamic_cast<Hand*>(temp.get());
 
     std::cout << "max score: " << int(result.score()) << " points with hand\n";
