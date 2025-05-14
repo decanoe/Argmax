@@ -35,4 +35,4 @@ public:
 
     virtual std::ostream& cout(std::ostream& c) const = 0;
 };
-
+std::ostream& operator<<(std::ostream&, std::unique_ptr<Instance>&);

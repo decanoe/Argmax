@@ -10,6 +10,7 @@ add_executable(${CMAKE_PROJECT_NAME}
     source/argmax.cpp
     source/file_data.cpp
     source/random_utils.cpp
+    source/instance.cpp
 
     SAT/clause.cpp
     SAT/formule.cpp
