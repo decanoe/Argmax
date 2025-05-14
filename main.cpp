@@ -62,6 +62,17 @@ void run_on_fa(const FileData& file_data, std::ofstream* output_file = nullptr) 
     
     Hand h(deck);
 
+    // for (size_t i = 0; i < 128; i++)
+    // {
+    //     h.randomize();
+    //     auto temp = h.randomize_clone();
+    //     auto res = h.breed(temp);
+
+    //     std::cout << "   " << h << "\n + " << temp << "\n=> " << res << "\n\n";
+    // }
+    // exit(0);
+    
+
     /*double t = 0;
     int count = 0;
     for (size_t i = 0; i < 1024; i++)
