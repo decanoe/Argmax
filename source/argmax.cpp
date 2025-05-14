@@ -127,6 +127,7 @@ int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list
         }
     }
 
+    if (best == nullptr) return -1;
     instance = std::move(best);
     return index;
 }
@@ -151,7 +152,7 @@ int change_to_best_neighbor(ReversibleInstance* instance, const std::list<int> &
 
         instance->revert_last_mutation();
     }
-
+    
     if (index != -1) instance->mutate_arg(index);
     return index;
 }
@@ -160,13 +161,13 @@ void Argmax::tabu_search(std::unique_ptr<Instance>& instance, size_t black_list_
     std::list<int> black_list;
     std::unique_ptr<Instance> best = instance->clone();
     ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(instance.get());
-
+    
     for (size_t i = 0; i < max_iter; i++)
     {
         int index = 0;
         if (r_instance != nullptr)  index = change_to_best_neighbor(r_instance, black_list);
         else                        index = change_to_best_neighbor(instance, black_list);
-
+        
         if (instance->score() > best->score())
             best = instance->clone();
         
