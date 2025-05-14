@@ -89,7 +89,7 @@ void Argmax::hill_climb(std::unique_ptr<Instance>& instance, unsigned int max_it
     unsigned int i = 0;
     ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(instance.get());
     if (r_instance != nullptr)  while (change_to_better_neighbor(r_instance)    && ++i < max_iter);
-    else                        while (change_to_better_neighbor(instance)        && ++i < max_iter);
+    else                        while (change_to_better_neighbor(instance)      && ++i < max_iter);
 }
 /* #endregion */
 

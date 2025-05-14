@@ -17,6 +17,8 @@ public:
     Hand(std::shared_ptr<Deck> deck, std::vector<unsigned int> peoples, std::set<unsigned int> sanctuaries);
     Hand(const Hand&);
 
+    bool operator==(std::unique_ptr<Instance>& other) const;
+
     unsigned int compute_nb_sanctuary() const;
     unsigned int nb_sanctuary() const;
     

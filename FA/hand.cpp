@@ -6,6 +6,13 @@ Hand::Hand(std::shared_ptr<Deck> deck): deck(deck), peoples{0,1,2,3,4,5,6,7}, sa
 Hand::Hand(std::shared_ptr<Deck> deck, std::vector<unsigned int> peoples, std::set<unsigned int> sanctuaries): deck(deck), peoples(peoples), sanctuaries(sanctuaries) {}
 Hand::Hand(const Hand& h): deck(h.deck), peoples(h.peoples), sanctuaries(h.sanctuaries) {}
 
+bool Hand::operator==(std::unique_ptr<Instance>& other) const {
+    Hand* h = dynamic_cast<Hand*>(other.get());
+    if (h == nullptr) return false;
+
+    return h->peoples == peoples && h->sanctuaries == sanctuaries;
+}
+
 unsigned int Hand::compute_nb_sanctuary() const {
     unsigned int count = 0;
     for (unsigned int i = 0; i < peoples.size() - 1; ++i)
