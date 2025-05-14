@@ -54,7 +54,7 @@ public:
 
     std::unique_ptr<Instance> breed(const std::unique_ptr<Instance>& other) override;
     std::unique_ptr<Instance> clone() const override;
-    std::unique_ptr<Instance> randomize_clone() const;
+    std::unique_ptr<Instance> randomize_clone() const override;
     
     std::ostream& cout(std::ostream& c) const override;
     friend std::ostream& operator<<(std::ostream&, const Solution&);

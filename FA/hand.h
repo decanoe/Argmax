@@ -30,7 +30,7 @@ public:
     
     std::unique_ptr<Instance> breed(const std::unique_ptr<Instance>& other) override;
     std::unique_ptr<Instance> clone() const override;
-    std::unique_ptr<Instance> randomize_clone() const;
+    std::unique_ptr<Instance> randomize_clone() const override;
     Hand& randomize();
 
     float get_coord(unsigned int index) const override;

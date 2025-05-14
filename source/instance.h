@@ -31,6 +31,8 @@ public:
     virtual std::unique_ptr<Instance> breed(const std::unique_ptr<Instance>& other) = 0;
     virtual std::unique_ptr<Instance> clone() const = 0;
 
+    virtual std::unique_ptr<Instance> randomize_clone() const = 0;
+
     virtual std::ostream& cout(std::ostream& c) const = 0;
 };
 
