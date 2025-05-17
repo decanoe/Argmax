@@ -49,6 +49,7 @@ namespace Argmax {
         unsigned int child_algo_parameter = 8;
         unsigned int blacklist_size = 0;
         float mutation_probability = 0.1;
+        float despawn_criteria_diversity_multiplier = 20;
         
         mixed_lambda_parameters(const FileData&);
     };

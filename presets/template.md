@@ -38,6 +38,7 @@ int     child_algo_budget = 128;
 int     child_algo_parameter = 8;
 int     blacklist_size = 0;
 float   mutation_probability = 0.1;
+float   despawn_criteria_diversity_multiplier = 0
 
 # ====================================== evolution parameters ======================================
 int     generation_count = 1024
