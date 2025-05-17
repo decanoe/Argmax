@@ -7,6 +7,7 @@
 #include <math.h>
 #include <random>
 #include <sstream>
+#include <queue>
 
 float get_time_from(std::chrono::system_clock::time_point point)
 {
@@ -24,7 +25,7 @@ void erase_lines(unsigned int &line_count)
         std::cout << "\r\033[1A\033[K";
     line_count = 0;
 }
-const char* CHAR_BLOCS[] = {" ", "▏", "▎", "▍", "▌", "▋" , "▊", "▉"};
+const char *CHAR_BLOCS[] = {" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉"};
 
 /* #region HILL_CLIMB */
 /// @brief changes <instance> to its best scoring neighbor if it is better than itself
@@ -59,7 +60,7 @@ bool change_to_better_neighbor(std::unique_ptr<Instance> &instance)
     instance = std::move(best);
     return true;
 }
-bool change_to_better_neighbor(ReversibleInstance* instance)
+bool change_to_better_neighbor(ReversibleInstance *instance)
 {
     unsigned int best = -1U;
     float score = instance->score();
@@ -68,12 +69,13 @@ bool change_to_better_neighbor(ReversibleInstance* instance)
     {
         instance->mutate_arg(i);
         float mutation_score = instance->score();
-        
+
         if (mutation_score > score)
         {
             best = i;
             score = mutation_score;
-            if (instance->is_max_score(score)) return -1;
+            if (instance->is_max_score(score))
+                return -1;
         }
 
         instance->revert_last_mutation();
@@ -84,12 +86,16 @@ bool change_to_better_neighbor(ReversibleInstance* instance)
     instance->mutate_arg(best);
     return true;
 }
-void Argmax::hill_climb(std::unique_ptr<Instance>& instance, unsigned int max_iter)
+void Argmax::hill_climb(std::unique_ptr<Instance> &instance, unsigned int max_iter)
 {
     unsigned int i = 0;
-    ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(instance.get());
-    if (r_instance != nullptr)  while (change_to_better_neighbor(r_instance)    && ++i < max_iter);
-    else                        while (change_to_better_neighbor(instance)      && ++i < max_iter);
+    ReversibleInstance *r_instance = dynamic_cast<ReversibleInstance *>(instance.get());
+    if (r_instance != nullptr)
+        while (change_to_better_neighbor(r_instance) && ++i < max_iter)
+            ;
+    else
+        while (change_to_better_neighbor(instance) && ++i < max_iter)
+            ;
 }
 /* #endregion */
 
@@ -127,50 +133,56 @@ int change_to_best_neighbor(std::unique_ptr<Instance> &instance, const std::list
         }
     }
 
-    if (best == nullptr) return -1;
+    if (best == nullptr)
+        return -1;
     instance = std::move(best);
     return index;
 }
-int change_to_best_neighbor(ReversibleInstance* instance, const std::list<int> &black_list)
+int change_to_best_neighbor(ReversibleInstance *instance, const std::list<int> &black_list)
 {
     int index = -1;
     float score = 0;
 
     for (unsigned int i = 0; i < instance->nb_args(); i++)
     {
-        if (std::find(black_list.begin(), black_list.end(), i) != black_list.end()) continue;
+        if (std::find(black_list.begin(), black_list.end(), i) != black_list.end())
+            continue;
 
         instance->mutate_arg(i);
         float mutation_score = instance->score();
-        
+
         if (mutation_score > score || index == -1)
         {
             index = i;
             score = mutation_score;
-            if (instance->is_max_score(score)) return -1;
+            if (instance->is_max_score(score))
+                return -1;
         }
 
         instance->revert_last_mutation();
     }
-    
-    if (index != -1) instance->mutate_arg(index);
+
+    if (index != -1)
+        instance->mutate_arg(index);
     return index;
 }
-void Argmax::tabu_search(std::unique_ptr<Instance>& instance, size_t black_list_size, unsigned int max_iter)
+void Argmax::tabu_search(std::unique_ptr<Instance> &instance, size_t black_list_size, unsigned int max_iter)
 {
     std::list<int> black_list;
     std::unique_ptr<Instance> best = instance->clone();
-    ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(instance.get());
-    
+    ReversibleInstance *r_instance = dynamic_cast<ReversibleInstance *>(instance.get());
+
     for (size_t i = 0; i < max_iter; i++)
     {
         int index = 0;
-        if (r_instance != nullptr)  index = change_to_best_neighbor(r_instance, black_list);
-        else                        index = change_to_best_neighbor(instance, black_list);
-        
+        if (r_instance != nullptr)
+            index = change_to_best_neighbor(r_instance, black_list);
+        else
+            index = change_to_best_neighbor(instance, black_list);
+
         if (instance->score() > best->score())
             best = instance->clone();
-        
+
         if (index == -1)
             break;
 
@@ -212,7 +224,7 @@ void change_to_best_neighbor(std::unique_ptr<Instance> &instance, unsigned int n
     instance = std::move(best);
     return;
 }
-void change_to_best_neighbor(ReversibleInstance* instance, unsigned int nb_mutation_to_test)
+void change_to_best_neighbor(ReversibleInstance *instance, unsigned int nb_mutation_to_test)
 {
     int index = -1;
     float score = 0;
@@ -222,12 +234,13 @@ void change_to_best_neighbor(ReversibleInstance* instance, unsigned int nb_mutat
         unsigned int tested_index = RandomUtils::get_index(instance->nb_args());
         instance->mutate_arg(tested_index);
         float mutation_score = instance->score();
-        
+
         if (mutation_score > score || index == -1)
         {
             index = tested_index;
             score = mutation_score;
-            if (instance->is_max_score(score)) return;
+            if (instance->is_max_score(score))
+                return;
         }
 
         instance->revert_last_mutation();
@@ -236,37 +249,41 @@ void change_to_best_neighbor(ReversibleInstance* instance, unsigned int nb_mutat
     instance->mutate_arg(index);
     return;
 }
-void Argmax::one_lambda_search(std::unique_ptr<Instance>& instance, unsigned int nb_mutation_to_test, unsigned int max_iter, bool debug)
+void Argmax::one_lambda_search(std::unique_ptr<Instance> &instance, unsigned int nb_mutation_to_test, unsigned int max_iter, bool debug)
 {
     std::unique_ptr<Instance> best = instance->clone();
 
     unsigned int line_count = 0;
     int progress_percent = -1;
-    ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(instance.get());
+    ReversibleInstance *r_instance = dynamic_cast<ReversibleInstance *>(instance.get());
     for (size_t i = 0; i < max_iter; i++)
     {
-        if (r_instance != nullptr)  change_to_best_neighbor(r_instance, nb_mutation_to_test);
-        else                        change_to_best_neighbor(instance, nb_mutation_to_test);
+        if (r_instance != nullptr)
+            change_to_best_neighbor(r_instance, nb_mutation_to_test);
+        else
+            change_to_best_neighbor(instance, nb_mutation_to_test);
 
         if (instance->score() > best->score())
             best = instance->clone();
         if (best->is_max_score(best->score()))
             break;
-        
+
         /* #region pretty print to wait */
-        if (debug) {
+        if (debug)
+        {
             int p = 100 * (float)i / max_iter;
             if (p != progress_percent)
             {
                 erase_lines(line_count);
                 progress_percent = p;
                 std::string t = "progress: " + std::to_string(progress_percent) + "%";
-                if (p < 10) t += " ";
+                if (p < 10)
+                    t += " ";
                 t += " \033[32;100m";
                 for (int i = 0; i < p / 8; i++)
                     t += "█";
-                t += CHAR_BLOCS[p%8];
-                for (int i = p / 8; i < 100/8; i++)
+                t += CHAR_BLOCS[p % 8];
+                for (int i = p / 8; i < 100 / 8; i++)
                     t += " ";
 
                 t += "\033[0m it: " + std::to_string(i) + "/" + std::to_string(max_iter) + "\n";
@@ -295,21 +312,24 @@ void Argmax::one_lambda_search(std::unique_ptr<Instance>& instance, unsigned int
 /* #region MIXED_LAMBDA_SEARCH */
 Argmax::mixed_lambda_parameters::mixed_lambda_parameters(const FileData &file_data)
 {
-    nb_iteration_max = file_data.get_int("nb_iteration_max", nb_iteration_max);
-    nb_mutation_to_test = file_data.get_int("nb_mutation_to_test", nb_mutation_to_test);
 
+    generation_count = file_data.get_int("generation_count", generation_count);
+    population_size = file_data.get_int("population_size", population_size);
+    competition_goup_size = file_data.get_int("competition_goup_size", competition_goup_size);
+    child_algo_budget = file_data.get_int("child_algo_budget", child_algo_budget);
+    child_algo_parameter = file_data.get_int("child_algo_parameter", child_algo_parameter);
     blacklist_size = file_data.get_int("blacklist_size", blacklist_size);
-    
-    time_between_mutation = file_data.get_int("time_between_mutation", time_between_mutation);
     mutation_probability = file_data.get_float("mutation_probability", mutation_probability);
 }
 std::ostream &Argmax::operator<<(std::ostream &c, const mixed_lambda_parameters &p)
 {
-    c <<   "nb_iteration_max:        " << p.nb_iteration_max;
-    c << "\nnb_mutation_to_test:     " << p.nb_mutation_to_test;
-    c << "\nblacklist_size:          " << p.blacklist_size;
-    c << "\ntime_between_mutation:   " << p.time_between_mutation;
-    c << "\nmutation_probability:    " << p.mutation_probability;
+    c << "generation_count:       " << p.generation_count;
+    c << "\npopulation_size:        " << p.population_size;
+    c << "\ncompetition_goup_size:  " << p.competition_goup_size;
+    c << "\nchild_algo_budget:      " << p.child_algo_budget;
+    c << "\nchild_algo_parameter:   " << p.child_algo_parameter;
+    c << "\nblacklist_size:         " << p.blacklist_size;
+    c << "\nmutation_probability:   " << p.mutation_probability;
     return c;
 }
 
@@ -343,7 +363,7 @@ unsigned int change_to_best_neighbor(std::unique_ptr<Instance> &instance, unsign
     instance = std::move(best);
     return best_index;
 }
-unsigned int change_to_best_neighbor(ReversibleInstance* instance, unsigned int nb_mutation_to_test, const std::list<unsigned int> &black_list)
+unsigned int change_to_best_neighbor(ReversibleInstance *instance, unsigned int nb_mutation_to_test, const std::list<unsigned int> &black_list)
 {
     unsigned int index = -1U;
     float score = 0;
@@ -353,12 +373,13 @@ unsigned int change_to_best_neighbor(ReversibleInstance* instance, unsigned int 
         unsigned int tested_index = RandomUtils::get_index(instance->nb_args(), black_list);
         instance->mutate_arg(tested_index);
         float mutation_score = instance->score();
-        
+
         if (mutation_score > score || index == -1U)
         {
             index = tested_index;
             score = mutation_score;
-            if (instance->is_max_score(score)) return index;
+            if (instance->is_max_score(score))
+                return index;
         }
 
         instance->revert_last_mutation();
@@ -367,62 +388,73 @@ unsigned int change_to_best_neighbor(ReversibleInstance* instance, unsigned int 
     instance->mutate_arg(index);
     return index;
 }
-void Argmax::mixed_one_lambda_search(std::unique_ptr<Instance>& instance, mixed_lambda_parameters parameters)
+std::unique_ptr<Instance> Argmax::mixed_one_lambda_search(std::function<std::unique_ptr<Instance>()> spawner, mixed_lambda_parameters parameters)
 {
-    std::cout << parameters<<"\n";
-    std::unique_ptr<Instance> best = instance->clone();
+    std::unique_ptr<Instance> best = nullptr;
 
-    std::list<unsigned int> blacklist = std::list<unsigned int>();
+    std::vector<std::unique_ptr<Instance>> population = std::vector<std::unique_ptr<Instance>>();
+    population.reserve(parameters.population_size);
+    for (unsigned int i = 0; i < parameters.population_size; i++) {
+        population.push_back(spawner());
+        if (best == nullptr || population[i]->score() > best->score()) best = population[i]->clone();
+    }
 
     unsigned int line_count = 0;
     int progress_percent = -1;
-    ReversibleInstance* r_instance = dynamic_cast<ReversibleInstance*>(instance.get());
-    for (size_t i = 0; i < parameters.nb_iteration_max; i++)
+    for (size_t g = 0; g < parameters.generation_count; g++)
     {
-        if (parameters.blacklist_size != 0) {
-            if (r_instance != nullptr)  blacklist.push_back(change_to_best_neighbor(r_instance, parameters.nb_mutation_to_test, blacklist));
-            else                        blacklist.push_back(change_to_best_neighbor(instance, parameters.nb_mutation_to_test, blacklist));
-            
-            if (blacklist.size() > parameters.blacklist_size) blacklist.pop_front();
+        /* #region find parent */
+        unsigned int parent_index = RandomUtils::get_index(population.size());
+        for (size_t i = 1; i < parameters.competition_goup_size; i++)
+        {
+            unsigned int test_index = RandomUtils::get_index(population.size());
+            if (population[parent_index]->score() < population[test_index]->score()) parent_index = test_index;
         }
-        else {
-            if (r_instance != nullptr)  change_to_best_neighbor(r_instance, parameters.nb_mutation_to_test);
-            else                        change_to_best_neighbor(instance, parameters.nb_mutation_to_test);
-        }
+        /* #endregion */
 
-        if (instance->score() > best->score())
-            best = instance->clone();
-        if (best->is_max_score(best->score()))
-            break;
+        /* #region spawning */
+        std::unique_ptr<Instance> child = population[parent_index]->clone();
+        for (size_t i = 0; i < child->nb_args(); i++) child->mutate_arg(i, parameters.mutation_probability);
+        /* #endregion */
         
-        /* #region mutation */
-        if (i % parameters.time_between_mutation == 0)
-            for (size_t j = 0; j < instance->nb_args(); j++) instance->mutate_arg(j, parameters.mutation_probability);
+        /* #region improving child */
+        one_lambda_search(child, parameters.child_algo_parameter, parameters.child_algo_budget / parameters.child_algo_parameter);
+        /* #endregion */
+
+        /* #region adding child */
+        unsigned int min_index = RandomUtils::get_index(population.size());
+        // for (size_t i = 1; i < population.size(); i++) if (population[min_index]->score() > population[i]->score()) min_index = i;
+        if (child->score() > best->score()) best = child->clone();
+        population[min_index] = std::move(child);
         /* #endregion */
 
         /* #region pretty print to wait */
-        int p = 100 * (float)i / parameters.nb_iteration_max;
+        int p = 100 * (float)g / parameters.generation_count;
         if (p != progress_percent)
         {
             erase_lines(line_count);
             progress_percent = p;
             std::string t = "progress: " + std::to_string(progress_percent) + "%";
-            if (p < 10) t += " ";
+            if (p < 10)
+                t += " ";
             t += " \033[32;100m";
             for (int i = 0; i < p / 8; i++)
                 t += "█";
-            t += CHAR_BLOCS[p%8];
-            for (int i = p / 8; i < 100/8; i++)
+            t += CHAR_BLOCS[p % 8];
+            for (int i = p / 8; i < 100 / 8; i++)
                 t += " ";
 
-            t += "\033[0m it: " + std::to_string(i) + "/" + std::to_string(parameters.nb_iteration_max) + "\n";
+            t += "\033[0m it: " + std::to_string(g) + "/" + std::to_string(parameters.generation_count) + "\n";
             std::cout << t;
             line_count++;
 
-            std::cout << "current      ";
-            instance->cout(std::cout);
-            std::cout << "\t with score of " + std::to_string(instance->score()) + "\n";
+            std::cout << "population sample:\n";
             line_count++;
+            for (size_t i = 0; i < __min(10, population.size()); i++)
+            {
+                population[i]->cout(std::cout << "\t") << "\t" << population[i]->score() << "\n";
+                line_count++;
+            }
 
             std::cout << "overall best ";
             best->cout(std::cout);
@@ -433,7 +465,7 @@ void Argmax::mixed_one_lambda_search(std::unique_ptr<Instance>& instance, mixed_
     }
     erase_lines(line_count);
 
-    instance = std::move(best);
+    return best;
 }
 /* #endregion */
 
@@ -561,13 +593,14 @@ float Argmax::standard_derivation(std::vector<InstanceGenWrapper> &population)
     return sqrtf(variance / population.size());
 }
 
-float get_frequency_score(Instance* instance, const std::unique_ptr<std::vector<std::map<float, unsigned int>>>& arg_frequency_map, unsigned int population_size) {
-    if (arg_frequency_map == nullptr) return 0;
+float get_frequency_score(Instance *instance, const std::unique_ptr<std::vector<std::map<float, unsigned int>>> &arg_frequency_map, unsigned int population_size) {
+    if (arg_frequency_map == nullptr)
+        return 0;
     float result = 0;
     for (unsigned int i = 0; i < instance->nb_args(); i++)
     {
         float v = (*arg_frequency_map)[i][instance->get_coord(i)] / (float)population_size;
-        result += v*v;
+        result += v * v;
     }
     return result;
 }
@@ -592,22 +625,23 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         for (unsigned int i = 0; i < temp->nb_args_max(); i++)
             *population_out << "\t" << temp->get_arg_labels(i);
         *population_out << "\n";
-        
+
         times_out = std::make_unique<std::stringstream>();
         *times_out << "generation\tfinding_parent\tspawning_child\trunning_child_algo\tsorting_population\tdespawning\tfinding_best\ttotal" << "\n";
     }
     /* #endregion */
-    
+
     /* #region initialization */
     auto rng = std::default_random_engine{};
     std::vector<InstanceGenWrapper> population = std::vector<InstanceGenWrapper>();
-    
+
     population.reserve(parameters.population_start_size + parameters.population_spawn_size);
     for (unsigned int i = 0; i < parameters.population_start_size; i++)
         population.push_back(InstanceGenWrapper(spawner(), 0));
 
     std::unique_ptr<std::vector<std::map<float, unsigned int>>> arg_frequency_map = nullptr;
-    if (parameters.despawn_criteria_diversity_multiplier != 0) {
+    if (parameters.despawn_criteria_diversity_multiplier != 0)
+    {
         arg_frequency_map = std::make_unique<std::vector<std::map<float, unsigned int>>>(population[0].instance->nb_args_max(), std::map<float, unsigned int>());
         for (const auto &individual : population)
         {
@@ -621,7 +655,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             }
         }
     }
-    
+
     unsigned int line_count = 0;
 
     /* #region get best instance */
@@ -641,12 +675,15 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
     }
     /* #endregion */
     /* #endregion */
-    
+
     bool max_found = false;
     int progress_percent = -1;
     for (unsigned int g = 1; g < parameters.generation_count; g++)
     {
-        if (max_found && out == nullptr) { break; }
+        if (max_found && out == nullptr)
+        {
+            break;
+        }
         auto start = std::chrono::system_clock::now();
 
         /* #region spawning new generation */
@@ -697,7 +734,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 for (unsigned int arg = 0; arg < instance->nb_args(); arg++)
                     instance->mutate_arg(arg, parameters.mutation_probability);
                 spawning_child_elapsed += get_time_from(spawning_child_start);
-                
+
                 auto child_algo_start = std::chrono::system_clock::now();
                 switch (parameters.run_algo_on_child)
                 {
@@ -728,7 +765,8 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 /* #endregion */
 
                 /* #region add instance to arg_frequency_map */
-                if (arg_frequency_map) {
+                if (arg_frequency_map)
+                {
                     for (unsigned int i = 0; i < instance->nb_args(); i++)
                     {
                         float v = instance->get_coord(i);
@@ -746,7 +784,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             }
         }
         /* #endregion */
-        
+
         /* #region despawning part of the population */
         auto sorting_start = std::chrono::system_clock::now();
         std::vector<unsigned int> remove_indices = std::vector<unsigned int>();
@@ -758,7 +796,8 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         float freq_mult = -parameters.despawn_criteria_diversity_multiplier;
         for (unsigned int i = 0; i < population.size(); i++)
         {
-            if (parameters.protect_child_from_despawn && population[i].generation == g) continue;
+            if (parameters.protect_child_from_despawn && population[i].generation == g)
+                continue;
 
             float score = population[i].instance->score();
             score += get_frequency_score(population[i].instance.get(), arg_frequency_map, population.size()) * freq_mult;
@@ -766,8 +805,10 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
 
             auto score_iter = remove_scores.begin();
             auto iter = remove_indices.begin();
-            while (iter != remove_indices.end()) {
-                if (score < *score_iter) {
+            while (iter != remove_indices.end())
+            {
+                if (score < *score_iter)
+                {
                     remove_indices.insert(iter, i);
                     remove_scores.insert(score_iter, score);
                     break;
@@ -776,34 +817,39 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
                 iter++;
             }
 
-            if (remove_indices.size() < parameters.population_despawn_size) {
+            if (remove_indices.size() < parameters.population_despawn_size)
+            {
                 remove_indices.push_back(i);
                 remove_scores.push_back(score);
             }
-            else if (remove_indices.size() > parameters.population_despawn_size) {
+            else if (remove_indices.size() > parameters.population_despawn_size)
+            {
                 remove_indices.pop_back();
                 remove_scores.pop_back();
             }
         }
-        
+
         float sorting_elapsed = get_time_from(sorting_start);
 
         auto despawning_start = std::chrono::system_clock::now();
         for (unsigned int index = 0; index < remove_indices.size(); index++)
         {
             /* #region remove instance to arg_frequency_map */
-            if (arg_frequency_map) {
+            if (arg_frequency_map)
+            {
                 for (unsigned int i = 0; i < population[remove_indices[index]].instance->nb_args(); i++)
                     (*arg_frequency_map)[i][population[remove_indices[index]].instance->get_coord(i)]--;
             }
             /* #endregion */
             population.erase(population.begin() + remove_indices[index]);
 
-            for (unsigned int i = index + 1; i < remove_indices.size(); i++) if (remove_indices[i] > remove_indices[index]) remove_indices[i]--;
+            for (unsigned int i = index + 1; i < remove_indices.size(); i++)
+                if (remove_indices[i] > remove_indices[index])
+                    remove_indices[i]--;
         }
         float despawning_elapsed = get_time_from(despawning_start);
         /* #endregion */
-        
+
         /* #region get best instance in gen */
         auto searching_start = std::chrono::system_clock::now();
         unsigned int best_in_gen = population.size();
@@ -822,7 +868,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
         mean_score /= population.size();
         float searching_elapsed = get_time_from(searching_start);
         /* #endregion */
-        
+
         float elapsed = get_time_from(start);
 
         /* #region fill output file */
@@ -862,7 +908,7 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             *times_out << "\n";
         }
         /* #endregion */
-        
+
         /* #region pretty print to wait */
         int p = 100 * (float)g / parameters.generation_count;
         if (p != progress_percent)
@@ -870,25 +916,26 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             erase_lines(line_count);
             progress_percent = p;
             std::string t = "progress: " + std::to_string(progress_percent) + "%";
-            if (p < 10) t += " ";
+            if (p < 10)
+                t += " ";
             t += " \033[32;100m";
             for (int i = 0; i < p / 8; i++)
                 t += "█";
-            t += CHAR_BLOCS[p%8];
-            for (int i = p / 8; i < 100/8; i++)
+            t += CHAR_BLOCS[p % 8];
+            for (int i = p / 8; i < 100 / 8; i++)
                 t += " ";
 
             t += "\033[0m it: " + std::to_string(g) + "/" + std::to_string(parameters.generation_count) + "\n";
             std::cout << t;
             line_count++;
 
-            std::cout << "population sample:\n"; line_count++;
+            std::cout << "population sample:\n";
+            line_count++;
             for (size_t i = 0; i < __min(10, population.size()); i++)
             {
                 population[i].instance->cout(std::cout << "\t") << "\t" << population[i].instance->score() << "\n";
                 line_count++;
             }
-            
 
             if (parameters.debug_show_best)
             {
@@ -911,10 +958,11 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
 
     erase_lines(line_count);
 
-    if (out) *out
-            << score_out->str()         << "/*populations*/\n"
-            << population_out->str()    << "/*times*/\n"
-            << times_out->str()    << "/*times*/\n";
+    if (out)
+        *out
+            << score_out->str() << "/*populations*/\n"
+            << population_out->str() << "/*times*/\n"
+            << times_out->str() << "/*times*/\n";
     return best;
 }
 /* #endregion */

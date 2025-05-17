@@ -35,7 +35,7 @@ void run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::of
         Argmax::one_lambda_search(instance, file_data.get_int("nb_mutation_to_test"), file_data.get_int("nb_iteration_max"), true);
     }
     else if (file_data.get_string("algorithm") == "mixed_one_lambda_search") {
-        Argmax::mixed_one_lambda_search(instance, Argmax::mixed_lambda_parameters(file_data));
+        instance = Argmax::mixed_one_lambda_search([&instance]() -> std::unique_ptr<Instance> { return instance->randomize_clone(); }, Argmax::mixed_lambda_parameters(file_data));
     }
     else if (file_data.get_string("algorithm") == "evolution") {
         instance = std::move(Argmax::evolution([&instance]() -> std::unique_ptr<Instance> { return instance->randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file));
