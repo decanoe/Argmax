@@ -882,6 +882,14 @@ std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instan
             std::cout << t;
             line_count++;
 
+            std::cout << "population sample:\n"; line_count++;
+            for (size_t i = 0; i < __min(10, population.size()); i++)
+            {
+                population[i].instance->cout(std::cout << "\t") << "\t" << population[i].instance->score() << "\n";
+                line_count++;
+            }
+            
+
             if (parameters.debug_show_best)
             {
                 std::cout << "best in generation ";
