@@ -126,20 +126,21 @@ std::unique_ptr<Instance> Hand::breed(const std::unique_ptr<Instance>& other_ins
     Hand* other = dynamic_cast<Hand*>(other_inst.get());
     if (other == nullptr) { std::cerr << "Instance is of wrong type, expected Hand !"; exit(-1); }
 
-    std::unique_ptr<Hand> h = std::make_unique<Hand>(this->deck, peoples, std::set<unsigned int>());
-    bool valid = false;
-    for (size_t i = 0; i < 1024 && !valid; i++)
-    {
-        valid = true;
-        for (unsigned int i = 0; i < 8; i++) h->peoples[i] = RandomUtils::get_bool(.5f) ? peoples[i] : other->peoples[i];
+    std::vector<unsigned int> joined_peoples = std::vector<unsigned int>();
+    joined_peoples.reserve(16);
+    for (size_t i = 0; i < 8; i++) { joined_peoples.push_back(peoples[i]); joined_peoples.push_back(other->peoples[i]); }
 
-        for (unsigned int i = 0; i < 8 && valid; i++)
-        for (unsigned int j = 0; j < i && valid; j++) {
-            if (h->peoples[i] == h->peoples[j]) valid = false;
-        }
+    std::set<unsigned int> selected_indices = std::set<unsigned int>();
+    std::set<unsigned int> tested_indices = std::set<unsigned int>();
+    while (selected_indices.size() < 8)
+    {
+        unsigned int index = RandomUtils::get_index(joined_peoples.size(), tested_indices);
+        for (size_t i = 0; i < 16; i++) if (joined_peoples[i] == joined_peoples[index]) tested_indices.insert(i);
+        selected_indices.insert(index);
     }
-    if (!valid) h->peoples = peoples;
-    
+    std::unique_ptr<Hand> h = std::make_unique<Hand>(this->deck, std::vector<unsigned int>(), std::set<unsigned int>());
+    h->peoples.reserve(8);
+    for (auto i : selected_indices) h->peoples.push_back(joined_peoples[i]);
     
     unsigned int nb = h->compute_nb_sanctuary();
     std::set<unsigned int> set1 = this->sanctuaries;
