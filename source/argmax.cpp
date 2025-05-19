@@ -26,17 +26,6 @@ void erase_lines(unsigned int &line_count)
     line_count = 0;
 }
 const char *CHAR_BLOCS[] = {" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉"};
-float get_frequency_score(Instance *instance, const std::unique_ptr<std::vector<std::map<float, unsigned int>>> &arg_frequency_map, unsigned int population_size) {
-    if (arg_frequency_map == nullptr)
-        return 0;
-    float result = 0;
-    for (unsigned int i = 0; i < instance->nb_args(); i++)
-    {
-        float v = (*arg_frequency_map)[i][instance->get_coord(i)] / (float)population_size;
-        result += v * v;
-    }
-    return result;
-}
 
 /* #region HILL_CLIMB */
 /// @brief changes <instance> to its best scoring neighbor if it is better than itself
@@ -320,203 +309,6 @@ void Argmax::one_lambda_search(std::unique_ptr<Instance> &instance, unsigned int
 }
 /* #endregion */
 
-/* #region MIXED_LAMBDA_SEARCH */
-Argmax::mixed_lambda_parameters::mixed_lambda_parameters(const FileData &file_data)
-{
-    generation_count = file_data.get_int("generation_count", generation_count);
-    population_size = file_data.get_int("population_size", population_size);
-    competition_goup_size = file_data.get_int("competition_goup_size", competition_goup_size);
-    child_algo_budget = file_data.get_int("child_algo_budget", child_algo_budget);
-    child_algo_parameter = file_data.get_int("child_algo_parameter", child_algo_parameter);
-    blacklist_size = file_data.get_int("blacklist_size", blacklist_size);
-    mutation_probability = file_data.get_float("mutation_probability", mutation_probability);
-    despawn_criteria_diversity_multiplier = file_data.get_float("despawn_criteria_diversity_multiplier", despawn_criteria_diversity_multiplier);
-}
-std::ostream &Argmax::operator<<(std::ostream &c, const mixed_lambda_parameters &p)
-{
-    c << "generation_count:       " << p.generation_count;
-    c << "\npopulation_size:        " << p.population_size;
-    c << "\ncompetition_goup_size:  " << p.competition_goup_size;
-    c << "\nchild_algo_budget:      " << p.child_algo_budget;
-    c << "\nchild_algo_parameter:   " << p.child_algo_parameter;
-    c << "\nblacklist_size:         " << p.blacklist_size;
-    c << "\nmutation_probability:   " << p.mutation_probability;
-    c << "\ndespawn_criteria_diversity_multiplier:   " << p.despawn_criteria_diversity_multiplier;
-    return c;
-}
-
-unsigned int change_to_best_neighbor(std::unique_ptr<Instance> &instance, unsigned int nb_mutation_to_test, const std::list<unsigned int> &black_list)
-{
-    std::unique_ptr<Instance> best = nullptr;
-    float score = 0;
-    unsigned int best_index;
-
-    for (unsigned int i = 0; i < nb_mutation_to_test; i++)
-    {
-        std::unique_ptr<Instance> mutation = instance->clone();
-        unsigned int tested_index = RandomUtils::get_index(instance->nb_args(), black_list);
-        mutation->mutate_arg(tested_index);
-        float mutation_score = mutation->score();
-
-        if (mutation_score > score || best == nullptr)
-        {
-            best = std::move(mutation);
-            score = mutation_score;
-            best_index = tested_index;
-
-            if (best->is_max_score(score))
-            {
-                instance = std::move(best);
-                return tested_index;
-            }
-        }
-    }
-
-    instance = std::move(best);
-    return best_index;
-}
-unsigned int change_to_best_neighbor(ReversibleInstance *instance, unsigned int nb_mutation_to_test, const std::list<unsigned int> &black_list)
-{
-    unsigned int index = -1U;
-    float score = 0;
-
-    for (unsigned int i = 0; i < nb_mutation_to_test; i++)
-    {
-        unsigned int tested_index = RandomUtils::get_index(instance->nb_args(), black_list);
-        instance->mutate_arg(tested_index);
-        float mutation_score = instance->score();
-
-        if (mutation_score > score || index == -1U)
-        {
-            index = tested_index;
-            score = mutation_score;
-            if (instance->is_max_score(score))
-                return index;
-        }
-
-        instance->revert_last_mutation();
-    }
-
-    instance->mutate_arg(index);
-    return index;
-}
-std::unique_ptr<Instance> Argmax::mixed_one_lambda_search(std::function<std::unique_ptr<Instance>()> spawner, mixed_lambda_parameters parameters)
-{
-    std::unique_ptr<Instance> best = nullptr;
-
-    std::vector<std::unique_ptr<Instance>> population = std::vector<std::unique_ptr<Instance>>();
-    population.reserve(parameters.population_size);
-    for (unsigned int i = 0; i < parameters.population_size; i++) {
-        population.push_back(spawner());
-        if (best == nullptr || population[i]->score() > best->score()) best = population[i]->clone();
-    }
-
-    std::unique_ptr<std::vector<std::map<float, unsigned int>>> arg_frequency_map = nullptr;
-    if (parameters.despawn_criteria_diversity_multiplier != 0)
-    {
-        arg_frequency_map = std::make_unique<std::vector<std::map<float, unsigned int>>>(population[0]->nb_args_max(), std::map<float, unsigned int>());
-        for (const auto &individual : population)
-        {
-            for (unsigned int i = 0; i < individual->nb_args(); i++)
-            {
-                float v = individual->get_coord(i);
-                if ((*arg_frequency_map)[i].count(v) == 0)
-                    (*arg_frequency_map)[i][v] = 1;
-                else
-                    (*arg_frequency_map)[i][v]++;
-            }
-        }
-    }
-
-    unsigned int line_count = 0;
-    int progress_percent = -1;
-    for (size_t g = 0; g < parameters.generation_count; g++)
-    {
-        /* #region find parent */
-        unsigned int parent_index = RandomUtils::get_index(population.size());
-        for (size_t i = 1; i < parameters.competition_goup_size; i++)
-        {
-            unsigned int test_index = RandomUtils::get_index(population.size());
-            if (population[parent_index]->score() < population[test_index]->score()) parent_index = test_index;
-        }
-        /* #endregion */
-
-        /* #region spawning */
-        std::unique_ptr<Instance> child = population[parent_index]->clone();
-        for (size_t i = 0; i < child->nb_args(); i++) child->mutate_arg(i, parameters.mutation_probability);
-        /* #endregion */
-        
-        /* #region improving child */
-        one_lambda_search(child, parameters.child_algo_parameter, parameters.child_algo_budget / parameters.child_algo_parameter);
-        /* #endregion */
-
-        /* #region adding child */
-        unsigned int min_index = 0;
-        float min_score = population[0]->score() - get_frequency_score(population[0].get(), arg_frequency_map, population.size()) * parameters.despawn_criteria_diversity_multiplier;
-        for (size_t i = 1; i < population.size(); i++) {
-            float score = population[i]->score() - get_frequency_score(population[i].get(), arg_frequency_map, population.size()) * parameters.despawn_criteria_diversity_multiplier;
-            if (min_score > score) { min_index = i; min_score = score; }
-        }
-        if (child->score() > best->score()) best = child->clone();
-
-        /* #region add instance to arg_frequency_map */
-        if (arg_frequency_map)
-        {
-            for (unsigned int i = 0; i < child->nb_args(); i++)
-            {
-                float v = child->get_coord(i);
-                if ((*arg_frequency_map)[i].count(v) == 0)
-                    (*arg_frequency_map)[i][v] = 1;
-                else
-                    (*arg_frequency_map)[i][v]++;
-            }
-        }
-        /* #endregion */
-
-        population[min_index] = std::move(child);
-        /* #endregion */
-
-        /* #region pretty print to wait */
-        int p = 100 * (float)g / parameters.generation_count;
-        if (p != progress_percent)
-        {
-            erase_lines(line_count);
-            progress_percent = p;
-            std::string t = "progress: " + std::to_string(progress_percent) + "%";
-            if (p < 10)
-                t += " ";
-            t += " \033[32;100m";
-            for (int i = 0; i < p / 8; i++)
-                t += "█";
-            t += CHAR_BLOCS[p % 8];
-            for (int i = p / 8; i < 100 / 8; i++)
-                t += " ";
-
-            t += "\033[0m it: " + std::to_string(g) + "/" + std::to_string(parameters.generation_count) + "\n";
-            std::cout << t;
-            line_count++;
-
-            std::cout << "population sample:\n";
-            line_count++;
-            for (size_t i = 0; i < __min(10, population.size()); i++)
-            {
-                population[i]->cout(std::cout << "\t") << "\t" << population[i]->score() << "\n";
-                line_count++;
-            }
-
-            std::cout << "overall best ";
-            best->cout(std::cout);
-            std::cout << "\t with score of " + std::to_string(best->score()) + "\n";
-            line_count++;
-        }
-        /* #endregion */
-    }
-    erase_lines(line_count);
-
-    return best;
-}
-/* #endregion */
-
 /* #region EVOLUTION */
 Argmax::evolution_parameters::evolution_parameters(const FileData &file_data)
 {
@@ -639,6 +431,17 @@ float Argmax::standard_derivation(std::vector<InstanceGenWrapper> &population)
         }
     }
     return sqrtf(variance / population.size());
+}
+float get_frequency_score(Instance *instance, const std::unique_ptr<std::vector<std::map<float, unsigned int>>> &arg_frequency_map, unsigned int population_size) {
+    if (arg_frequency_map == nullptr)
+        return 0;
+    float result = 0;
+    for (unsigned int i = 0; i < instance->nb_args(); i++)
+    {
+        float v = (*arg_frequency_map)[i][instance->get_coord(i)] / (float)population_size;
+        result += v * v;
+    }
+    return result;
 }
 
 std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, std::ofstream *out)

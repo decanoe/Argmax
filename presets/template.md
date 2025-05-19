@@ -30,16 +30,6 @@ int     ban_list_random_added_size = 5
 int     nb_mutation_to_test = 16
 int     nb_iteration_max = 512
 
-# ====================================== mixed_one_lambda_search parameters ================================
-int     generation_count = 1000;
-int     population_size = 30;
-int     competition_goup_size = 2;
-int     child_algo_budget = 128;
-int     child_algo_parameter = 8;
-int     blacklist_size = 0;
-float   mutation_probability = 0.1;
-float   despawn_criteria_diversity_multiplier = 0
-
 # ====================================== evolution parameters ======================================
 int     generation_count = 1024
 
