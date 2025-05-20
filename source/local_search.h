@@ -7,6 +7,7 @@
 #include <functional>
 
 namespace LocalSearch {
+    void hill_climb_one             (std::unique_ptr<Instance>& instance, unsigned int budget = 1024, std::ofstream* out = nullptr);
     void hill_climb_first           (std::unique_ptr<Instance>& instance, unsigned int budget = 1024, std::ofstream* out = nullptr);
     void hill_climb_best            (std::unique_ptr<Instance>& instance, unsigned int budget = 1024, std::ofstream* out = nullptr);
     // void hill_climb_greedy_first    (std::unique_ptr<Instance>& instance, unsigned int budget = 1024, std::ofstream* out = nullptr);
