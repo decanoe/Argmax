@@ -89,7 +89,7 @@ void hill_climb_best                            (ReversibleInstance* instance, u
         {
             instance->mutate_arg(i);
             used_budget++;
-            if (best == -1U || instance->score() > best_score) {
+            if (instance->score() > best_score) {
                 best = i;
                 best_score = instance->score();
             }
@@ -115,7 +115,7 @@ void LocalSearch::hill_climb_best               (std::unique_ptr<Instance>& inst
             std::unique_ptr<Instance> temp = instance->clone();
             temp->mutate_arg(i);
             used_budget++;
-            if (best == nullptr || temp->score() > best_score) {
+            if (temp->score() > best_score) {
                 best = std::move(temp);
                 best_score = temp->score();
             }

@@ -209,7 +209,11 @@ int main(int argc, char *args[]) {
         std::remove("./temp.rundata");
 
         std::cout << "data saved in " << output_file_path << std::endl;
-        system(("python ./python/data_visualizer.py " + output_file_path).c_str());
+
+        if (file_data.get_string("algorithm") == "evolution")
+            system(("python ./python/data_visualizer.py " + output_file_path + " evolution").c_str());
+        else
+            system(("python ./python/data_visualizer.py " + output_file_path + " local_search").c_str());
     }
 
     return 0;

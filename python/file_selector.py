@@ -33,7 +33,7 @@ class Ptr:
     def get(self):
         return self.value
 
-def file_selector() -> list[str]:
+def file_selector() -> tuple[list[str], str]:
     plt.rcParams["font.family"] = "monospace"
     fig, ax = plt.subplots()
     fig.subplots_adjust(left=0.99, right=1, bottom=0.99, top=1)
@@ -112,6 +112,8 @@ def file_selector() -> list[str]:
         with open(dir_path + "\\data\\" + path.removeprefix("\\")) as f: file_content = f.read()
         if (path.startswith("\\evolution")):
             file_content = file_content.split("\n/*scores*/\n")[0]
+        elif (path.startswith("\\local_search")):
+            file_content = "can't open file"
         text.set_text(file_content)
         text_slider_factor.set(file_content.count("\n") * 0.1)
         text_slider.set_val(1)
@@ -158,7 +160,10 @@ def file_selector() -> list[str]:
         update(None)
     fig.canvas.mpl_connect('scroll_event', on_scroll)
 
+    submit: Ptr = Ptr()
+    submit.set(False)
     def submit_callback(event):
+        submit.set(True)
         plt.close(fig)
     submit_axe = fig.add_axes([0.65, 0.05, 0.3, 0.05])
     submit_button = Button(submit_axe, "submit")
@@ -166,11 +171,27 @@ def file_selector() -> list[str]:
 
     plt.show()
     
+    if (not(submit.get())):
+        exit()
+    
+    data_type: str = ""
     result = []
     for b in buttons:
         if (b.state and b.path != None):
             result.append(dir_path + "\\data\\" + b.path.removeprefix("\\"))
-    return result
+            if (b.path.startswith("\\evolution") and data_type in ["evolution", ""]):
+                data_type = "evolution"
+            elif (b.path.startswith("\\local_search") and data_type in ["local_search", ""]):
+                data_type = "local_search"
+            else:
+                print("ERROR: please select files of the same type")
+                exit(1)
+    
+    if (len(result) == 0):
+        print("ERROR: please select at least one file")
+        exit(1)
+
+    return result, data_type
 
 if __name__ == "__main__":
     print(file_selector())

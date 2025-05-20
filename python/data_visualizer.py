@@ -1,21 +1,25 @@
 import os
 import sys
-import ast
 import pandas as pd
 import numpy as np
 import io
 
 BUTTON_WIDTH: int = 0.2
+DATA_TYPE: str = ""
 
 if __name__ != "__main__":
     exit()
-    
+
 file_paths: str = ""
 if (len(sys.argv) < 2):
     from file_selector import file_selector
-    file_paths = file_selector()
+    file_paths, DATA_TYPE = file_selector()
 else:
-    file_paths = [sys.argv[1]]
+    file_paths, DATA_TYPE = [sys.argv[1]], sys.argv[2]
+
+# if (DATA_TYPE == "local_search"):
+#     print("local_search")
+#     exit()
 
 # ===============================================================================================
 
@@ -33,28 +37,38 @@ class FileInfo:
         file_content: str = ""
         with open(path) as f: file_content = f.read()
 
-        self.parameters = file_content.split("\n/*scores*/\n")[0]
-        file_content = file_content.split("\n/*scores*/\n")[1]
+        if (DATA_TYPE == "evolution"):
+            self.parameters = file_content.split("\n/*scores*/\n")[0]
+            file_content = file_content.split("\n/*scores*/\n")[1]
 
-        file_times = file_content.split("\n/*times*/\n")[1]
-        file_content = file_content.split("\n/*times*/\n")[0]
+            file_times = file_content.split("\n/*times*/\n")[1]
+            file_content = file_content.split("\n/*times*/\n")[0]
 
-        self.data = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[0]), sep = "\t", index_col = "generation")
-        self.populations = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[1]), sep = "\t")
-        self.times = pd.read_csv(io.StringIO(file_times), sep = "\t", index_col = "generation")
-    
-        self.global_labels = ["best_score", "gen_best_score", "mean_score", "std", "age"]
-        self.local_labels = ["all_args"]
-        self.times_labels = []
-        self.args_labels = []
+            self.data = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[0]), sep = "\t", index_col = "generation")
+            self.populations = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[1]), sep = "\t")
+            self.times = pd.read_csv(io.StringIO(file_times), sep = "\t", index_col = "generation")
         
-        for label in self.populations.columns.values:
-            if (label not in ["generation", "age", "nb_args"]):
-                self.args_labels.append(label)
-                self.local_labels.append(label)
-        for label in self.times.columns.values:
-            if (label != "generation"):
-                self.times_labels.append(label)
+            self.global_labels = ["best_score", "gen_best_score", "mean_score", "std", "age"]
+            self.local_labels = ["all_args"]
+            self.times_labels = []
+            self.args_labels = []
+            
+            for label in self.populations.columns.values:
+                if (label not in ["generation", "age", "nb_args"]):
+                    self.args_labels.append(label)
+                    self.local_labels.append(label)
+            for label in self.times.columns.values:
+                if (label != "generation"):
+                    self.times_labels.append(label)
+        elif (DATA_TYPE == "local_search"):
+            self.data = pd.read_csv(io.StringIO(file_content), sep = "\t", index_col = "budget")
+            self.populations = None
+            self.times = None
+        
+            self.global_labels = ["fitness", "nb_better_neighbors", "size_of_the_jump"]
+            self.local_labels = []
+            self.times_labels = []
+            self.args_labels = []
 
     def plot_global(self, fig: plt.Figure, ax: plt.Axes, plot_key: str, start_range_at_0: bool) -> tuple[list[plt.Line2D], list[str]]:
         if (plot_key == "age"):
@@ -136,7 +150,7 @@ for f in file_infos[0:]:
 PLOT_CATEGORY = "global" # global / local / times
 NORMALIZE_TIMES = False
 RANGE_0 = False
-PLOT_KEY = "best_score"
+PLOT_KEY = "best_score" if DATA_TYPE == "evolution" else "fitness"
 
 fig, ax = plt.subplots()
 fig.subplots_adjust(left=0.1, right=0.9, bottom=0.35, top=0.95)
