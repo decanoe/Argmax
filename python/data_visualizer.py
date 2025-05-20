@@ -76,6 +76,8 @@ class FileInfo:
             vc = self.populations[["generation", plot_key]].groupby("generation").mean()
             
             vc.plot.line(ax=ax)
+        elif plot_key == "size_of_the_jump":
+            self.data.plot.line(y=plot_key, use_index=True, ax=ax, style=".")
         elif start_range_at_0:
             self.data.plot.line(y=plot_key, use_index=True, ax=ax, ylim=(-0.05, self.data[plot_key].max() + 0.1))
         else:
