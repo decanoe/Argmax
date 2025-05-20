@@ -28,7 +28,7 @@ str     label = template
 
 # <!-- #region ==================== hill_climb parameters ====================================== -->
 int     budget = 1024
-# first / best
+# first / best / one
 str     hc_type = first
 
 # <!-- #endregion -->

@@ -1,17 +1,12 @@
 #include "file_data.h"
 #include <sstream>
 #include <fstream>
+#include <regex>
 
-FileData::FileData(const std::string& path): path(path) {
-    std::ifstream file = std::ifstream(path);
-    if (!file.is_open()) {
-        std::cerr << "\033[1;31mERROR: cannot open peoples file at \"" << path << "\" !\033[0m\n";
-        exit(1);
-    }
-
+FileData::FileData(std::istream& content, const std::string& path): path(path) {
     std::string line;
     int l_count = 0;
-    while (std::getline(file, line))
+    while (std::getline(content, line))
     {
         l_count++;
         if (line.size() == 0 || line[0] == '#') continue;
@@ -22,11 +17,11 @@ FileData::FileData(const std::string& path): path(path) {
         std::string key;
         std::string equal_sign;
         if (!(stream >> type >> key >> equal_sign)) {
-            std::cerr << "\033[1;31mERROR: line " << l_count << " of file " << path << " contains an error of type or key\033[0m\n";
+            std::cerr << "\033[1;31mERROR: line " << l_count << " of content " << path << " contains an error of type or key\033[0m\n";
             exit(1);
         }
         if (equal_sign != "=") {
-            std::cerr << "\033[1;31mERROR: expected \033[0m\033[31m=\033[1m, got \033[0m\033[31m" << equal_sign << "\033[1m.\nLine " << l_count << " of file " << path << "\033[0m\n";
+            std::cerr << "\033[1;31mERROR: expected \033[0m\033[31m=\033[1m, got \033[0m\033[31m" << equal_sign << "\033[1m.\nLine " << l_count << " of content " << path << "\033[0m\n";
             exit(1);
         }
 
@@ -34,7 +29,7 @@ FileData::FileData(const std::string& path): path(path) {
             float value;
             if (stream >> value) float_vars[key] = value;
             else {
-                std::cerr << "\033[1;31mERROR: " << type << " parameter " << key << " has no value.\nLine " << l_count << " of file " << path << "\033[0m\n";
+                std::cerr << "\033[1;31mERROR: " << type << " parameter " << key << " has no value.\nLine " << l_count << " of content " << path << "\033[0m\n";
                 exit(1);
             }
         }
@@ -43,12 +38,12 @@ FileData::FileData(const std::string& path): path(path) {
             if (stream >> value) {
                 if (value == "false" || value == "true") float_vars[key] = (value == "false" ? false : true);
                 else {
-                    std::cerr << "\033[1;31mERROR: bool parameter " << key << " should be \033[0m\033[31mtrue\033[1m of \033[0m\033[31mfalse\033[1m, got \033[0m\033[31m" << value << "\033[1m instead.\nLine " << l_count << " of file " << path << "\033[0m\n";
+                    std::cerr << "\033[1;31mERROR: bool parameter " << key << " should be \033[0m\033[31mtrue\033[1m of \033[0m\033[31mfalse\033[1m, got \033[0m\033[31m" << value << "\033[1m instead.\nLine " << l_count << " of content " << path << "\033[0m\n";
                     exit(1);
                 }
             }
             else {
-                std::cerr << "\033[1;31mERROR: bool parameter " << key << " has no value.\nLine " << l_count << " of file " << path << "\033[0m\n";
+                std::cerr << "\033[1;31mERROR: bool parameter " << key << " has no value.\nLine " << l_count << " of content " << path << "\033[0m\n";
                 exit(1);
             }
         }
@@ -56,7 +51,7 @@ FileData::FileData(const std::string& path): path(path) {
             std::string value;
             if (stream >> value) str_vars[key] = value;
             else {
-                std::cerr << "\033[1;31mERROR: string parameter " << key << " has no value.\nLine " << l_count << " of file " << path << "\033[0m\n";
+                std::cerr << "\033[1;31mERROR: string parameter " << key << " has no value.\nLine " << l_count << " of content " << path << "\033[0m\n";
                 exit(1);
             }
         }
@@ -128,4 +123,82 @@ std::ostream& operator<<(std::ostream& c, const FileData& f) {
     for (const auto& [key, value] : f.float_vars)
         std::cout << key << " = " << value << "\n";
     return c << "\033[1A";
+}
+
+void apply_replacements(const std::string& content, const std::string& path, std::list<FileData>& result, std::list<std::pair<std::string, std::list<std::string>>>::iterator replacements, std::list<std::pair<std::string, std::list<std::string>>>::iterator end) {
+    std::pair<std::string, std::list<std::string>> pair = *replacements;
+    replacements++;
+    std::string key = pair.first;
+
+    for (std::string replacement : pair.second) {
+        std::string modified_all = std::regex_replace(content, std::regex(key), replacement);
+
+        if (replacements == end) {
+            std::istringstream content(modified_all);
+            result.push_back(FileData(content, path));
+        }
+        else apply_replacements(modified_all, path, result, replacements, end);
+    }
+}
+std::list<FileData> generate_file_data(const std::string& path) {
+    std::ifstream file = std::ifstream(path);
+    if (!file.is_open()) {
+        std::cerr << "\033[1;31mERROR: cannot open data_file at \"" << path << "\" !\033[0m\n";
+        exit(1);
+    }
+
+    std::string all = "";
+    std::string line;
+    std::list<std::pair<std::string, std::list<std::string>>> replacements = std::list<std::pair<std::string, std::list<std::string>>>();
+    int l_count = 0;
+    while (std::getline(file, line))
+    {
+        l_count++;
+        if (line.size() == 0 || line[0] == '#') {
+            all += line + "\n";
+            continue;
+        }
+        
+        std::istringstream stream(line);
+
+        std::string first_word;
+        stream >> first_word;
+
+        if (first_word != "iterate") {
+            all += line + "\n";
+            continue;
+        }
+
+        std::string key;
+        stream >> key;
+        if (key[0] != '<' || key[key.size()-1] != '>') {
+            std::cerr << "\033[1;31mERROR: line " << l_count << " of content " << path << " iterate is not followed by a key surrounded by <>\033[0m\n";
+            exit(1);
+        }
+
+        std::list<std::string> replacement = std::list<std::string>();
+        std::string word;
+        stream >> word;
+        while (word != "<end>")
+        {
+            replacement.push_back(word);
+            if (!(stream >> word)) {
+                std::cerr << "\033[1;31mERROR: line " << l_count << " of content " << path << " iterate does not end with key <end>\033[0m\n";
+                exit(1);
+            }
+        }
+        replacements.push_back(std::pair<std::string, std::list<std::string>>(key, replacement));
+
+        all += "# " + line + "\n";
+    }
+
+
+    if (replacements.size() == 0) {
+        std::istringstream content(all);
+        return std::list<FileData>{ FileData(content, path) };
+    }
+
+    std::list<FileData> result = std::list<FileData>();
+    apply_replacements(all, path, result, replacements.begin(), replacements.end());
+    return result;
 }

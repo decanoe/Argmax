@@ -28,6 +28,8 @@ void path_message() {
 
 void run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::ofstream* output_file = nullptr) {
     if (file_data.get_string("algorithm") == "hill_climb") {
+        if (file_data.get_string("hc_type") == "one")
+            LocalSearch::hill_climb_one(instance, file_data.get_int("budget"), output_file);
         if (file_data.get_string("hc_type") == "first")
             LocalSearch::hill_climb_first(instance, file_data.get_int("budget"), output_file);
         else if (file_data.get_string("hc_type") == "best")
@@ -168,53 +170,56 @@ int main(int argc, char *args[]) {
 
     srand(time(NULL));
     
-    FileData file_data = FileData(arg1);
+    auto files_data = generate_file_data(arg1);
+    for (const FileData& file_data : files_data)
+    {
+        std::ofstream* output_file = nullptr;
+        if (file_data.get_bool("debug_screen", false)) {
+            output_file = new std::ofstream("./temp.rundata");
+            if (!(*output_file).is_open()) {
+                std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
+                exit(1);
+            }
+        }
 
-    std::ofstream* output_file = nullptr;
-    if (file_data.get_bool("debug_screen", false)) {
-        output_file = new std::ofstream("./temp.rundata");
-        if (!(*output_file).is_open()) {
-            std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
-            exit(1);
+        if (file_data.get_string("problem") == "SAT") run_on_sat(file_data, output_file);
+        if (file_data.get_string("problem") == "FA") run_on_fa(file_data, output_file);
+        
+        if (output_file != nullptr) {
+            (*output_file).close();
+            delete output_file;
+
+            std::string output_file_path = "";
+            if (file_data.contains_string("label")) output_file_path = "./python/data/" + file_data.get_string("label") + "_" + timestamp() + ".rundata";
+            else                                    output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
+            std::ofstream final_file = std::ofstream(output_file_path);
+            if (!final_file.is_open()) {
+                std::cerr << "\033[1;31mERROR: cannot open output file at \"" + output_file_path + "\" !\033[0m\n";
+                exit(1);
+            }
+
+            std::ifstream temp_file = std::ifstream("./temp.rundata");
+            if (!temp_file.is_open()) {
+                std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
+                exit(1);
+            }
+
+            std::string line; 
+            while (std::getline(temp_file, line)) final_file << line << "\n";
+
+            final_file.close();
+            temp_file.close();
+            std::remove("./temp.rundata");
+
+            std::cout << "data saved in " << output_file_path << std::endl;
+
+            if (files_data.size() == 1) {
+                if (file_data.get_string("algorithm") == "evolution")
+                    system(("python ./python/data_visualizer.py " + output_file_path + " evolution").c_str());
+                else
+                    system(("python ./python/data_visualizer.py " + output_file_path + " local_search").c_str());
+            }
         }
     }
-
-    if (file_data.get_string("problem") == "SAT") run_on_sat(file_data, output_file);
-    if (file_data.get_string("problem") == "FA") run_on_fa(file_data, output_file);
-    
-    if (output_file != nullptr) {
-        (*output_file).close();
-        delete output_file;
-
-        std::string output_file_path = "";
-        if (file_data.contains_string("label")) output_file_path = "./python/data/" + file_data.get_string("label") + "_" + timestamp() + ".rundata";
-        else                                    output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
-        std::ofstream final_file = std::ofstream(output_file_path);
-        if (!final_file.is_open()) {
-            std::cerr << "\033[1;31mERROR: cannot open output file at \"" + output_file_path + "\" !\033[0m\n";
-            exit(1);
-        }
-
-        std::ifstream temp_file = std::ifstream("./temp.rundata");
-        if (!temp_file.is_open()) {
-            std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
-            exit(1);
-        }
-
-        std::string line; 
-        while (std::getline(temp_file, line)) final_file << line << "\n";
-
-        final_file.close();
-        temp_file.close();
-        std::remove("./temp.rundata");
-
-        std::cout << "data saved in " << output_file_path << std::endl;
-
-        if (file_data.get_string("algorithm") == "evolution")
-            system(("python ./python/data_visualizer.py " + output_file_path + " evolution").c_str());
-        else
-            system(("python ./python/data_visualizer.py " + output_file_path + " local_search").c_str());
-    }
-
     return 0;
 }

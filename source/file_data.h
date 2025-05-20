@@ -1,16 +1,18 @@
 #pragma once
 #include <map>
 #include <string>
+#include <list>
 #include <iostream>
 
 class FileData
 {
 private:
     std::string path;
+
     std::map<std::string, float> float_vars;
     std::map<std::string, std::string> str_vars;
 public:
-    FileData(const std::string& path);
+    FileData(std::istream& content, const std::string& path);
 
     bool get_bool(const std::string&) const;
     int get_int(const std::string&) const;
@@ -30,3 +32,5 @@ public:
     friend std::ostream& operator<<(std::ostream&, const FileData&);
 };
 std::ostream& operator<<(std::ostream&, const FileData&);
+
+std::list<FileData> generate_file_data(const std::string& path);
