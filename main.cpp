@@ -1,5 +1,7 @@
 #include "source/argmax.h"
+#include "source/local_search.h"
 #include "source/file_data.h"
+#include "source/fitness_instance.h"
 #include <ctime>
 #include <chrono>
 
@@ -26,7 +28,10 @@ void path_message() {
 
 void run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::ofstream* output_file = nullptr) {
     if (file_data.get_string("algorithm") == "hill_climb") {
-        Argmax::hill_climb(instance, file_data.get_int("nb_iteration_max"));
+        if (file_data.get_string("hc_type") == "first")
+            LocalSearch::hill_climb_first(instance, file_data.get_int("budget"), output_file);
+        else if (file_data.get_string("hc_type") == "best")
+            LocalSearch::hill_climb_best(instance, file_data.get_int("budget"), output_file);
     }
     else if (file_data.get_string("algorithm") == "tabu_search") {
         Argmax::tabu_search(instance, file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
@@ -42,11 +47,12 @@ void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr)
     std::cout << "reading file..." << std::endl;
     std::shared_ptr<Formule> f = std::shared_ptr<Formule>(new Formule(file_data.get_string("instance")));
     
-    Solution solution(f);
-    solution.randomize();
-    std::unique_ptr<Instance> temp = solution.clone();
+    FitnessInstance instance = FitnessInstance([&f](const std::vector<bool>& a) -> float { return f->count_valid_clauses(a); }, f->get_nb_variables());
+    instance.randomize();
+
+    std::unique_ptr<Instance> temp = instance.clone();
     run(file_data, temp, output_file);
-    Solution result = *dynamic_cast<Solution*>(temp.get());
+    FitnessInstance result = *dynamic_cast<FitnessInstance*>(temp.get());
 
     std::cout << "max score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
 }

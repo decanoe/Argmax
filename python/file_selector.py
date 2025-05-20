@@ -94,9 +94,12 @@ def file_selector() -> list[str]:
             if b.state and b.path == None:
                 b.button.color = "#d6ab2b"
                 b.button.hovercolor = "#f5c842"
-            elif b.state:
+            elif b.state and b.path.startswith("\\evolution"):
                 b.button.color = "#5a83c4"
                 b.button.hovercolor = "#6491d9"
+            elif b.state:
+                b.button.color = "#39b83f"
+                b.button.hovercolor = "#40cf47"
             else:
                 b.button.color = "0.85"
                 b.button.hovercolor = "0.95"
@@ -106,7 +109,9 @@ def file_selector() -> list[str]:
     
     def update_text(path: str):
         file_content: str = ""
-        with open(dir_path + "\\data\\" + path.removeprefix("\\")) as f: file_content = f.read().split("\n/*scores*/\n")[0]
+        with open(dir_path + "\\data\\" + path.removeprefix("\\")) as f: file_content = f.read()
+        if (path.startswith("\\evolution")):
+            file_content = file_content.split("\n/*scores*/\n")[0]
         text.set_text(file_content)
         text_slider_factor.set(file_content.count("\n") * 0.1)
         text_slider.set_val(1)
@@ -114,6 +119,13 @@ def file_selector() -> list[str]:
     
     def switch_dir_update(dir: str):
         dir_states[dir] = not(dir_states[dir])
+        if not(dir_states[dir]):
+            for key in dir_states.keys():
+                if (key.startswith(dir)):
+                    dir_states[key] = False
+            for b in buttons:
+                if (b.parent_dir.startswith(dir)):
+                    b.state = False
         update(None)
     def add_buttons(current_dir: str = '', indent: int = 0):
         for dir in files[current_dir].next_dir:

@@ -4,6 +4,7 @@ Argmax :
 In order :
     - binary fitness function & solution
     - binary SAT fitness function (F_sat)
+->
     - compare HC first and HC best on F_sat
     - implement NK problem
     - compare HC first and HC best on F_NK for different K
