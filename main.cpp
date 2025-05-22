@@ -28,12 +28,26 @@ void path_message() {
 
 void run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::ofstream* output_file = nullptr) {
     if (file_data.get_string("algorithm") == "hill_climb") {
-        if (file_data.get_string("hc_type") == "one")
+        if (file_data.get_string("hc_choice") == "one")
             LocalSearch::hill_climb_one(instance, file_data.get_int("budget"), output_file);
-        if (file_data.get_string("hc_type") == "first")
+        if (file_data.get_string("hc_choice") == "first")
             LocalSearch::hill_climb_first(instance, file_data.get_int("budget"), output_file);
-        else if (file_data.get_string("hc_type") == "best")
+        else if (file_data.get_string("hc_choice") == "best")
             LocalSearch::hill_climb_best(instance, file_data.get_int("budget"), output_file);
+    }
+    if (file_data.get_string("algorithm") == "greedy") {
+        if (file_data.get_string("greedy_type") == "all") {
+            if (file_data.get_string("greedy_choice") == "first")
+                LocalSearch::hill_climb_greedy_all_first(instance, file_data.get_int("budget"), output_file);
+            else if (file_data.get_string("greedy_choice") == "best")
+                LocalSearch::hill_climb_greedy_all_best(instance, file_data.get_int("budget"), output_file);
+        }
+        else if (file_data.get_string("greedy_type") == "improve") {
+            if (file_data.get_string("greedy_choice") == "first")
+                LocalSearch::hill_climb_greedy_first(instance, file_data.get_int("budget"), output_file);
+            else if (file_data.get_string("greedy_choice") == "best")
+                LocalSearch::hill_climb_greedy_best(instance, file_data.get_int("budget"), output_file);
+        }
     }
     else if (file_data.get_string("algorithm") == "tabu_search") {
         Argmax::tabu_search(instance, file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));

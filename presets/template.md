@@ -29,7 +29,15 @@ str     label = template
 # <!-- #region ==================== hill_climb parameters ====================================== -->
 int     budget = 1024
 # first / best / one
-str     hc_type = first
+str     hc_choice = first
+
+# <!-- #endregion -->
+# <!-- #region ==================== greedy parameters ====================================== -->
+int     budget = 1024
+# first / best
+str     greedy_choice = first
+# all / improve
+str     greedy_type = all
 
 # <!-- #endregion -->
 # <!-- #region ==================== tabu_search parameters ===================================== -->

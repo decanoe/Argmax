@@ -1,5 +1,10 @@
 #include "local_search.h"
 
+auto cmp = [](std::pair<unsigned int, float> a, std::pair<unsigned int, float> b) {
+    if (a.second != b.second) return a.second > b.second;
+    else return a.first < b.first;
+};
+
 unsigned int count_better_neighbors(ReversibleInstance* instance) {
     unsigned int result = 0;
     float score = instance->score();
@@ -211,7 +216,190 @@ void LocalSearch::hill_climb_best               (std::unique_ptr<Instance>& inst
         better_neighbors = count_better_neighbors(instance);
     }
 }
-// void LocalSearch::hill_climb_greedy_first    (std::unique_ptr<Instance>& instance, unsigned int budget = 1024, std::ofstream* out = nullptr) {}
-// void LocalSearch::hill_climb_greedy_best     (std::unique_ptr<Instance>& instance, unsigned int budget = 1024, std::ofstream* out = nullptr) {}
-// void LocalSearch::hill_climb_greedy_all_first(std::unique_ptr<Instance>& instance, unsigned int budget = 1024, std::ofstream* out = nullptr) {}
-// void LocalSearch::hill_climb_greedy_all_best (std::unique_ptr<Instance>& instance, unsigned int budget = 1024, std::ofstream* out = nullptr) {}
+
+void LocalSearch::hill_climb_greedy_first       (std::unique_ptr<Instance>& instance, unsigned int budget, std::ofstream* out) {
+    if (dynamic_cast<ReversibleInstance *>(instance.get()) == nullptr) {
+        std::cerr << "\033[1;31mERROR: cannot do a hill_climb_greedy on non reversible instance\033[0m\n";
+        exit(1);
+    }
+    if (out) { *out << "budget\tfitness\tnb_better_neighbors\tsize_of_the_jump" << "\n"; }
+    
+    float score = instance->score();
+    unsigned int used_budget = 1;
+    unsigned int better_neighbors = count_better_neighbors(instance);
+    if (out) { *out << used_budget << "\t" << score << "\t" << better_neighbors << "\t0\n"; }
+
+    std::set<std::pair<unsigned int, float>, decltype(cmp)> sorted_list(cmp);
+    while (used_budget < budget)
+    {
+        better_neighbors = 0;
+        sorted_list.clear();
+        for (size_t i = 0; i < instance->nb_args() && used_budget < budget; i++)
+        {
+            instance->mutate_arg(i);
+            used_budget++;
+            if (instance->score() > score) {
+                sorted_list.insert({i, instance->score()});
+                better_neighbors++;
+            }
+            instance->mutate_arg(i);
+        }
+        for (std::pair<unsigned int, float> pair : sorted_list) instance->mutate_arg(pair.first);
+        unsigned int count = sorted_list.size();
+        for (auto pair = sorted_list.rbegin(); pair != sorted_list.rend(); pair++) {
+            used_budget++;
+            if (instance->score() > score) {
+                score = instance->score();
+                break;
+            }
+            else {
+                count--;
+                instance->mutate_arg(pair->first);
+            }
+        }
+        if (out) { *out << used_budget << "\t" << score << "\t" << better_neighbors << "\t" << count << "\n"; }
+        if (count == 0) return;
+    }
+}
+void LocalSearch::hill_climb_greedy_best        (std::unique_ptr<Instance>& instance, unsigned int budget, std::ofstream* out) {
+    if (dynamic_cast<ReversibleInstance *>(instance.get()) == nullptr) {
+        std::cerr << "\033[1;31mERROR: cannot do a hill_climb_greedy on non reversible instance\033[0m\n";
+        exit(1);
+    }
+    if (out) { *out << "budget\tfitness\tnb_better_neighbors\tsize_of_the_jump" << "\n"; }
+    
+    float score = instance->score();
+    unsigned int used_budget = 1;
+    unsigned int better_neighbors = count_better_neighbors(instance);
+    if (out) { *out << used_budget << "\t" << score << "\t" << better_neighbors << "\t0\n"; }
+
+    std::set<std::pair<unsigned int, float>, decltype(cmp)> sorted_list(cmp);
+    while (used_budget < budget)
+    {
+        better_neighbors = 0;
+        sorted_list.clear();
+        for (size_t i = 0; i < instance->nb_args() && used_budget < budget; i++)
+        {
+            instance->mutate_arg(i);
+            used_budget++;
+            if (instance->score() > score) {
+                sorted_list.insert({i, instance->score()});
+                better_neighbors++;
+            }
+            instance->mutate_arg(i);
+        }
+        for (std::pair<unsigned int, float> pair : sorted_list) instance->mutate_arg(pair.first);
+        unsigned int count = sorted_list.size();
+        unsigned int best_count = 0;
+        for (auto pair = sorted_list.rbegin(); pair != sorted_list.rend(); pair++) {
+            used_budget++;
+            if (instance->score() > score) {
+                score = instance->score();
+                best_count = count;
+            }
+            count--;
+            instance->mutate_arg(pair->first);
+        }
+        if (out) { *out << used_budget << "\t" << score << "\t" << better_neighbors << "\t" << best_count << "\n"; }
+        if (best_count == 0) return;
+
+        for (std::pair<unsigned int, float> pair : sorted_list) {
+            if (best_count == 0) break;
+            best_count--;
+            instance->mutate_arg(pair.first);
+        }
+    }
+}
+void LocalSearch::hill_climb_greedy_all_first   (std::unique_ptr<Instance>& instance, unsigned int budget, std::ofstream* out) {
+    if (dynamic_cast<ReversibleInstance *>(instance.get()) == nullptr) {
+        std::cerr << "\033[1;31mERROR: cannot do a hill_climb_greedy on non reversible instance\033[0m\n";
+        exit(1);
+    }
+    if (out) { *out << "budget\tfitness\tnb_better_neighbors\tsize_of_the_jump" << "\n"; }
+    
+    float score = instance->score();
+    unsigned int used_budget = 1;
+    unsigned int better_neighbors = count_better_neighbors(instance);
+    if (out) { *out << used_budget << "\t" << score << "\t" << better_neighbors << "\t0\n"; }
+
+    std::set<std::pair<unsigned int, float>, decltype(cmp)> sorted_list(cmp);
+    while (used_budget < budget)
+    {
+        better_neighbors = 0;
+        sorted_list.clear();
+        for (size_t i = 0; i < instance->nb_args() && used_budget < budget; i++)
+        {
+            instance->mutate_arg(i);
+            used_budget++;
+            sorted_list.insert({i, instance->score()});
+            if (instance->score() > score) {
+                better_neighbors++;
+            }
+            instance->mutate_arg(i);
+        }
+        for (std::pair<unsigned int, float> pair : sorted_list) instance->mutate_arg(pair.first);
+        unsigned int count = sorted_list.size();
+        for (auto pair = sorted_list.rbegin(); pair != sorted_list.rend(); pair++) {
+            used_budget++;
+            if (instance->score() > score) {
+                score = instance->score();
+                break;
+            }
+            else {
+                count--;
+                instance->mutate_arg(pair->first);
+            }
+        }
+        if (out) { *out << used_budget << "\t" << score << "\t" << better_neighbors << "\t" << count << "\n"; }
+        if (count == 0) return;
+    }
+}
+void LocalSearch::hill_climb_greedy_all_best    (std::unique_ptr<Instance>& instance, unsigned int budget, std::ofstream* out) {
+    if (dynamic_cast<ReversibleInstance *>(instance.get()) == nullptr) {
+        std::cerr << "\033[1;31mERROR: cannot do a hill_climb_greedy on non reversible instance\033[0m\n";
+        exit(1);
+    }
+    if (out) { *out << "budget\tfitness\tnb_better_neighbors\tsize_of_the_jump" << "\n"; }
+    
+    float score = instance->score();
+    unsigned int used_budget = 1;
+    unsigned int better_neighbors = count_better_neighbors(instance);
+    if (out) { *out << used_budget << "\t" << score << "\t" << better_neighbors << "\t0\n"; }
+
+    std::set<std::pair<unsigned int, float>, decltype(cmp)> sorted_list(cmp);
+    while (used_budget < budget)
+    {
+        better_neighbors = 0;
+        sorted_list.clear();
+        for (size_t i = 0; i < instance->nb_args() && used_budget < budget; i++)
+        {
+            instance->mutate_arg(i);
+            used_budget++;
+            sorted_list.insert({i, instance->score()});
+            if (instance->score() > score) {
+                better_neighbors++;
+            }
+            instance->mutate_arg(i);
+        }
+        for (std::pair<unsigned int, float> pair : sorted_list) instance->mutate_arg(pair.first);
+        unsigned int count = sorted_list.size();
+        unsigned int best_count = 0;
+        for (auto pair = sorted_list.rbegin(); pair != sorted_list.rend(); pair++) {
+            used_budget++;
+            if (instance->score() > score) {
+                score = instance->score();
+                best_count = count;
+            }
+            count--;
+            instance->mutate_arg(pair->first);
+        }
+        if (out) { *out << used_budget << "\t" << score << "\t" << better_neighbors << "\t" << best_count << "\n"; }
+        if (best_count == 0) return;
+
+        for (std::pair<unsigned int, float> pair : sorted_list) {
+            if (best_count == 0) break;
+            best_count--;
+            instance->mutate_arg(pair.first);
+        }
+    }
+}
