@@ -168,11 +168,12 @@ int main(int argc, char *args[]) {
         return 0;
     }
 
-    srand(time(NULL));
+    auto seed = time(NULL);
     
     auto files_data = generate_file_data(arg1);
     for (const FileData& file_data : files_data)
     {
+        srand(seed);
         std::ofstream* output_file = nullptr;
         if (file_data.get_bool("debug_screen", false)) {
             output_file = new std::ofstream("./temp.rundata");
