@@ -7,12 +7,15 @@ add_compile_options(-Wall -Werror)
 
 add_executable(${CMAKE_PROJECT_NAME}
     main.cpp
+
     source/argmax.cpp
     source/local_search.cpp
     source/file_data.cpp
     source/random_utils.cpp
     source/instance.cpp
     source/fitness_instance.cpp
+
+    NK/nk.cpp
 
     SAT/clause.cpp
     SAT/formule.cpp

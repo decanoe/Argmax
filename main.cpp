@@ -5,6 +5,8 @@
 #include <ctime>
 #include <chrono>
 
+#include "NK/nk.h"
+
 #include "SAT/formule.h"
 #include "SAT/solution.h"
 
@@ -22,7 +24,10 @@ std::string timestamp() {
 }
 
 void path_message() {
-    std::cerr << "\033[1;31mIf you want to run an algorithm you need to put a path to a file with all the informations\nIf you want to launch the visualizer please use -visualize or -v\n\033[0m";
+    std::cerr << "\033[1;31mIf you want to run an algorithm you need to put a path to a file with all the informations\n\033[0m";
+    std::cerr << "\033[1;31mIf you want to launch the visualizer please use -visualize or -v\n\033[0m";
+    std::cerr << "\033[1;31mIf you want to test a Faraway hand please use -test or -t followed by all the card indices\n\033[0m";
+    std::cerr << "\033[1;31mIf you want to create a NK instance please use -create_nk or -nk followed by the N and the K wanted and a path to save the instance\n\033[0m";
     exit(1);
 }
 
@@ -71,6 +76,20 @@ void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr)
     FitnessInstance result = *dynamic_cast<FitnessInstance*>(temp.get());
 
     std::cout << "max score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
+}
+void run_on_nk(const FileData& file_data, std::ofstream* output_file = nullptr) {
+    std::shared_ptr<NK> nk = nullptr;
+    if (file_data.contains_string("instance")) { std::cout << "reading file..." << std::endl; nk = std::shared_ptr<NK>(new NK(file_data.get_string("instance"))); }
+    else                                        nk = std::shared_ptr<NK>(new NK(file_data.get_int("N"), file_data.get_int("K")));
+    
+    FitnessInstance instance = FitnessInstance([&nk](const std::vector<bool>& a) -> float { return nk->evaluate(a); }, nk->get_nb_variables());
+    instance.randomize();
+
+    std::unique_ptr<Instance> temp = instance.clone();
+    run(file_data, temp, output_file);
+    FitnessInstance result = *dynamic_cast<FitnessInstance*>(temp.get());
+
+    std::cout << "max score: " << result << " : " << result.score() << "\n";
 }
 void run_on_fa(const FileData& file_data, std::ofstream* output_file = nullptr) {
     std::cout << "reading files..." << std::endl;
@@ -181,6 +200,16 @@ int main(int argc, char *args[]) {
         test_FA_hand(argc, 2, args);
         return 0;
     }
+    else if (arg1 == "-create_nk" || arg1 == "-nk") {
+        if (argc < 5) {
+            std::cerr << "\033[1;31mIf you want to create an nk instance you need to put a N, a K and a path to save the instance.\n\033[0m";
+            exit(1);
+        }
+        srand(time(NULL));
+        NK nk(atoi(args[2]), atoi(args[3]));
+        nk.save_to_file(args[4]);
+        return 0;
+    }
 
     auto seed = time(NULL);
     
@@ -199,6 +228,7 @@ int main(int argc, char *args[]) {
 
         if (file_data.get_string("problem") == "SAT") run_on_sat(file_data, output_file);
         if (file_data.get_string("problem") == "FA") run_on_fa(file_data, output_file);
+        if (file_data.get_string("problem") == "NK") run_on_nk(file_data, output_file);
         
         if (output_file != nullptr) {
             (*output_file).close();

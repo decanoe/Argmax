@@ -10,12 +10,14 @@ str     algorithm = evolution
 
 # <!-- #endregion -->
 # <!-- #region ==================== files containing data to run =============================== -->
+# SAT
+str     instance = ./SAT/instances/BMS_k3_n100_m429/BMS_k3_n100_m429_0.cnf
+# NK (optional if parameter were provided)
+str     instance = ./NK/instances/100_1.nk
+# FA
 str     cards = ./FA/data/cards.txt
 str     sanctuaries = ./FA/data/sanctuary.txt
 str     subset = ./FA/subsets/8_7_1.txt
-str     instance = ./SAT/instances/BMS_k3_n100_m429/BMS_k3_n100_m429_0.cnf
-# (optional)
-str     instance = ./NK/instances/100_1.nk
 # <!-- #endregion -->
 # <!-- #region ==================== debug file ================================================= -->
 # whether or not to launch the Python viewer
