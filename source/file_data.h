@@ -33,4 +33,4 @@ public:
 };
 std::ostream& operator<<(std::ostream&, const FileData&);
 
-std::list<FileData> generate_file_data(const std::string& path);
+std::list<FileData> generate_file_data(const std::string& path, bool allow_import = true);

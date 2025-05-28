@@ -2,6 +2,7 @@
 #include <sstream>
 #include <fstream>
 #include <regex>
+#include <filesystem>
 
 FileData::FileData(std::istream& content, const std::string& path): path(path) {
     std::string line;
@@ -140,7 +141,9 @@ void apply_replacements(const std::string& content, const std::string& path, std
         else apply_replacements(modified_all, path, result, replacements, end);
     }
 }
-std::list<FileData> generate_file_data(const std::string& path) {
+std::list<FileData> generate_file_data(const std::string& path, bool allow_import) {
+    std::list<FileData> result = std::list<FileData>();
+    std::string directory = std::filesystem::path(path).parent_path().u8string();
     std::ifstream file = std::ifstream(path);
     if (!file.is_open()) {
         std::cerr << "\033[1;31mERROR: cannot open data_file at \"" << path << "\" !\033[0m\n";
@@ -164,32 +167,38 @@ std::list<FileData> generate_file_data(const std::string& path) {
         std::string first_word;
         stream >> first_word;
 
-        if (first_word != "iterate") {
-            all += line + "\n";
-            continue;
-        }
-
-        std::string key;
-        stream >> key;
-        if (key[0] != '<' || key[key.size()-1] != '>') {
-            std::cerr << "\033[1;31mERROR: line " << l_count << " of content " << path << " iterate is not followed by a key surrounded by <>\033[0m\n";
-            exit(1);
-        }
-
-        std::list<std::string> replacement = std::list<std::string>();
-        std::string word;
-        stream >> word;
-        while (word != "<end>")
-        {
-            replacement.push_back(word);
-            if (!(stream >> word)) {
-                std::cerr << "\033[1;31mERROR: line " << l_count << " of content " << path << " iterate does not end with key <end>\033[0m\n";
+        if (first_word == "iterate") {
+            std::string key;
+            stream >> key;
+            if (key[0] != '<' || key[key.size()-1] != '>') {
+                std::cerr << "\033[1;31mERROR: line " << l_count << " of content " << path << " iterate is not followed by a key surrounded by <>\033[0m\n";
                 exit(1);
             }
-        }
-        replacements.push_back(std::pair<std::string, std::list<std::string>>(key, replacement));
 
-        all += "# " + line + "\n";
+            std::list<std::string> replacement = std::list<std::string>();
+            std::string word;
+            stream >> word;
+            while (word != "<end>")
+            {
+                replacement.push_back(word);
+                if (!(stream >> word)) {
+                    std::cerr << "\033[1;31mERROR: line " << l_count << " of content " << path << " iterate does not end with key <end>\033[0m\n";
+                    exit(1);
+                }
+            }
+            replacements.push_back(std::pair<std::string, std::list<std::string>>(key, replacement));
+
+            all += "# " + line + "\n";
+        }
+        else if (first_word == "import") {
+            std::string import_path;
+            stream >> import_path;
+
+            if (allow_import) result.splice(result.end(), generate_file_data(directory + "/" + import_path, false));
+
+            all += "# " + line + "\n";
+        }
+        else all += line + "\n";
     }
 
 
@@ -198,7 +207,6 @@ std::list<FileData> generate_file_data(const std::string& path) {
         return std::list<FileData>{ FileData(content, path) };
     }
 
-    std::list<FileData> result = std::list<FileData>();
     apply_replacements(all, path, result, replacements.begin(), replacements.end());
     return result;
 }
