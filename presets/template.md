@@ -23,7 +23,7 @@ str     subset = ./FA/subsets/8_7_1.txt
 # whether or not to launch the Python viewer
 bool    debug_screen = true
 # start of the debug file name (will be followed by the date)
-str     label = template
+str     label = template_<timestamp>.rundata
 
 # <!-- #endregion -->
 

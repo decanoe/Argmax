@@ -4,6 +4,8 @@
 #include "source/fitness_instance.h"
 #include <ctime>
 #include <chrono>
+#include <filesystem>
+#include <regex>
 
 #include "NK/nk.h"
 
@@ -33,10 +35,14 @@ void path_message() {
 
 void run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::ofstream* output_file = nullptr) {
     if (file_data.get_string("algorithm") == "hill_climb") {
-        if (file_data.get_string("hc_choice") == "one")
-            LocalSearch::hill_climb_one(instance, file_data.get_int("budget"), output_file);
+        if (file_data.get_string("hc_choice") == "random")
+            LocalSearch::hill_climb_random(instance, file_data.get_int("budget"), output_file);
         if (file_data.get_string("hc_choice") == "first")
             LocalSearch::hill_climb_first(instance, file_data.get_int("budget"), output_file);
+        if (file_data.get_string("hc_choice") == "cycle")
+            LocalSearch::hill_climb_cycle(instance, file_data.get_int("budget"), output_file);
+        if (file_data.get_string("hc_choice") == "least")
+            LocalSearch::hill_climb_least(instance, file_data.get_int("budget"), output_file);
         else if (file_data.get_string("hc_choice") == "best")
             LocalSearch::hill_climb_best(instance, file_data.get_int("budget"), output_file);
     }
@@ -46,12 +52,16 @@ void run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::of
                 LocalSearch::hill_climb_greedy_all_first(instance, file_data.get_int("budget"), output_file);
             else if (file_data.get_string("greedy_choice") == "best")
                 LocalSearch::hill_climb_greedy_all_best(instance, file_data.get_int("budget"), output_file);
+            else if (file_data.get_string("greedy_choice") == "least")
+                LocalSearch::hill_climb_greedy_all_least(instance, file_data.get_int("budget"), output_file);
         }
         else if (file_data.get_string("greedy_type") == "improve") {
             if (file_data.get_string("greedy_choice") == "first")
                 LocalSearch::hill_climb_greedy_first(instance, file_data.get_int("budget"), output_file);
             else if (file_data.get_string("greedy_choice") == "best")
                 LocalSearch::hill_climb_greedy_best(instance, file_data.get_int("budget"), output_file);
+            else if (file_data.get_string("greedy_choice") == "least")
+                LocalSearch::hill_climb_greedy_least(instance, file_data.get_int("budget"), output_file);
         }
     }
     else if (file_data.get_string("algorithm") == "tabu_search") {
@@ -206,6 +216,7 @@ int main(int argc, char *args[]) {
             exit(1);
         }
         srand(time(NULL));
+        
         NK nk(atoi(args[2]), atoi(args[3]));
         nk.save_to_file(args[4]);
         return 0;
@@ -235,8 +246,9 @@ int main(int argc, char *args[]) {
             delete output_file;
 
             std::string output_file_path = "";
-            if (file_data.contains_string("label")) output_file_path = "./python/data/" + file_data.get_string("label") + "_" + timestamp() + ".rundata";
+            if (file_data.contains_string("label")) output_file_path = std::regex_replace("./python/data/" + file_data.get_string("label"), std::regex("<timestamp>"), timestamp());
             else                                    output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
+            std::filesystem::create_directories(std::filesystem::path(output_file_path).parent_path());
             std::ofstream final_file = std::ofstream(output_file_path);
             if (!final_file.is_open()) {
                 std::cerr << "\033[1;31mERROR: cannot open output file at \"" + output_file_path + "\" !\033[0m\n";
