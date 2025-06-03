@@ -169,9 +169,9 @@ void hill_climb_cycle                           (ReversibleInstance* instance, u
     {
         bool better = false;
         
-        for (size_t i = 0; i < instance->nb_args() && used_budget < budget; i++)
+        for (unsigned int j = 0; j < instance->nb_args() && used_budget < budget; j++)
         {
-            i = (i + loop) % instance->nb_args();
+            unsigned int i = (j + loop) % instance->nb_args();
             instance->mutate_arg(i);
             used_budget++;
             if (instance->score() > score) {
@@ -203,9 +203,9 @@ void LocalSearch::hill_climb_cycle              (std::unique_ptr<Instance>& inst
     {
         bool better = false;
         
-        for (size_t i = 0; i < instance->nb_args() && used_budget < budget; i++)
+        for (unsigned int j = 0; j < instance->nb_args() && used_budget < budget; j++)
         {
-            i = (i + loop) % instance->nb_args();
+            unsigned int i = (j + loop) % instance->nb_args();
             std::unique_ptr<Instance> temp = instance->clone();
             temp->mutate_arg(i);
             used_budget++;

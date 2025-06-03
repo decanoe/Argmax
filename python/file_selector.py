@@ -10,7 +10,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 def _sort_key(s: str)->str:
     l: list = os.path.basename(s).split("_")
-    return "_".join(l[:-4] + [l[-1], l[-2], l[-3], l[-4]])
+    return "_".join(l)
 class DirInfos:
     current_dir: str
     next_dir: list[str]
