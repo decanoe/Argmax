@@ -200,7 +200,14 @@ void test_FA_hand(int argc, int first_card, char *args[]) {
 std::string execute_file(const FileData file_data) {
     srand(file_data.get_seed());
     std::ofstream* output_file = nullptr;
+    std::string output_file_path = "";
     if (file_data.get_bool("debug_screen", false)) {
+        if (file_data.contains_string("label")) output_file_path = std::regex_replace("./python/data/" + file_data.get_string("label"), std::regex("<timestamp>"), timestamp());
+        else                                    output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
+
+        std::ifstream infile(output_file_path);
+        if (infile.good() && !file_data.get_bool("override", false)) return output_file_path;
+        
         output_file = new std::ofstream("./temp.rundata");
         if (!(*output_file).is_open()) {
             std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
@@ -216,9 +223,6 @@ std::string execute_file(const FileData file_data) {
         (*output_file).close();
         delete output_file;
 
-        std::string output_file_path = "";
-        if (file_data.contains_string("label")) output_file_path = std::regex_replace("./python/data/" + file_data.get_string("label"), std::regex("<timestamp>"), timestamp());
-        else                                    output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
         std::filesystem::create_directories(std::filesystem::path(output_file_path).parent_path());
         std::ofstream final_file = std::ofstream(output_file_path);
         if (!final_file.is_open()) {

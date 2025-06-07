@@ -24,6 +24,8 @@ str     subset = ./FA/subsets/8_7_1.txt
 bool    debug_screen = true
 # start of the debug file name (will be followed by the date)
 str     label = template_<timestamp>.rundata
+# run algorithm even if output file already exists (default false)
+bool    override = true
 
 # <!-- #endregion -->
 
