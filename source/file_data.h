@@ -8,11 +8,16 @@ class FileData
 {
 private:
     std::string path;
+    unsigned int seed;
 
     std::map<std::string, float> float_vars;
     std::map<std::string, std::string> str_vars;
 public:
     FileData(std::istream& content, const std::string& path);
+    
+    void set_seed(unsigned int seed);
+    void set_default_seed(unsigned int seed);
+    unsigned int get_seed() const ;
 
     bool get_bool(const std::string&) const;
     int get_int(const std::string&) const;

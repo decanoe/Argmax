@@ -37,6 +37,7 @@ out
 temp.rundata
 results
 python/data/*
+python/output/*
 python/__pycache__
 
 presets/*

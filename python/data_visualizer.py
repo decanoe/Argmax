@@ -4,22 +4,10 @@ import pandas as pd
 import numpy as np
 import io
 
-BUTTON_WIDTH: int = 0.2
-DATA_TYPE: str = ""
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 if __name__ != "__main__":
     exit()
-
-file_paths: str = ""
-if (len(sys.argv) < 2):
-    from file_selector import file_selector
-    file_paths, DATA_TYPE = file_selector()
-else:
-    file_paths, DATA_TYPE = [sys.argv[1]], sys.argv[2]
-
-# if (DATA_TYPE == "local_search"):
-#     print("local_search")
-#     exit()
 
 # ===============================================================================================
 
@@ -27,140 +15,180 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 from matplotlib.backend_bases import MouseEvent
 from matplotlib.text import Annotation
-from button import ButtonProcessor
+from button import ButtonCycle, ButtonCheck
+
+DATA_TYPE: ButtonCycle = None
+PLOT_TYPE: ButtonCycle = None
+N: ButtonCycle = None
+K: ButtonCycle = None
+I: ButtonCycle = None
+SELECTED_ALGOS: ButtonCheck = None
+AXIS1: ButtonCycle = None
+AXIS2: ButtonCycle = None
+
+ALGO_KEYS: list[str] = []
 
 # ===============================================================================================
 
-class FileInfo:
+class NKRunInfo:
+    data: pd.DataFrame
+    name: str
+    
+    N: int
+    K: int
+    algo: str
+    seed: int
+    instance: int
+    
     def __init__(self, path: str):
         self.name = os.path.basename(path)
-        file_content: str = ""
-        with open(path) as f: file_content = f.read()
+        with open(path) as f: self.data = pd.read_csv(io.StringIO(f.read()), sep = "\t")
+        
+        temp = self.name.removesuffix(".rundata").split("_")
+        self.algo, self.instance, self.seed = "_".join(temp[:-2]), int(temp[-2]), int(temp[-1])
+        dir: str = os.path.dirname(path)
+        self.K = int(os.path.basename(dir).removeprefix("K"))
+        dir = os.path.dirname(dir)
+        self.N = int(os.path.basename(dir).removeprefix("N"))
+    def __repr__(self)-> str:
+        return self.algo + f" {self.N} {self.K}"
+NK_file_infos: dict[int, dict[int, dict[str, dict[int, dict[int, NKRunInfo]]]]] = {}
 
-        if (DATA_TYPE == "evolution"):
-            self.parameters = file_content.split("\n/*scores*/\n")[0]
-            file_content = file_content.split("\n/*scores*/\n")[1]
+from tqdm import tqdm
+dirs = list(os.walk(dir_path+"\\data\\local_search"))
+for i in tqdm(range(len(dirs))):
+    for f in dirs[i][2]:
+        info: NKRunInfo = NKRunInfo(dirs[i][0] + "\\" + f)
+        NK_file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, {}).setdefault(info.instance, {})[info.seed] = info
 
-            file_times = file_content.split("\n/*times*/\n")[1]
-            file_content = file_content.split("\n/*times*/\n")[0]
-
-            self.data = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[0]), sep = "\t", index_col = "generation")
-            self.populations = pd.read_csv(io.StringIO(file_content.split("/*populations*/\n")[1]), sep = "\t")
-            self.times = pd.read_csv(io.StringIO(file_times), sep = "\t", index_col = "generation")
-        
-            self.global_labels = ["best_score", "gen_best_score", "mean_score", "std", "age"]
-            self.local_labels = ["all_args"]
-            self.times_labels = []
-            self.args_labels = []
-            
-            for label in self.populations.columns.values:
-                if (label not in ["generation", "age", "nb_args"]):
-                    self.args_labels.append(label)
-                    self.local_labels.append(label)
-            for label in self.times.columns.values:
-                if (label != "generation"):
-                    self.times_labels.append(label)
-        elif (DATA_TYPE == "local_search"):
-            self.data = pd.read_csv(io.StringIO(file_content), sep = "\t", index_col = "budget")
-            self.populations = None
-            self.times = None
-        
-            self.global_labels = ["fitness", "nb_better_neighbors", "size_of_the_jump"]
-            self.local_labels = []
-            self.times_labels = []
-            self.args_labels = []
-
-    def plot_global(self, fig: plt.Figure, ax: plt.Axes, plot_key: str, start_range_at_0: bool) -> tuple[list[plt.Line2D], list[str]]:
-        if (plot_key == "age"):
-            x = list(self.data.index)
-            vc = self.populations[["generation", plot_key]].groupby("generation").mean()
-            
-            vc.plot.line(ax=ax)
-        elif plot_key == "size_of_the_jump":
-            self.data.plot.line(y=plot_key, use_index=True, ax=ax)
-        elif start_range_at_0:
-            self.data.plot.line(y=plot_key, use_index=True, ax=ax, ylim=(-0.05, self.data[plot_key].max() + 0.1))
-        else:
-            self.data.plot.line(y=plot_key, use_index=True, ax=ax)
-        return [], [self.name]
-    def plot_time(self, fig: plt.Figure, ax: plt.Axes, plot_key: str, normalize_times: bool) -> tuple[list[plt.Line2D], list[str]]:
-        if (normalize_times):
-            (self.times[plot_key] / self.times.total).plot.line(y=plot_key, use_index=True, ax=ax, ylim=(-0.1, 1.1))
-        else:
-            self.times.plot.line(y=plot_key, use_index=True, ax=ax)
-        return [], [self.name]
-    def plot_arg(self, fig: plt.Figure, ax: plt.Axes, plot_key: str) -> tuple[list[plt.Line2D], list[str]]:
-        x = list(self.data.index)
-        vc = self.populations[["generation", plot_key]].groupby(plot_key).value_counts()
-        result: list[plt.Line2D] = []
-        
-        if (len(vc) != 0):
-            args, _ = zip(*vc.index.tolist())
-            for arg in set(args):
-                y = np.array(list(vc[arg].reindex(x, fill_value=0)))
-                line, = ax.plot(x, y / np.array(self.populations[["generation"]].value_counts().tolist()), label=arg)
-                result.append(line)
-        return result, []
-    def plot_all_args(self, fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
-        x = list(self.data.index)
-        y = {}
-        
-        for key in self.local_labels:
-            if key == "all_args":
-                continue
-            
-            vc = self.populations[["generation", key]].groupby(key).value_counts()
-            if (len(vc) != 0):
-                args, _ = zip(*vc.index.tolist())
-                for arg in set(args):
-                    if (arg not in y):
-                        y[arg] = np.zeros(len(x))
-                    y[arg] += np.array(list(vc[arg].reindex(x, fill_value=0)))
-        
-        result: list[plt.Line2D] = []
-        for arg in y.keys():
-            line, = ax.plot(x, y[arg] / np.array(self.populations[["generation"]].value_counts().tolist()), label=arg)
-            result.append(line)
-        return result, []
+def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+    lines = []
+    legends = []
     
-    def plot_data(self, fig: plt.Figure, ax: plt.Axes, plot_key: str, normalize_times: bool, start_range_at_0: bool) -> tuple[list[plt.Line2D], list[str]]:
-        if (PLOT_KEY in self.global_labels):
-            return self.plot_global(fig, ax, plot_key, start_range_at_0)
-        elif (PLOT_KEY in self.times_labels):
-            return self.plot_time(fig, ax, plot_key, normalize_times)
-        elif (PLOT_KEY in self.args_labels):
-            return self.plot_arg(fig, ax, plot_key)
-        elif (PLOT_KEY == "all_args"):
-            return self.plot_all_args(fig, ax)
-        return [], []
+    colors = []
+    last_x = []
+    last_y = []
+    max_x = 0
+    
+    for algo in ALGO_KEYS:
+        infos = NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()].values()
+        
+        all_x = []
+        all_y = []
+        
+        current_x = 0
+        current_y = 0
+        for info in infos:
+            all_x += list(info.data["budget"].to_numpy() + current_x)
+            current_x = all_x[-1]
+            all_y += list(np.maximum(info.data["fitness"].to_numpy(), current_y))
+            current_y = all_y[-1]
+        
+        max_x = max(max_x, current_x)
+        
+        line, = ax.plot(all_x, all_y, label=algo)
+        legends.append(algo)
+        lines.append(line)
+        
+        colors.append(line.get_color())
+        last_x.append(all_x[-1])
+        last_y.append(all_y[-1])
+    
+    for i in range(len(ALGO_KEYS)):
+        ax.plot([last_x[i], max_x], [last_y[i], last_y[i]], color=colors[i], linestyle='dashed')
+    
+    ax.set_xlabel("budget")
+    ax.set_ylabel("fitness")
+    return lines, legends
+def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+    legends = []
+    
+    for i in range(len(ALGO_KEYS)):
+        if not(SELECTED_ALGOS.button.get_status()[i]):
+            continue
+         
+        infos = NK_file_infos[N.get_value()][K.get_value()][ALGO_KEYS[i]][I.get_value()].values()
+        
+        all_x = []
+        all_y = []
+        
+        for info in infos:
+            all_x += list(info.data[info.data.size_of_the_jump != 0][AXIS1.get_value()].to_numpy())
+            all_y += list(info.data[info.data.size_of_the_jump != 0][AXIS2.get_value()].to_numpy())
+        
+        ax.scatter(all_x, all_y, label=ALGO_KEYS[i])
+        legends.append(ALGO_KEYS[i])
+    
+    ax.set_xlabel(AXIS1.get_label())
+    ax.set_ylabel(AXIS2.get_label())
+    return [], legends
+def NK_plot(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+    if (PLOT_TYPE.get_value() == "anytime"):
+        return NK_plot_anytime(fig, ax)
+    return NK_plot_correlation(fig, ax)
 
-file_infos: list[FileInfo] = [FileInfo(path) for path in file_paths]
+N_keys = sorted(NK_file_infos.keys())
+K_keys = sorted(NK_file_infos[N_keys[0]].keys())
+ALGO_KEYS = sorted(NK_file_infos[N_keys[0]][K_keys[0]].keys())
 
-for f in file_infos[0:]:
-    if (
-        f.args_labels != file_infos[0].args_labels or
-        f.times_labels != file_infos[0].times_labels or
-        f.local_labels != file_infos[0].local_labels or
-        f.global_labels != file_infos[0].global_labels
-        ):
-        print("the file", f.path, "does not have the same labels as the file", file_infos[0].path)
-        print("cannot run a good visualization")
-        exit()
+# region output_table
+def NK_generate_table():
+    avg_content: str = "inst" + "\t".join(ALGO_KEYS)
+    budgets: list[int] = [100000, 50000, 10000, 5000, 1000]
+    best_budget_content: list[str] = [avg_content for _ in budgets]
+    
+    for n, n_data in NK_file_infos.items():
+        for k, k_data in n_data.items():
+            # region avg
+            avg_content += f"\n{n}_{k}"
+            for algo, algo_data in k_data.items():
+                avg: float = 0
+                count: int = 0
+                for i_data in algo_data.values():
+                    for s_data in i_data.values():
+                        avg += float(s_data.data.fitness.iloc[-1])
+                        count += 1
+                avg_content += f"\t{round(avg/count, 6)}"
+            # endregion
+            
+            # region best_budget_content
+            for budget_index in range(len(budgets)):
+                best_budget_content[budget_index] += f"\n{n}_{k}"
+                for algo, algo_data in k_data.items():
+                    avg: float = 0
+                    count: int = 0
+                    for i_data in algo_data.values():
+                        budget: int = budgets[budget_index]
+                        max_fitness: float = 0
+                        for s_data in i_data.values():
+                            for index in range(-1, -len(s_data.data), -1):
+                                b: int = s_data.data.budget.iloc[index]
+                                if (b <= budget):
+                                    max_fitness = max(max_fitness, s_data.data.fitness.iloc[index])
+                                    budget -= b
+                                    break
+                        avg += max_fitness
+                        count += 1
+                    best_budget_content[budget_index] += f"\t{round(avg/count, 6)}"
+            # endregion
+    
+    with open(dir_path + "/output/avg.txt", "w") as f: f.write(avg_content)
+    for budget_index in range(len(budgets)):
+        with open(dir_path + f"/output/best_{budgets[budget_index]//1000}_000.txt", "w") as f: f.write(best_budget_content[budget_index])
+
+NK_generate_table()
+# endregion
 
 # ===============================================================================================
-
-PLOT_CATEGORY = "global" # global / local / times
-NORMALIZE_TIMES = False
-RANGE_0 = False
-PLOT_KEY = "best_score" if DATA_TYPE == "evolution" else "fitness"
-
 fig, ax = plt.subplots()
 fig.subplots_adjust(left=0.1, right=0.9, bottom=0.35, top=0.95)
 lines: list = []
-
 annot: Annotation
 
-def update(event):
+def plot(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+    if (DATA_TYPE.get_value() == "NK"):
+        return NK_plot(fig, ax)
+def update(event = None):
     global lines, annot
     ax.clear()
     
@@ -169,12 +197,7 @@ def update(event):
                     arrowprops=dict(arrowstyle="->"))
     annot.set_visible(False)
     
-    lines = []
-    legends = []
-    for f in file_infos:
-        line, legend = f.plot_data(fig, ax, PLOT_KEY, NORMALIZE_TIMES, RANGE_0)
-        lines += line
-        legends += legend
+    lines, legends = plot(fig, ax)
     
     if len(legends) != 0:
         ax.legend(legends)
@@ -207,168 +230,34 @@ def hover(event):
 fig.canvas.mpl_connect("motion_notify_event", hover)
 # endregion
 
-def plot_key_buttons_callback(value: str):
-    global PLOT_KEY
-    PLOT_KEY = value
-    update(None)
-# region local buttons
-local_buttons_axes: list[plt.Axes] = []
-local_buttons: list[ButtonProcessor] = []
-
-if (len(file_infos) == 1):
-    for l in file_infos[0].local_labels:
-        local_buttons_axes.append(fig.add_axes([0, 0.1, 0, 0.05]))
-        local_buttons.append(ButtonProcessor(local_buttons_axes[-1], l, plot_key_buttons_callback, l))
-
-local_slider_ax = fig.add_axes([0.1, 0, 0.8, 0.05])
-if (len(file_infos) == 1):
-    local_slider = Slider(
-        ax=local_slider_ax,
-        label="slider",
-        valmin=0,
-        valmax=len(file_infos[0].local_labels) - 1,
-        valinit=0,
-        orientation="horizontal"
-    )
-    def local_slider_update(event):
-        i = 0
-        for a in local_buttons_axes:
-            pos = a.get_position()
-            pos.x0 = 0.1 - (local_slider.val - i) * (BUTTON_WIDTH + 0.025)
-            pos.x1 = 0.1 + BUTTON_WIDTH - (local_slider.val - i) * (BUTTON_WIDTH + 0.025)
-            i += 1
-            a.set_position(pos)
-        
-        fig.canvas.draw_idle()
-    local_slider.on_changed(local_slider_update)
-    local_slider_update(None)
-
-    def on_local_scroll(event):
-        if (local_slider_ax.get_visible()):
-            increment = 1 if event.button == 'up' else -1
-            local_slider.set_val(max(local_slider.valmin, min(local_slider.valmax, local_slider.val + increment * 0.5)))
-            local_slider_update(None)
-
-    fig.canvas.mpl_connect('scroll_event', on_local_scroll)
-# endregion
-# region global buttons
-range_0_button_axe = fig.add_axes([0.45, 0.2, 0.3, 0.05])
-range_0_button = Button(range_0_button_axe, "start y at 0: false")
-def range_0_buttons_callback(event):
-    global RANGE_0
-    RANGE_0 = not(RANGE_0)
+# region NK =====================================================================================
+def update_NK():
+    global N, K, I, SELECTED_ALGOS
+    N_keys = sorted(NK_file_infos.keys())
+    K_keys = sorted(NK_file_infos[N_keys[0]].keys())
+    I_keys = sorted(NK_file_infos[N_keys[0]][K_keys[0]][ALGO_KEYS[0]].keys())
     
-    range_0_button.label.set_text("start y at 0: true" if RANGE_0 else "start y at 0: false")
-    
-    update(None)
-range_0_button.on_clicked(range_0_buttons_callback)
+    N = ButtonCycle(fig.add_axes([0.1, 0.14, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, update)
+    K = ButtonCycle(fig.add_axes([0.21, 0.14, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, update)
+    I = ButtonCycle(fig.add_axes([0.32, 0.14, 0.1, 0.05]), ["I" + str(i) for i in I_keys], I_keys, update)
+# endregion =====================================================================================
 
-global_buttons_axes: list[plt.Axes] = []
-global_buttons: list[ButtonProcessor] = []
-for l in file_infos[-1].global_labels:
-    global_buttons_axes.append(fig.add_axes([0, 0.1, 0, 0.05]))
-    global_buttons.append(ButtonProcessor(global_buttons_axes[-1], l, plot_key_buttons_callback, l))
-
-global_slider_ax = fig.add_axes([0.1, 0, 0.8, 0.05])
-global_slider = Slider(
-    ax=global_slider_ax,
-    label="slider",
-    valmin=0,
-    valmax=len(file_infos[-1].global_labels) - 1,
-    valinit=0,
-    orientation="horizontal"
-)
-def global_slider_update(event):
-    i = 0
-    for a in global_buttons_axes:
-        pos = a.get_position()
-        pos.x0 = 0.1 - (global_slider.val - i) * (BUTTON_WIDTH + 0.025)
-        pos.x1 = 0.1 + BUTTON_WIDTH - (global_slider.val - i) * (BUTTON_WIDTH + 0.025)
-        i += 1
-        a.set_position(pos)
-    
-    fig.canvas.draw_idle()
-global_slider.on_changed(global_slider_update)
-global_slider_update(None)
-
-def on_global_scroll(event):
-    if (global_slider_ax.get_visible()):
-        increment = 1 if event.button == 'up' else -1
-        global_slider.set_val(max(global_slider.valmin, min(global_slider.valmax, global_slider.val + increment * 0.5)))
-        global_slider_update(None)
-
-fig.canvas.mpl_connect('scroll_event', on_global_scroll)
-# endregion
-# region times buttons
-normalize_button_axe = fig.add_axes([0.45, 0.2, 0.3, 0.05])
-normalize_button = Button(normalize_button_axe, "normalize: false")
-def normalize_buttons_callback(event):
-    global NORMALIZE_TIMES
-    NORMALIZE_TIMES = not(NORMALIZE_TIMES)
-    
-    normalize_button.label.set_text("normalize: true" if NORMALIZE_TIMES else "normalize: false")
-    
-    update(None)
-normalize_button.on_clicked(normalize_buttons_callback)
-
-times_buttons_axes: list[plt.Axes] = []
-times_buttons: list[ButtonProcessor] = []
-for l in file_infos[-1].times_labels:
-    times_buttons_axes.append(fig.add_axes([0, 0.1, 0, 0.05]))
-    times_buttons.append(ButtonProcessor(times_buttons_axes[-1], l, plot_key_buttons_callback, l))
-
-times_slider_ax = fig.add_axes([0.1, 0, 0.8, 0.05])
-times_slider = Slider(
-    ax=times_slider_ax,
-    label="slider",
-    valmin=0,
-    valmax=len(file_infos[-1].times_labels) - 1,
-    valinit=0,
-    orientation="horizontal"
-)
-def times_slider_update(event):
-    i = 0
-    for a in times_buttons_axes:
-        pos = a.get_position()
-        pos.x0 = 0.1 - (times_slider.val - i) * (BUTTON_WIDTH + 0.025)
-        pos.x1 = 0.1 + BUTTON_WIDTH - (times_slider.val - i) * (BUTTON_WIDTH + 0.025)
-        i += 1
-        a.set_position(pos)
-    
-    fig.canvas.draw_idle()
-times_slider.on_changed(times_slider_update)
-times_slider_update(None)
-
-def on_times_scroll(event):
-    if (times_slider_ax.get_visible()):
-        increment = 1 if event.button == 'up' else -1
-        times_slider.set_val(max(times_slider.valmin, min(times_slider.valmax, times_slider.val + increment * 0.5)))
-        times_slider_update(None)
-
-fig.canvas.mpl_connect('scroll_event', on_times_scroll)
-# endregion
-
-# region category button
-category_ax = fig.add_axes([0.1, 0.2, 0.3, 0.05])
-category_button = Button(category_ax, PLOT_CATEGORY)
-
+# region permanent buttons ======================================================================
 def update_visibility():
-    for a in local_buttons_axes + [local_slider_ax]:
-        a.set_visible(PLOT_CATEGORY == "individual")
-    for a in global_buttons_axes + [global_slider_ax, range_0_button_axe]:
-        a.set_visible(PLOT_CATEGORY == "global")
-    for a in times_buttons_axes + [times_slider_ax, normalize_button_axe]:
-        a.set_visible(PLOT_CATEGORY == "times")
-    fig.canvas.draw_idle()
-def switch_category(event):
-    global PLOT_CATEGORY
-    PLOT_CATEGORY = "global" if (PLOT_CATEGORY == "times") else "individual" if (PLOT_CATEGORY == "global") else "times"
-    category_button.label.set_text(PLOT_CATEGORY)
+    if (DATA_TYPE.get_value() == "NK"):
+        update_NK()
     
-    update_visibility()
-update_visibility()
-category_button.on_clicked(switch_category)
-# endregion
+    for b in [K]:
+        b.set_visible(DATA_TYPE.get_value() == "NK")
+    for b in [AXIS1, AXIS2, SELECTED_ALGOS]:
+        b.set_visible(PLOT_TYPE.get_value() == "correlation")
+    update()
+DATA_TYPE = ButtonCycle(fig.add_axes([0.1, 0.2, 0.3, 0.05]), ["NK", "SAT"], callback=update_visibility)
+PLOT_TYPE = ButtonCycle(fig.add_axes([0.6, 0.2, 0.3, 0.05]), ["anytime", "correlation"], callback=update_visibility)
+AXIS1 = ButtonCycle(fig.add_axes([0.76, 0.14, 0.09, 0.05]), ["fitness", "neighbors", "jump"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=update)
+AXIS2 = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["jump", "fitness", "neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=update)
+SELECTED_ALGOS = ButtonCheck(fig.add_axes([0.6, 0.02, 0.15, 0.17]), ALGO_KEYS, update)
+# endregion =====================================================================================
 
-update(None)
+update_visibility()
 plt.show()

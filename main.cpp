@@ -6,6 +6,7 @@
 #include <chrono>
 #include <filesystem>
 #include <regex>
+#include <thread>
 
 #include "NK/nk.h"
 
@@ -196,12 +197,64 @@ void test_FA_hand(int argc, int first_card, char *args[]) {
     std::cout << "score: " << int(h.score()) << " points with hand\n";
 }
 
+std::string execute_file(const FileData file_data) {
+    srand(file_data.get_seed());
+    std::ofstream* output_file = nullptr;
+    if (file_data.get_bool("debug_screen", false)) {
+        output_file = new std::ofstream("./temp.rundata");
+        if (!(*output_file).is_open()) {
+            std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
+            exit(1);
+        }
+    }
+
+    if (file_data.get_string("problem") == "SAT") run_on_sat(file_data, output_file);
+    if (file_data.get_string("problem") == "FA") run_on_fa(file_data, output_file);
+    if (file_data.get_string("problem") == "NK") run_on_nk(file_data, output_file);
+    
+    if (output_file != nullptr) {
+        (*output_file).close();
+        delete output_file;
+
+        std::string output_file_path = "";
+        if (file_data.contains_string("label")) output_file_path = std::regex_replace("./python/data/" + file_data.get_string("label"), std::regex("<timestamp>"), timestamp());
+        else                                    output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
+        std::filesystem::create_directories(std::filesystem::path(output_file_path).parent_path());
+        std::ofstream final_file = std::ofstream(output_file_path);
+        if (!final_file.is_open()) {
+            std::cerr << "\033[1;31mERROR: cannot open output file at \"" + output_file_path + "\" !\033[0m\n";
+            exit(1);
+        }
+
+        std::ifstream temp_file = std::ifstream("./temp.rundata");
+        if (!temp_file.is_open()) {
+            std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
+            exit(1);
+        }
+
+        std::string line; 
+        while (std::getline(temp_file, line)) final_file << line << "\n";
+
+        final_file.close();
+        temp_file.close();
+        std::remove("./temp.rundata");
+
+        std::cout << "data saved in " << output_file_path << std::endl;
+        return output_file_path;
+    }
+    return "";
+}
+
 int main(int argc, char *args[]) {
     system("chcp 65001");
     std::cout << "\033[1A\r\033[K";
     if (argc < 2) path_message();
 
     std::string arg1 = args[1];
+    if (arg1 == "-visualize_evo" || arg1 == "-v_evo") {
+        system("python ./python/evolution_visualizer.py");
+        return 0;
+    }
     if (arg1 == "-visualize" || arg1 == "-v") {
         system("python ./python/data_visualizer.py");
         return 0;
@@ -216,6 +269,15 @@ int main(int argc, char *args[]) {
             exit(1);
         }
         srand(time(NULL));
+
+        // for (unsigned int N : { 50, 100, 200, 400, 800, 1000 })
+        // for (unsigned int K : { 0, 1, 2, 4, 8 })
+        // for (unsigned int I = 0; I < 10; I++)
+        // {
+        //     NK nk(N, K);
+        //     nk.save_to_file("./NK/instances/" + std::to_string(N) + "_" + std::to_string(K) + "_" + std::to_string(I) + ".nk");
+        // }
+        // exit(0);
         
         NK nk(atoi(args[2]), atoi(args[3]));
         nk.save_to_file(args[4]);
@@ -225,58 +287,24 @@ int main(int argc, char *args[]) {
     auto seed = time(NULL);
     
     auto files_data = generate_file_data(arg1);
-    for (const FileData& file_data : files_data)
+    std::list<std::thread> threads;
+    std::string output_file_path = "";
+    for (FileData& file_data : files_data)
     {
-        srand(seed);
-        std::ofstream* output_file = nullptr;
-        if (file_data.get_bool("debug_screen", false)) {
-            output_file = new std::ofstream("./temp.rundata");
-            if (!(*output_file).is_open()) {
-                std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
-                exit(1);
-            }
-        }
+        file_data.set_default_seed(seed);
+        std::string output_file_path = execute_file(file_data);
 
-        if (file_data.get_string("problem") == "SAT") run_on_sat(file_data, output_file);
-        if (file_data.get_string("problem") == "FA") run_on_fa(file_data, output_file);
-        if (file_data.get_string("problem") == "NK") run_on_nk(file_data, output_file);
-        
-        if (output_file != nullptr) {
-            (*output_file).close();
-            delete output_file;
-
-            std::string output_file_path = "";
-            if (file_data.contains_string("label")) output_file_path = std::regex_replace("./python/data/" + file_data.get_string("label"), std::regex("<timestamp>"), timestamp());
-            else                                    output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
-            std::filesystem::create_directories(std::filesystem::path(output_file_path).parent_path());
-            std::ofstream final_file = std::ofstream(output_file_path);
-            if (!final_file.is_open()) {
-                std::cerr << "\033[1;31mERROR: cannot open output file at \"" + output_file_path + "\" !\033[0m\n";
-                exit(1);
-            }
-
-            std::ifstream temp_file = std::ifstream("./temp.rundata");
-            if (!temp_file.is_open()) {
-                std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
-                exit(1);
-            }
-
-            std::string line; 
-            while (std::getline(temp_file, line)) final_file << line << "\n";
-
-            final_file.close();
-            temp_file.close();
-            std::remove("./temp.rundata");
-
-            std::cout << "data saved in " << output_file_path << std::endl;
-
-            if (files_data.size() == 1) {
-                if (file_data.get_string("algorithm") == "evolution")
-                    system(("python ./python/data_visualizer.py " + output_file_path + " evolution").c_str());
-                else
-                    system(("python ./python/data_visualizer.py " + output_file_path + " local_search").c_str());
-            }
-        }
+        // threads.push_back(std::thread(execute_file, file_data));
+    }
+    // while (threads.size() != 0) {
+    //     threads.back().join();
+    //     threads.pop_back();
+    // }
+    if (files_data.size() == 1) {
+        if (files_data.front().get_string("algorithm") == "evolution")
+            system(("python ./python/evolution_visualizer.py " + output_file_path + " evolution").c_str());
+        else
+            system(("python ./python/evolution_visualizer.py " + output_file_path + " local_search").c_str());
     }
     return 0;
 }

@@ -59,6 +59,10 @@ FileData::FileData(std::istream& content, const std::string& path): path(path) {
     }
 }
 
+void FileData::set_seed(unsigned int seed) { float_vars["seed"] = seed; }
+void FileData::set_default_seed(unsigned int seed) { if (!contains_bool("seed")) float_vars["seed"] = seed; }
+unsigned int FileData::get_seed() const  { return get_int("seed"); }
+
 bool FileData::get_bool(const std::string& key) const {
     if (!contains_bool(key)) {
         std::cerr << "\033[1;31mERROR: File \"" << path << "\" has no value for key " << key << "!\033[0m\n";
