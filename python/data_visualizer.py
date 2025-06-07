@@ -55,7 +55,7 @@ class NKRunInfo:
 NK_file_infos: dict[int, dict[int, dict[str, dict[int, dict[int, NKRunInfo]]]]] = {}
 
 from tqdm import tqdm
-dirs = list(os.walk(dir_path+"\\data\\local_search"))
+dirs = list(os.walk(dir_path+"\\data\\local_search\\NK"))
 for i in tqdm(range(len(dirs))):
     for f in dirs[i][2]:
         info: NKRunInfo = NKRunInfo(dirs[i][0] + "\\" + f)
@@ -116,7 +116,7 @@ def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
             all_x += list(info.data[info.data.size_of_the_jump != 0][AXIS1.get_value()].to_numpy())
             all_y += list(info.data[info.data.size_of_the_jump != 0][AXIS2.get_value()].to_numpy())
         
-        ax.scatter(all_x, all_y, label=ALGO_KEYS[i])
+        ax.scatter(all_x, all_y, label=ALGO_KEYS[i], s=5)
         legends.append(ALGO_KEYS[i])
     
     ax.set_xlabel(AXIS1.get_label())
