@@ -77,6 +77,9 @@ int FileData::get_int(const std::string& key) const {
     }
     return float_vars.at(key);
 }
+unsigned int FileData::get_uint(const std::string& key) const {
+    return get_int(key);
+}
 float FileData::get_float(const std::string& key) const {
     if (!contains_float(key)) {
         std::cerr << "\033[1;31mERROR: File \"" << path << "\" has no value for key " << key << "!\033[0m\n";
@@ -100,6 +103,9 @@ int FileData::get_int(const std::string& key, int default_value) const {
     if (!contains_int(key)) return default_value;
     return float_vars.at(key);
 }
+unsigned int FileData::get_uint(const std::string& key, int default_value) const {
+    return get_int(key, default_value);
+}
 float FileData::get_float(const std::string& key, float default_value) const {
     if (!contains_float(key)) return default_value;
     return float_vars.at(key);
@@ -114,6 +120,9 @@ bool FileData::contains_bool(const std::string& key) const {
 }
 bool FileData::contains_int(const std::string& key) const {
     return float_vars.count(key);
+}
+bool FileData::contains_uint(const std::string& key) const {
+    return contains_int(key);
 }
 bool FileData::contains_float(const std::string& key) const {
     return float_vars.count(key);

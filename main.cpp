@@ -34,35 +34,35 @@ void path_message() {
     exit(1);
 }
 
-void run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::ofstream* output_file = nullptr) {
+unsigned int run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::ofstream* output_file = nullptr, unsigned int used_budget = 0) {
     if (file_data.get_string("algorithm") == "hill_climb") {
         if (file_data.get_string("hc_choice") == "random")
-            LocalSearch::hill_climb_random(instance, file_data.get_int("budget"), output_file);
-        if (file_data.get_string("hc_choice") == "first")
-            LocalSearch::hill_climb_first(instance, file_data.get_int("budget"), output_file);
-        if (file_data.get_string("hc_choice") == "cycle")
-            LocalSearch::hill_climb_cycle(instance, file_data.get_int("budget"), output_file);
-        if (file_data.get_string("hc_choice") == "least")
-            LocalSearch::hill_climb_least(instance, file_data.get_int("budget"), output_file);
+            return LocalSearch::hill_climb_random(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
+        else if (file_data.get_string("hc_choice") == "first")
+            return LocalSearch::hill_climb_first(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
+        else if (file_data.get_string("hc_choice") == "cycle")
+            return LocalSearch::hill_climb_cycle(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
+        else if (file_data.get_string("hc_choice") == "least")
+            return LocalSearch::hill_climb_least(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
         else if (file_data.get_string("hc_choice") == "best")
-            LocalSearch::hill_climb_best(instance, file_data.get_int("budget"), output_file);
+            return LocalSearch::hill_climb_best(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
     }
-    if (file_data.get_string("algorithm") == "greedy") {
+    else if (file_data.get_string("algorithm") == "greedy") {
         if (file_data.get_string("greedy_type") == "all") {
             if (file_data.get_string("greedy_choice") == "first")
-                LocalSearch::hill_climb_greedy_all_first(instance, file_data.get_int("budget"), output_file);
+                return LocalSearch::hill_climb_greedy_all_first(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
             else if (file_data.get_string("greedy_choice") == "best")
-                LocalSearch::hill_climb_greedy_all_best(instance, file_data.get_int("budget"), output_file);
+                return LocalSearch::hill_climb_greedy_all_best(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
             else if (file_data.get_string("greedy_choice") == "least")
-                LocalSearch::hill_climb_greedy_all_least(instance, file_data.get_int("budget"), output_file);
+                return LocalSearch::hill_climb_greedy_all_least(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
         }
         else if (file_data.get_string("greedy_type") == "improve") {
             if (file_data.get_string("greedy_choice") == "first")
-                LocalSearch::hill_climb_greedy_first(instance, file_data.get_int("budget"), output_file);
+                return LocalSearch::hill_climb_greedy_first(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
             else if (file_data.get_string("greedy_choice") == "best")
-                LocalSearch::hill_climb_greedy_best(instance, file_data.get_int("budget"), output_file);
+                return LocalSearch::hill_climb_greedy_best(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
             else if (file_data.get_string("greedy_choice") == "least")
-                LocalSearch::hill_climb_greedy_least(instance, file_data.get_int("budget"), output_file);
+                return LocalSearch::hill_climb_greedy_least(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
         }
     }
     else if (file_data.get_string("algorithm") == "tabu_search") {
@@ -74,6 +74,8 @@ void run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::of
     else if (file_data.get_string("algorithm") == "evolution") {
         instance = std::move(Argmax::evolution([&instance]() -> std::unique_ptr<Instance> { return instance->randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file));
     }
+
+    return 0;
 }
 void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr) {
     std::cout << "reading file..." << std::endl;
@@ -83,7 +85,13 @@ void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr)
     instance.randomize();
 
     std::unique_ptr<Instance> temp = instance.clone();
-    run(file_data, temp, output_file);
+    unsigned int used_budget = run(file_data, temp, output_file);
+    while (file_data.get_bool("iterate", false) && used_budget < file_data.get_uint("budget", 0))
+    {
+        std::unique_ptr<Instance> temp2 = temp->randomize_clone();
+        used_budget = run(file_data, temp2, output_file, used_budget);
+        if (temp2->score() > temp->score()) temp = std::move(temp2);
+    }
     FitnessInstance result = *dynamic_cast<FitnessInstance*>(temp.get());
 
     std::cout << "max score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
@@ -95,9 +103,16 @@ void run_on_nk(const FileData& file_data, std::ofstream* output_file = nullptr) 
     
     FitnessInstance instance = FitnessInstance([&nk](const std::vector<bool>& a) -> float { return nk->evaluate(a); }, nk->get_nb_variables());
     instance.randomize();
-
+    
     std::unique_ptr<Instance> temp = instance.clone();
-    run(file_data, temp, output_file);
+    unsigned int used_budget = run(file_data, temp, output_file);
+    while (file_data.get_bool("iterate", false) && used_budget < file_data.get_uint("budget", 0))
+    {
+        std::unique_ptr<Instance> temp2 = temp->randomize_clone();
+        used_budget = run(file_data, temp2, output_file, used_budget);
+        if (temp2->score() > temp->score()) temp = std::move(temp2);
+    }
+    
     FitnessInstance result = *dynamic_cast<FitnessInstance*>(temp.get());
 
     std::cout << "max score: " << result << " : " << result.score() << "\n";
@@ -131,7 +146,13 @@ void run_on_fa(const FileData& file_data, std::ofstream* output_file = nullptr) 
 
     h.randomize();
     std::unique_ptr<Instance> temp = h.clone();
-    run(file_data, temp, output_file);
+    unsigned int used_budget = run(file_data, temp, output_file);
+    while (file_data.get_bool("iterate", false) && used_budget < file_data.get_uint("budget", 0))
+    {
+        std::unique_ptr<Instance> temp2 = temp->randomize_clone();
+        used_budget = run(file_data, temp2, output_file, used_budget);
+        if (temp2->score() > temp->score()) temp = std::move(temp2);
+    }
     Hand result = *dynamic_cast<Hand*>(temp.get());
 
     std::cout << "max score: " << int(result.score()) << " points with hand\n";

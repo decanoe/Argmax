@@ -176,7 +176,7 @@ def NK_generate_table():
     for budget_index in range(len(budgets)):
         with open(dir_path + f"/output/best_{budgets[budget_index]//1000}_000.txt", "w") as f: f.write(best_budget_content[budget_index])
 
-NK_generate_table()
+# NK_generate_table()
 # endregion
 
 # ===============================================================================================
