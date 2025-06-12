@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <regex>
 #include <thread>
+#include <sstream>
 
 #include "NK/nk.h"
 
@@ -34,7 +35,7 @@ void path_message() {
     exit(1);
 }
 
-unsigned int run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::ofstream* output_file = nullptr, unsigned int used_budget = 0) {
+unsigned int run(const FileData& file_data, std::unique_ptr<Instance>& instance, std::ostream* output_file = nullptr, unsigned int used_budget = 0) {
     if (file_data.get_string("algorithm") == "hill_climb") {
         if (file_data.get_string("hc_choice") == "random")
             return LocalSearch::hill_climb_random(instance, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
@@ -77,7 +78,7 @@ unsigned int run(const FileData& file_data, std::unique_ptr<Instance>& instance,
 
     return 0;
 }
-void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr) {
+void run_on_sat(const FileData& file_data, std::ostream* output_file = nullptr) {
     std::cout << "reading file..." << std::endl;
     std::shared_ptr<Formule> f = std::shared_ptr<Formule>(new Formule(file_data.get_string("instance")));
     
@@ -96,7 +97,7 @@ void run_on_sat(const FileData& file_data, std::ofstream* output_file = nullptr)
 
     std::cout << "max score: " << result << " : " << int(result.score()) << " out of " << f->get_nb_clauses() << "\n";
 }
-void run_on_nk(const FileData& file_data, std::ofstream* output_file = nullptr) {
+void run_on_nk(const FileData& file_data, std::ostream* output_file = nullptr) {
     std::shared_ptr<NK> nk = nullptr;
     if (file_data.contains_string("instance")) { std::cout << "reading file..." << std::endl; nk = std::shared_ptr<NK>(new NK(file_data.get_string("instance"))); }
     else                                        nk = std::shared_ptr<NK>(new NK(file_data.get_int("N"), file_data.get_int("K")));
@@ -117,7 +118,7 @@ void run_on_nk(const FileData& file_data, std::ofstream* output_file = nullptr) 
 
     std::cout << "max score: " << result << " : " << result.score() << "\n";
 }
-void run_on_fa(const FileData& file_data, std::ofstream* output_file = nullptr) {
+void run_on_fa(const FileData& file_data, std::ostream* output_file = nullptr) {
     std::cout << "reading files..." << std::endl;
     std::shared_ptr<Deck> deck = std::make_shared<Deck>(file_data.get_string("cards"), file_data.get_string("sanctuaries"));
 
@@ -220,7 +221,7 @@ void test_FA_hand(int argc, int first_card, char *args[]) {
 
 std::string execute_file(const FileData file_data) {
     srand(file_data.get_seed());
-    std::ofstream* output_file = nullptr;
+    std::ostringstream* output_file = nullptr;
     std::string output_file_path = "";
     if (file_data.get_bool("debug_screen", false)) {
         if (file_data.contains_string("label")) output_file_path = std::regex_replace("./python/data/" + file_data.get_string("label"), std::regex("<timestamp>"), timestamp());
@@ -229,11 +230,7 @@ std::string execute_file(const FileData file_data) {
         std::ifstream infile(output_file_path);
         if (infile.good() && !file_data.get_bool("override", false)) return output_file_path;
         
-        output_file = new std::ofstream("./temp.rundata");
-        if (!(*output_file).is_open()) {
-            std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
-            exit(1);
-        }
+        output_file = new std::ostringstream();
     }
 
     if (file_data.get_string("problem") == "SAT") run_on_sat(file_data, output_file);
@@ -241,9 +238,6 @@ std::string execute_file(const FileData file_data) {
     if (file_data.get_string("problem") == "NK") run_on_nk(file_data, output_file);
     
     if (output_file != nullptr) {
-        (*output_file).close();
-        delete output_file;
-
         std::filesystem::create_directories(std::filesystem::path(output_file_path).parent_path());
         std::ofstream final_file = std::ofstream(output_file_path);
         if (!final_file.is_open()) {
@@ -251,18 +245,10 @@ std::string execute_file(const FileData file_data) {
             exit(1);
         }
 
-        std::ifstream temp_file = std::ifstream("./temp.rundata");
-        if (!temp_file.is_open()) {
-            std::cerr << "\033[1;31mERROR: cannot open output file at \"./temp.rundata\" !\033[0m\n";
-            exit(1);
-        }
-
-        std::string line; 
-        while (std::getline(temp_file, line)) final_file << line << "\n";
+        final_file << output_file->str();
 
         final_file.close();
-        temp_file.close();
-        std::remove("./temp.rundata");
+        delete output_file;
 
         std::cout << "data saved in " << output_file_path << std::endl;
         return output_file_path;

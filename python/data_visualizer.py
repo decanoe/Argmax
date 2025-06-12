@@ -45,21 +45,26 @@ class NKRunInfo:
         with open(path) as f: self.data = pd.read_csv(io.StringIO(f.read()), sep = "\t")
         
         temp = self.name.removesuffix(".rundata").split("_")
-        self.algo, self.instance, self.seed = "_".join(temp[:-2]), int(temp[-2]), int(temp[-1])
+        self.algo, self.instance = "_".join(temp[:-1]), int(temp[-1])
         dir: str = os.path.dirname(path)
         self.K = int(os.path.basename(dir).removeprefix("K"))
         dir = os.path.dirname(dir)
         self.N = int(os.path.basename(dir).removeprefix("N"))
     def __repr__(self)-> str:
         return self.algo + f" {self.N} {self.K}"
-NK_file_infos: dict[int, dict[int, dict[str, dict[int, dict[int, NKRunInfo]]]]] = {}
+NK_file_infos: dict[int, dict[int, dict[str, dict[int, NKRunInfo]]]] = {}
 
 from tqdm import tqdm
 dirs = list(os.walk(dir_path+"\\data\\local_search\\NK"))
 for i in tqdm(range(len(dirs))):
     for f in dirs[i][2]:
         info: NKRunInfo = NKRunInfo(dirs[i][0] + "\\" + f)
-        NK_file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, {}).setdefault(info.instance, {})[info.seed] = info
+        NK_file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, {})[info.instance] = info
+
+N_keys = sorted(NK_file_infos.keys())
+K_keys = sorted(NK_file_infos[N_keys[0]].keys())
+ALGO_KEYS = sorted(NK_file_infos[N_keys[0]][K_keys[0]].keys())
+ALGO_COLORS = { ALGO_KEYS[i]: plt.cm.rainbow(np.linspace(0, 1, len(ALGO_KEYS)))[i] for i in range(len(ALGO_KEYS)) }
 
 def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     lines = []
@@ -70,23 +75,25 @@ def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], li
     last_y = []
     max_x = 0
     
-    for algo in ALGO_KEYS:
-        infos = NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()].values()
+    sorted_algos = sorted(ALGO_KEYS, key=lambda algo:NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()].data.fitness.max(), reverse=True)
+    
+    for algo in sorted_algos:
+        data = NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()].data
         
         all_x = []
         all_y = []
         
         current_x = 0
-        current_y = 0
-        for info in infos:
-            all_x += list(info.data["budget"].to_numpy() + current_x)
-            current_x = all_x[-1]
-            all_y += list(np.maximum(info.data["fitness"].to_numpy(), current_y))
-            current_y = all_y[-1]
+        temp = data
+        while len(temp) != 0:
+            current_x = temp.budget.iloc[0]
+            all_x.append(current_x)
+            all_y.append(temp.fitness.iloc[0])
+            temp = data[data.fitness > all_y[-1]]
         
         max_x = max(max_x, current_x)
         
-        line, = ax.plot(all_x, all_y, label=algo)
+        line, = ax.plot(all_x, all_y, label=algo, color = ALGO_COLORS[algo])
         legends.append(algo)
         lines.append(line)
         
@@ -94,7 +101,7 @@ def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], li
         last_x.append(all_x[-1])
         last_y.append(all_y[-1])
     
-    for i in range(len(ALGO_KEYS)):
+    for i in range(len(last_x)):
         ax.plot([last_x[i], max_x], [last_y[i], last_y[i]], color=colors[i], linestyle='dashed')
     
     ax.set_xlabel("budget")
@@ -103,21 +110,23 @@ def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], li
 def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     legends = []
     
+    max_val: float = 0
     for i in range(len(ALGO_KEYS)):
         if not(SELECTED_ALGOS.button.get_status()[i]):
             continue
          
-        infos = NK_file_infos[N.get_value()][K.get_value()][ALGO_KEYS[i]][I.get_value()].values()
+        info = NK_file_infos[N.get_value()][K.get_value()][ALGO_KEYS[i]][I.get_value()]
         
-        all_x = []
-        all_y = []
+        all_x = list(info.data[info.data.size_of_the_jump != 0][AXIS1.get_value()].to_numpy())
+        all_y = list(info.data[info.data.size_of_the_jump != 0][AXIS2.get_value()].to_numpy())
         
-        for info in infos:
-            all_x += list(info.data[info.data.size_of_the_jump != 0][AXIS1.get_value()].to_numpy())
-            all_y += list(info.data[info.data.size_of_the_jump != 0][AXIS2.get_value()].to_numpy())
+        max_val = max(max_val, info.data[info.data.size_of_the_jump != 0][AXIS1.get_value()].max(), info.data[info.data.size_of_the_jump != 0][AXIS2.get_value()].max())
         
         ax.scatter(all_x, all_y, label=ALGO_KEYS[i], s=5)
         legends.append(ALGO_KEYS[i])
+    
+    if (AXIS1.get_value() in ["nb_better_neighbors", "size_of_the_jump"] and AXIS2.get_value() in ["nb_better_neighbors", "size_of_the_jump"]):
+        ax.plot([0, max_val], [0, max_val], color = "black")
     
     ax.set_xlabel(AXIS1.get_label())
     ax.set_ylabel(AXIS2.get_label())
@@ -126,10 +135,6 @@ def NK_plot(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]
     if (PLOT_TYPE.get_value() == "anytime"):
         return NK_plot_anytime(fig, ax)
     return NK_plot_correlation(fig, ax)
-
-N_keys = sorted(NK_file_infos.keys())
-K_keys = sorted(NK_file_infos[N_keys[0]].keys())
-ALGO_KEYS = sorted(NK_file_infos[N_keys[0]][K_keys[0]].keys())
 
 # region output_table
 def NK_generate_table():

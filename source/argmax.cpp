@@ -444,7 +444,7 @@ float get_frequency_score(Instance *instance, const std::unique_ptr<std::vector<
     return result;
 }
 
-std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, std::ofstream *out)
+std::unique_ptr<Instance> Argmax::evolution(std::function<std::unique_ptr<Instance>()> spawner, evolution_parameters parameters, std::ostream *out)
 {
     /* #region output initialization */
     std::unique_ptr<std::stringstream> score_out = nullptr;
