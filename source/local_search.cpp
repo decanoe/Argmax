@@ -220,13 +220,12 @@ unsigned int hill_climb_least                           (ReversibleInstance* ins
             instance->revert_last_mutation();
         }
         if (best == -1U) {
-            if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << best_score << "\t" << better_neighbors << "\t0\t" << best_score << "\t" << better_neighbors << "\n"; }
+            if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << old_best << "\t" << better_neighbors << "\t0\t" << old_best << "\t" << better_neighbors << "\n"; }
             break;
         }
-        float old_score = instance->score();
         instance->mutate_arg(best);
         better_neighbors_after = count_better_neighbors(instance);
-        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << old_score << "\t" << better_neighbors << "\t1\t" << best_score << "\t" << better_neighbors_after << "\n"; }
+        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << old_best << "\t" << better_neighbors << "\t1\t" << best_score << "\t" << better_neighbors_after << "\n"; }
         better_neighbors = better_neighbors_after;
     }
     return used_budget;
@@ -276,7 +275,7 @@ unsigned int LocalSearch::hill_climb_greedy_first       (std::unique_ptr<Instanc
             }
         }
         better_neighbors_after = count_better_neighbors(instance);
-        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << score << "\t" << better_neighbors << "\t1\t" << instance->score() << "\t" << better_neighbors_after << "\n"; }
+        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << score << "\t" << better_neighbors << "\t" << count << "\t" << instance->score() << "\t" << better_neighbors_after << "\n"; }
         score = instance->score();
         better_neighbors = better_neighbors_after;
         if (count == 0) return used_budget;
@@ -328,7 +327,7 @@ unsigned int LocalSearch::hill_climb_greedy_best        (std::unique_ptr<Instanc
         }
         
         better_neighbors_after = count_better_neighbors(instance);
-        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << old_score << "\t" << better_neighbors << "\t1\t" << score << "\t" << better_neighbors_after << "\n"; }
+        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << old_score << "\t" << better_neighbors << "\t" << best_count << "\t" << score << "\t" << better_neighbors_after << "\n"; }
         better_neighbors = better_neighbors_after;
         if (best_count == 0) return used_budget;
     }
@@ -381,7 +380,7 @@ unsigned int LocalSearch::hill_climb_greedy_least       (std::unique_ptr<Instanc
 
         if (best_count == 0) score = old_score;
         better_neighbors_after = count_better_neighbors(instance);
-        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << old_score << "\t" << better_neighbors << "\t1\t" << score << "\t" << better_neighbors_after << "\n"; }
+        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << old_score << "\t" << better_neighbors << "\t" << best_count << "\t" << score << "\t" << better_neighbors_after << "\n"; }
         better_neighbors = better_neighbors_after;
         if (best_count == 0) return used_budget;
     }
@@ -425,7 +424,7 @@ unsigned int LocalSearch::hill_climb_greedy_all_first   (std::unique_ptr<Instanc
             }
         }
         better_neighbors_after = count_better_neighbors(instance);
-        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << score << "\t" << better_neighbors << "\t1\t" << instance->score() << "\t" << better_neighbors_after << "\n"; }
+        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << score << "\t" << better_neighbors << "\t" << count << "\t" << instance->score() << "\t" << better_neighbors_after << "\n"; }
         score = instance->score();
         better_neighbors = better_neighbors_after;
         if (count == 0) return used_budget;
@@ -476,7 +475,7 @@ unsigned int LocalSearch::hill_climb_greedy_all_best    (std::unique_ptr<Instanc
             instance->mutate_arg(pair.first);
         }
         better_neighbors_after = count_better_neighbors(instance);
-        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << old_score << "\t" << better_neighbors << "\t1\t" << score << "\t" << better_neighbors_after << "\n"; }
+        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << old_score << "\t" << better_neighbors << "\t" << best_count << "\t" << score << "\t" << better_neighbors_after << "\n"; }
         better_neighbors = better_neighbors_after;
         if (best_count == 0) return used_budget;
     }
@@ -528,7 +527,7 @@ unsigned int LocalSearch::hill_climb_greedy_all_least   (std::unique_ptr<Instanc
         }
         if (best_count == 0) score = old_score;
         better_neighbors_after = count_better_neighbors(instance);
-        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << old_score << "\t" << better_neighbors << "\t1\t" << score << "\t" << better_neighbors_after << "\n"; }
+        if (out) { *out << used_budget << "\t" << (used_budget  - initial_budget) << "\t" << old_score << "\t" << better_neighbors << "\t" << best_count << "\t" << score << "\t" << better_neighbors_after << "\n"; }
         better_neighbors = better_neighbors_after;
         if (best_count == 0) return used_budget;
     }

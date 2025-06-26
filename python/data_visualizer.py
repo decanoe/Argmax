@@ -25,6 +25,9 @@ I: ButtonCycle = None
 SELECTED_ALGOS: ButtonCheck = None
 AXIS1: ButtonCycle = None
 AXIS2: ButtonCycle = None
+AXIS1_WHEN: ButtonCycle = None
+AXIS2_WHEN: ButtonCycle = None
+X_SCALE: ButtonCycle = None
 
 ALGO_KEYS: list[str] = []
 
@@ -69,13 +72,10 @@ ALGO_COLORS = { ALGO_KEYS[i]: plt.cm.rainbow(np.linspace(0, 1, len(ALGO_KEYS)))[
 def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     lines = []
     legends = []
+    if (X_SCALE.get_value() == "log scale"):
+        ax.set_xscale('log')
     
-    colors = []
-    last_x = []
-    last_y = []
-    max_x = 0
-    
-    sorted_algos = sorted(ALGO_KEYS, key=lambda algo:NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()].data.fitness.max(), reverse=True)
+    sorted_algos = sorted(ALGO_KEYS, key=lambda algo:NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()].data.fitness_after_jump.max(), reverse=True)
     
     for algo in sorted_algos:
         data = NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()].data
@@ -88,27 +88,31 @@ def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], li
         while len(temp) != 0:
             current_x = temp.budget.iloc[0]
             all_x.append(current_x)
-            all_y.append(temp.fitness.iloc[0])
-            temp = data[data.fitness > all_y[-1]]
+            all_y.append(temp.fitness_after_jump.iloc[0])
+            temp = data[data.fitness_after_jump > all_y[-1]]
         
-        max_x = max(max_x, current_x)
+        max_x = data.budget.max()
+        if (current_x != max_x):
+            all_x.append(max_x)
+            all_y.append(all_y[-1])
         
         line, = ax.plot(all_x, all_y, label=algo, color = ALGO_COLORS[algo])
         legends.append(algo)
         lines.append(line)
         
-        colors.append(line.get_color())
-        last_x.append(all_x[-1])
-        last_y.append(all_y[-1])
-    
-    for i in range(len(last_x)):
-        ax.plot([last_x[i], max_x], [last_y[i], last_y[i]], color=colors[i], linestyle='dashed')
-    
     ax.set_xlabel("budget")
     ax.set_ylabel("fitness")
+    ax.grid()
     return lines, legends
 def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     legends = []
+    
+    axis1: str = AXIS1.get_value()
+    if (axis1 != "size_of_the_jump"):
+        axis1 += AXIS1_WHEN.get_value()
+    axis2: str = AXIS2.get_value()
+    if (axis2 != "size_of_the_jump"):
+        axis2 += AXIS2_WHEN.get_value()
     
     max_val: float = 0
     for i in range(len(ALGO_KEYS)):
@@ -117,19 +121,20 @@ def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
          
         info = NK_file_infos[N.get_value()][K.get_value()][ALGO_KEYS[i]][I.get_value()]
         
-        all_x = list(info.data[info.data.size_of_the_jump != 0][AXIS1.get_value()].to_numpy())
-        all_y = list(info.data[info.data.size_of_the_jump != 0][AXIS2.get_value()].to_numpy())
+        all_x = list(info.data[info.data.size_of_the_jump != 0][axis1].to_numpy())
+        all_y = list(info.data[info.data.size_of_the_jump != 0][axis2].to_numpy())
         
-        max_val = max(max_val, info.data[info.data.size_of_the_jump != 0][AXIS1.get_value()].max(), info.data[info.data.size_of_the_jump != 0][AXIS2.get_value()].max())
+        max_val = max(max_val, info.data[info.data.size_of_the_jump != 0][axis1].max(), info.data[info.data.size_of_the_jump != 0][axis2].max())
         
         ax.scatter(all_x, all_y, label=ALGO_KEYS[i], s=5)
         legends.append(ALGO_KEYS[i])
     
-    if (AXIS1.get_value() in ["nb_better_neighbors", "size_of_the_jump"] and AXIS2.get_value() in ["nb_better_neighbors", "size_of_the_jump"]):
+    if (not(axis1.startswith("fitness")) and not(axis2.startswith("fitness"))):
         ax.plot([0, max_val], [0, max_val], color = "black")
     
     ax.set_xlabel(AXIS1.get_label())
     ax.set_ylabel(AXIS2.get_label())
+    ax.grid()
     return [], legends
 def NK_plot(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     if (PLOT_TYPE.get_value() == "anytime"):
@@ -249,20 +254,31 @@ def update_NK():
 
 # region permanent buttons ======================================================================
 def update_visibility():
+    for b in [AXIS1, AXIS2, SELECTED_ALGOS]:
+        b.set_visible(PLOT_TYPE.get_value() == "correlation")
+    
+    AXIS1_WHEN.set_visible(PLOT_TYPE.get_value() == "correlation" and AXIS1.get_label() != "jump")
+    AXIS2_WHEN.set_visible(PLOT_TYPE.get_value() == "correlation" and AXIS2.get_label() != "jump")
+    
+    update()
+def update_visibility_data_type():
     if (DATA_TYPE.get_value() == "NK"):
         update_NK()
     
     for b in [K]:
         b.set_visible(DATA_TYPE.get_value() == "NK")
-    for b in [AXIS1, AXIS2, SELECTED_ALGOS]:
-        b.set_visible(PLOT_TYPE.get_value() == "correlation")
-    update()
-DATA_TYPE = ButtonCycle(fig.add_axes([0.1, 0.2, 0.3, 0.05]), ["NK", "SAT"], callback=update_visibility)
+    update_visibility()
+DATA_TYPE = ButtonCycle(fig.add_axes([0.1, 0.2, 0.3, 0.05]), ["NK", "SAT"], callback=update_visibility_data_type)
 PLOT_TYPE = ButtonCycle(fig.add_axes([0.6, 0.2, 0.3, 0.05]), ["anytime", "correlation"], callback=update_visibility)
-AXIS1 = ButtonCycle(fig.add_axes([0.76, 0.14, 0.09, 0.05]), ["fitness", "neighbors", "jump"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=update)
-AXIS2 = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["jump", "fitness", "neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=update)
+
+X_SCALE = ButtonCycle(fig.add_axes([0.6, 0.14, 0.15, 0.05]), ["log scale", "linear scale"], callback=update)
+
+AXIS1 = ButtonCycle(fig.add_axes([0.76, 0.14, 0.09, 0.05]), ["jump", "fitness", "neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=update_visibility)
+AXIS2 = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["fitness", "neighbors", "jump"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=update_visibility)
+AXIS1_WHEN = ButtonCycle(fig.add_axes([0.86, 0.14, 0.09, 0.05]), ["after jump", "before jump"], ["_after_jump", "_before_jump"], callback=update)
+AXIS2_WHEN = ButtonCycle(fig.add_axes([0.86, 0.08, 0.09, 0.05]), ["after jump", "before jump"], ["_after_jump", "_before_jump"], callback=update)
 SELECTED_ALGOS = ButtonCheck(fig.add_axes([0.6, 0.02, 0.15, 0.17]), ALGO_KEYS, update)
 # endregion =====================================================================================
 
-update_visibility()
+update_visibility_data_type()
 plt.show()
