@@ -142,49 +142,59 @@ def NK_plot(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]
     return NK_plot_correlation(fig, ax)
 
 # region output_table
+def add_spaces(value: float, str_size: int):
+    return str(value) + " " * (str_size - len(str(value)))
 def NK_generate_table():
-    avg_content: str = "inst" + "\t".join(ALGO_KEYS)
+    CELL_SIZE = 16
+    
+    avg_content: str = "| " + " | ".join([add_spaces(algo, CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
+    avg_content += " |\n| " + " | ".join(["-" * CELL_SIZE] * (len(ALGO_KEYS) + 1))
     budgets: list[int] = [100000, 50000, 10000, 5000, 1000]
     best_budget_content: list[str] = [avg_content for _ in budgets]
     
-    for n, n_data in NK_file_infos.items():
+    for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
         for k, k_data in n_data.items():
             # region avg
-            avg_content += f"\n{n}_{k}"
+            avg_content += " |\n| " + add_spaces(f"**{n}_{k}**", CELL_SIZE)
+            values = []
             for algo, algo_data in k_data.items():
-                avg: float = 0
-                count: int = 0
+                values.append(0)
+                count = 0
                 for i_data in algo_data.values():
-                    for s_data in i_data.values():
-                        avg += float(s_data.data.fitness.iloc[-1])
-                        count += 1
-                avg_content += f"\t{round(avg/count, 6)}"
+                    ends = i_data.data[(i_data.data.size_of_the_jump == 0) * (i_data.data.in_run_budget != 1)]
+                    values[-1] += float(ends.fitness_after_jump.sum())
+                    count += len(ends)
+                values[-1] /= count
+            
+            best = max(values)
+            for v in values:
+                if (v == best):
+                    avg_content += " | " + add_spaces(f"<b>{round(v, 6)}</b>", CELL_SIZE)
+                else:
+                    avg_content += " | " + add_spaces(round(v, 6), CELL_SIZE)
             # endregion
             
             # region best_budget_content
             for budget_index in range(len(budgets)):
-                best_budget_content[budget_index] += f"\n{n}_{k}"
+                best_budget_content[budget_index] += " |\n| " + add_spaces(f"**{n}_{k}**", CELL_SIZE)
+                values = []
                 for algo, algo_data in k_data.items():
-                    avg: float = 0
-                    count: int = 0
+                    values.append(0)
                     for i_data in algo_data.values():
-                        budget: int = budgets[budget_index]
-                        max_fitness: float = 0
-                        for s_data in i_data.values():
-                            for index in range(-1, -len(s_data.data), -1):
-                                b: int = s_data.data.budget.iloc[index]
-                                if (b <= budget):
-                                    max_fitness = max(max_fitness, s_data.data.fitness.iloc[index])
-                                    budget -= b
-                                    break
-                        avg += max_fitness
-                        count += 1
-                    best_budget_content[budget_index] += f"\t{round(avg/count, 6)}"
+                        values[-1] += i_data.data[i_data.data.budget <= budgets[budget_index]].fitness_after_jump.max()
+                    values[-1] /= len(algo_data.values())
+                
+                best = max(values)
+                for v in values:
+                    if (v == best):
+                        best_budget_content[budget_index] += " | " + add_spaces(f"<b>{round(v, 6)}</b>", CELL_SIZE)
+                    else:
+                        best_budget_content[budget_index] += " | " + add_spaces(round(v, 6), CELL_SIZE)
             # endregion
     
-    with open(dir_path + "/output/avg.txt", "w") as f: f.write(avg_content)
+    with open(dir_path + "/output/avg.txt", "w") as f: f.write(avg_content + " |")
     for budget_index in range(len(budgets)):
-        with open(dir_path + f"/output/best_{budgets[budget_index]//1000}_000.txt", "w") as f: f.write(best_budget_content[budget_index])
+        with open(dir_path + f"/output/best_{budgets[budget_index]//1000}_000.txt", "w") as f: f.write(best_budget_content[budget_index] + " |")
 
 # NK_generate_table()
 # endregion
