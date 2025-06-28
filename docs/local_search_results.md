@@ -1,5 +1,5 @@
-> [!NOTE]
-> Work in progress
+> [!TIP]
+> Une liste complete des algorithmes est présente [ici](algorithmes.md)
 
 ## Moyenne du score obtenu en une execution de l'algorithme
 > [NOTE]
@@ -26,6 +26,7 @@
 > Les meilleurs scores sont calculés en faisant la moyenne du score maximum atteint sur 10 instances différentes
 
 ### Meilleur score obtenu pour un budget de 1 000 tests
+Sur un budget très limité, les algorithmes greedy_improve_best et greedy_improve_first atteignent des scores plus élevés sur les instances la plus part des instances. Mais sur les instances les plus dures (K = 8), le Hill Climb Random a de meilleurs (car plus d'itérations).
 <details>
 <summary>Voir les valeurs</summary>
 
@@ -62,6 +63,7 @@
 </details>
 
 ### Meilleur score obtenu pour un budget de 100 000 tests
+Avec beaucoups de budget, les algorithmes Greedy sont toujours plus performants si la taille des instances n'est pas trop petite.
 <details>
 <summary>Voir les valeurs</summary>
 
@@ -78,3 +80,5 @@
 | **100_4**        | 76.13663         | 77.8408          | 77.73532         | 76.62696         |<ins>77.93245</ins> | 77.4047          | 75.38315         | 76.1391          | 75.78376         | 74.31157         | 76.51002         |
 | **100_8**        | 74.85355         | 76.11952         | 75.90545         | 74.90298         |<ins>76.6459</ins>  | 75.9813          | 74.58828         | 75.38416         | 75.19425         | 72.07755         | 75.17865         |
 </details>
+
+Globalement, sur des instances de petite taille (N = 50), les Hill Climber sont assez performants, mais ils sont vite surpassé par les algorithmes Greedy lorsque N augmente.

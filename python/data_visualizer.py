@@ -40,19 +40,30 @@ class NKRunInfo:
     N: int
     K: int
     algo: str
-    seed: int
     instance: int
     
-    def __init__(self, path: str):
-        self.name = os.path.basename(path)
-        with open(path) as f: self.data = pd.read_csv(io.StringIO(f.read()), sep = "\t")
+    def __init__(self, n: int, k: int, algo: str, instance: str = "avg", name: str = "avg"):
+        self.name = name
+        self.algo = algo
+        self.N = n
+        self.K = k
+        self.instance = instance
+    @classmethod
+    def from_file(cls, path: str):
+        name = os.path.basename(path)
+        with open(path) as f: data = pd.read_csv(io.StringIO(f.read()), sep = "\t")
         
-        temp = self.name.removesuffix(".rundata").split("_")
-        self.algo, self.instance = "_".join(temp[:-1]), int(temp[-1])
+        temp = name.removesuffix(".rundata").split("_")
+        algo, instance = "_".join(temp[:-1]), int(temp[-1])
         dir: str = os.path.dirname(path)
-        self.K = int(os.path.basename(dir).removeprefix("K"))
+        k = int(os.path.basename(dir).removeprefix("K"))
         dir = os.path.dirname(dir)
-        self.N = int(os.path.basename(dir).removeprefix("N"))
+        n = int(os.path.basename(dir).removeprefix("N"))
+        
+        result = cls(n, k, algo, instance, name)
+        result.data = data
+        return result
+        
     def __repr__(self)-> str:
         return self.algo + f" {self.N} {self.K}"
 NK_file_infos: dict[int, dict[int, dict[str, dict[int, NKRunInfo]]]] = {}
@@ -61,7 +72,7 @@ from tqdm import tqdm
 dirs = list(os.walk(dir_path+"\\data\\local_search\\NK"))
 for i in tqdm(range(len(dirs))):
     for f in dirs[i][2]:
-        info: NKRunInfo = NKRunInfo(dirs[i][0] + "\\" + f)
+        info: NKRunInfo = NKRunInfo.from_file(dirs[i][0] + "\\" + f)
         NK_file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, {})[info.instance] = info
 
 N_keys = sorted(NK_file_infos.keys())

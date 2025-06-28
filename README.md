@@ -39,7 +39,7 @@ Dû au nombre élévé de paramètres pour chaque éxecution, une grande partie 
 ## Résultats et interprétations
 L'ensemble des résultats sont répertoriés [ici](docs/local_search_results.md).
 > [!NOTE]
-> Ces résultats concernent principalement les algorithmes de recherche locales simples. Pour des résultats sur les algorithmes écolutifs et mimétiques, voir [ici](docs/evolution_results.md).
+> Ces résultats concernent principalement les algorithmes de recherche locales simples. Pour des résultats sur les algorithmes évolutifs et mimétiques, voir [ici](docs/evolution_results.md).
 
 ## À faire
 Algorithmes évolutifs / mimétiques :
