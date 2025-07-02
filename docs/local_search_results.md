@@ -1,6 +1,37 @@
 > [!TIP]
 > Une liste complete des algorithmes est présente [ici](algorithmes.md)
 
+# Comparaisons des scores pour chaque algorithmes
+## Evolution du score en fonction du budget
+> [NOTE]
+> Pour chaque N et K, une moyenne est faite sur 10 instances différentes avec un budget de 100 000 pour chaque exécution.
+Les graphiques montrent l'évolution du meilleur score trouvé en fonction du budget utilisé.
+<details>
+<summary>Graphiques pour N = 50</summary>
+
+### K = 1
+![score anytime pour les instances 50_1](graphs/50_1_anytime.svg)
+### K = 2
+![score anytime pour les instances 50_2](graphs/50_2_anytime.svg)
+### K = 4
+![score anytime pour les instances 50_4](graphs/50_4_anytime.svg)
+### K = 8
+![score anytime pour les instances 50_8](graphs/50_8_anytime.svg)
+</details>
+
+<details>
+<summary>Graphiques pour N = 100</summary>
+
+### K = 1
+![score anytime pour les instances 100_1](graphs/100_1_anytime.svg)
+### K = 2
+![score anytime pour les instances 100_2](graphs/100_2_anytime.svg)
+### K = 4
+![score anytime pour les instances 100_4](graphs/100_4_anytime.svg)
+### K = 8
+![score anytime pour les instances 100_8](graphs/100_8_anytime.svg)
+</details>
+
 ## Moyenne du score obtenu en une execution de l'algorithme
 > [NOTE]
 > La moyenne est calculée sur 10 instances différentes par paire de N, K et autant d'execution nécessaire pour couvrir un budget de 100 000 tests
@@ -82,3 +113,51 @@ Avec beaucoups de budget, les algorithmes Greedy sont toujours plus performants 
 </details>
 
 Globalement, sur des instances de petite taille (N = 50), les Hill Climber sont assez performants, mais ils sont vite surpassé par les algorithmes Greedy lorsque N augmente.
+
+# Corrélations entre la taille des sauts et d'autres données
+> [NOTE]
+> Ces résultats ne sont intéréssants que sur les algorithmes Greedy puisque les algorithmes Hill Climb ne font que des saut d'un seul bit.
+## Taille des sauts en fonction du score
+> [NOTE]
+> À chaque saut, on regarde la taille du saut en fonction du score avant le saut.
+
+<details>
+<summary>Graphiques pour N = 100</summary>
+
+### K = 1
+![Taille des sauts en fonction du score pour les instances 100_1](graphs/100_1_greedy_jump_size_per_fitness.svg)
+### K = 4
+![Taille des sauts en fonction du score pour les instances 100_4](graphs/100_4_greedy_jump_size_per_fitness.svg)
+### K = 8
+![Taille des sauts en fonction du score pour les instances 100_8](graphs/100_8_greedy_jump_size_per_fitness.svg)
+</details>
+
+## Score obtenu après chaque saut en foncion de sa taille
+> [NOTE]
+> À chaque saut, on regarde le score obtenu après le saut en fonction de la taille du saut.
+
+<details>
+<summary>Graphiques pour N = 100</summary>
+
+### K = 1
+![Score en fonction de la taille des sauts pour les instances 100_1](graphs/100_1_greedy_fitness_after_jump_size.svg)
+### K = 4
+![Score en fonction de la taille des sauts pour les instances 100_4](graphs/100_4_greedy_fitness_after_jump_size.svg)
+### K = 8
+![Score en fonction de la taille des sauts pour les instances 100_8](graphs/100_8_greedy_fitness_after_jump_size.svg)
+</details>
+
+## Taille des sauts en fonction du nombre de voisins améliorants
+> [NOTE]
+> À chaque saut, on regarde la taille du saut en fonction du nombre de voisins améliorants avant le saut.
+
+<details>
+<summary>Graphiques pour N = 100</summary>
+
+### K = 1
+![Taille des sauts en fonction du nombre de voisins améliorants pour les instances 100_1](graphs/100_1_greedy_jump_size_per_neighbor.svg)
+### K = 4
+![Taille des sauts en fonction du nombre de voisins améliorants pour les instances 100_4](graphs/100_4_greedy_jump_size_per_neighbor.svg)
+### K = 8
+![Taille des sauts en fonction du nombre de voisins améliorants pour les instances 100_8](graphs/100_8_greedy_jump_size_per_neighbor.svg)
+</details>
