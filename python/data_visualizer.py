@@ -80,6 +80,45 @@ K_keys = sorted(NK_file_infos[N_keys[0]].keys())
 ALGO_KEYS = sorted(NK_file_infos[N_keys[0]][K_keys[0]].keys())
 ALGO_COLORS = { ALGO_KEYS[i]: plt.cm.rainbow(np.linspace(0, 1, len(ALGO_KEYS)))[i] for i in range(len(ALGO_KEYS)) }
 
+def NK_plot_anytime_avg(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+    lines = []
+    legends = []
+    if (X_SCALE.get_value() == "log scale"):
+        ax.set_xscale('log')
+        
+    all_points_per_algo: dict[str, dict[int, int]] = {}
+    for algo in ALGO_KEYS:
+        all_points: dict[int, int] = {}
+        
+        for i, runinfo in NK_file_infos[N.get_value()][K.get_value()][algo].items():
+            data = runinfo.data
+            
+            temp = data
+            while len(temp) != 0:
+                all_points.setdefault(temp.budget.iloc[0], 0)
+                temp = data[data.fitness_after_jump > temp.fitness_after_jump.iloc[0]]
+            
+            all_points.setdefault(data.budget.max(), 0)
+        
+        for x in all_points.keys():
+            for i, runinfo in NK_file_infos[N.get_value()][K.get_value()][algo].items():
+                data = runinfo.data
+                all_points[x] += data[data.budget <= x].fitness_after_jump.max()
+            all_points[x] /= len(NK_file_infos[N.get_value()][K.get_value()][algo])
+        
+        all_points_per_algo[algo] = all_points
+    
+    sorted_algos = sorted(ALGO_KEYS, key=lambda algo:max(all_points_per_algo[algo].values()), reverse=True)
+    for algo in sorted_algos:
+        x, y = zip(*sorted(all_points_per_algo[algo].items()))
+        line, = ax.plot(x, y, label=algo, color = ALGO_COLORS[algo])
+        legends.append(algo)
+        lines.append(line)
+        
+    ax.set_xlabel("budget")
+    ax.set_ylabel("fitness")
+    ax.grid()
+    return lines, legends
 def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     lines = []
     legends = []
@@ -127,21 +166,37 @@ def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
     
     max_val: float = 0
     for i in range(len(ALGO_KEYS)):
+        algo = ALGO_KEYS[i]
         if not(SELECTED_ALGOS.button.get_status()[i]):
             continue
          
-        info = NK_file_infos[N.get_value()][K.get_value()][ALGO_KEYS[i]][I.get_value()]
+        infos: list[NKRunInfo] = []
+        if (I.get_value() == "avg"):
+            infos = NK_file_infos[N.get_value()][K.get_value()][algo].values()
+        else:
+            infos = [NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()]]
         
-        all_x = list(info.data[info.data.size_of_the_jump != 0][axis1].to_numpy())
-        all_y = list(info.data[info.data.size_of_the_jump != 0][axis2].to_numpy())
+        all_x: list[float] = []
+        all_y: list[float] = []
+        for info in infos:
+            all_x += list(info.data[info.data.size_of_the_jump != 0][axis1].to_numpy())
+            all_y += list(info.data[info.data.size_of_the_jump != 0][axis2].to_numpy())
+            max_val = max(max_val, info.data[info.data.size_of_the_jump != 0][axis1].max(), info.data[info.data.size_of_the_jump != 0][axis2].max())
         
-        max_val = max(max_val, info.data[info.data.size_of_the_jump != 0][axis1].max(), info.data[info.data.size_of_the_jump != 0][axis2].max())
-        
-        ax.scatter(all_x, all_y, label=ALGO_KEYS[i], s=5)
-        legends.append(ALGO_KEYS[i])
+        p, = ax.plot(all_x, all_y, 'o', markersize=3, label=algo, alpha = min(1, 150 / len(all_x)))
+        legends.append(algo)
+        #region aproximation
+        color = p.get_color()
+        theta = np.polyfit(all_x, all_y, deg=1)
+        model = np.poly1d(theta)
+        x = np.linspace(min(all_x), max(all_x), 100)
+        ax.plot(x, model(x), "--", c=color)
+        legends.append("_" + algo + "_approximation")
+        #endregion
     
     if (not(axis1.startswith("fitness")) and not(axis2.startswith("fitness"))):
-        ax.plot([0, max_val], [0, max_val], color = "black")
+        ax.plot([0, max_val], [0, max_val], color = "lightgrey")
+        legends.append("x=y")
     
     ax.set_xlabel(AXIS1.get_label())
     ax.set_ylabel(AXIS2.get_label())
@@ -149,7 +204,10 @@ def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
     return [], legends
 def NK_plot(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     if (PLOT_TYPE.get_value() == "anytime"):
-        return NK_plot_anytime(fig, ax)
+        if (I.get_value() == "avg"):
+            return NK_plot_anytime_avg(fig, ax)
+        else:
+            return NK_plot_anytime(fig, ax)
     return NK_plot_correlation(fig, ax)
 
 # region output_table
@@ -231,7 +289,9 @@ def update(event = None):
     lines, legends = plot(fig, ax)
     
     if len(legends) != 0:
-        ax.legend(legends)
+        leg = ax.legend(legends)
+        for lh in leg.legend_handles:
+            lh.set_alpha(1)
     
     fig.canvas.draw_idle()
 
@@ -270,7 +330,7 @@ def update_NK():
     
     N = ButtonCycle(fig.add_axes([0.1, 0.14, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, update)
     K = ButtonCycle(fig.add_axes([0.21, 0.14, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, update)
-    I = ButtonCycle(fig.add_axes([0.32, 0.14, 0.1, 0.05]), ["I" + str(i) for i in I_keys], I_keys, update)
+    I = ButtonCycle(fig.add_axes([0.32, 0.14, 0.1, 0.05]), ["I" + str(i) for i in I_keys] + ["AVG"], I_keys + ["avg"], update)
 # endregion =====================================================================================
 
 # region permanent buttons ======================================================================
