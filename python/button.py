@@ -1,7 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, CheckButtons
-from matplotlib.backend_bases import MouseEvent
+from matplotlib.backend_bases import MouseEvent, MouseButton
 
 class ButtonProcessor:
     axes: plt.Axes
@@ -61,7 +61,10 @@ class ButtonCycle:
         self.callback = callback
     
     def process(self, event):
-        self.index = (self.index + 1) % len(self.labels)
+        if event.button is MouseButton.LEFT:
+            self.index = (self.index + 1) % len(self.labels)
+        elif event.button is MouseButton.RIGHT:
+            self.index = (self.index + len(self.labels) - 1) % len(self.labels)
         self.button.label.set_text(self.labels[self.index])
         if (self.callback != None):
             self.callback()
