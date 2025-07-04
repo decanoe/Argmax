@@ -284,7 +284,7 @@ def NK_avg_budget_per_algo():
     
     with open(dir_path + "/output/budgets.txt", "w") as f: f.write(avg_content + " |")
 
-NK_avg_budget_per_algo()
+# NK_avg_budget_per_algo()
 # NK_generate_table()
 # endregion
 
