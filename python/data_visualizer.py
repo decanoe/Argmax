@@ -264,7 +264,27 @@ def NK_generate_table():
     with open(dir_path + "/output/avg.txt", "w") as f: f.write(avg_content + " |")
     for budget_index in range(len(budgets)):
         with open(dir_path + f"/output/best_{budgets[budget_index]//1000}_000.txt", "w") as f: f.write(best_budget_content[budget_index] + " |")
+def NK_avg_budget_per_algo():
+    CELL_SIZE = 16
+    
+    avg_content: str = "| " + " | ".join([add_spaces(algo, CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
+    avg_content += " |\n| " + " | ".join(["-" * (CELL_SIZE-1) + ":"] * (len(ALGO_KEYS) + 1))
+    
+    for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
+        for k, k_data in n_data.items():
+            avg_content += " |\n| " + add_spaces(f"**{n}_{k}**", CELL_SIZE)
+            for algo_data in k_data.values():
+                value: float = 0
+                count: int = 0
+                for i_data in algo_data.values():
+                    ends = i_data.data[(i_data.data.size_of_the_jump == 0) * (i_data.data.in_run_budget != 1) * (i_data.data.budget != i_data.data.budget.max())]
+                    count += len(ends)
+                    value += ends.in_run_budget.sum()
+                avg_content += " | " + add_spaces(round(value / count, 1), CELL_SIZE)
+    
+    with open(dir_path + "/output/budgets.txt", "w") as f: f.write(avg_content + " |")
 
+NK_avg_budget_per_algo()
 # NK_generate_table()
 # endregion
 
@@ -354,8 +374,8 @@ PLOT_TYPE = ButtonCycle(fig.add_axes([0.6, 0.2, 0.3, 0.05]), ["anytime", "correl
 
 X_SCALE = ButtonCycle(fig.add_axes([0.6, 0.14, 0.15, 0.05]), ["log scale", "linear scale"], callback=update)
 
-AXIS1 = ButtonCycle(fig.add_axes([0.76, 0.14, 0.09, 0.05]), ["jump", "fitness", "neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=update_visibility)
-AXIS2 = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["fitness", "neighbors", "jump"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=update_visibility)
+AXIS1 = ButtonCycle(fig.add_axes([0.76, 0.14, 0.09, 0.05]), ["jump", "fitness", "improving neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=update_visibility)
+AXIS2 = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["fitness", "improving neighbors", "jump"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=update_visibility)
 AXIS1_WHEN = ButtonCycle(fig.add_axes([0.86, 0.14, 0.09, 0.05]), ["after jump", "before jump"], ["_after_jump", "_before_jump"], callback=update)
 AXIS2_WHEN = ButtonCycle(fig.add_axes([0.86, 0.08, 0.09, 0.05]), ["after jump", "before jump"], ["_after_jump", "_before_jump"], callback=update)
 SELECTED_ALGOS = ButtonCheck(fig.add_axes([0.6, 0.02, 0.15, 0.17]), ALGO_KEYS, update)

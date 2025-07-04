@@ -114,6 +114,30 @@ Avec beaucoups de budget, les algorithmes Greedy sont toujours plus performants 
 
 Globalement, sur des instances de petite taille (N = 50), les Hill Climber sont assez performants, mais ils sont vite surpassé par les algorithmes Greedy lorsque N augmente.
 
+<br/><br/><br/><br/><br/>
+
+# Comparaisons des budgets moyens pour chaque algorithmes
+> [NOTE]
+> La moyenne est calculée sur 10 instances différentes par paire de N, K et autant d'execution nécessaire pour couvrir un budget de 100 000 tests
+<details>
+<summary>Voir les valeurs</summary>
+
+| instance (N_K)   | greedy_all_best  | greedy_all_first | greedy_all_least | greedy_improve_best | greedy_improve_first | greedy_improve_least | hc_best          | hc_cycle         | hc_first         | hc_least         | hc_random        |
+| ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: |
+| **50_0**         | 201.0            | 3588.7           | 5194.1           | 126.0            | 102.0            | 1641.9           | 1308.2           | 380.5            | 691.5            | 1308.2           | 232.5            |
+| **50_1**         | 493.5            | 2509.6           | 3996.1           | 286.3            | 500.2            | 1394.1           | 1120.3           | 390.6            | 614.1            | 1505.8           | 240.5            |
+| **50_2**         | 572.8            | 2390.8           | 3518.2           | 329.2            | 741.6            | 1220.1           | 941.0            | 398.9            | 557.0            | 2058.6           | 247.6            |
+| **50_4**         | 632.8            | 2059.8           | 3577.7           | 361.7            | 791.4            | 1356.8           | 761.7            | 365.1            | 486.0            | 3931.6           | 253.1            |
+| **50_8**         | 604.8            | 1465.9           | 3512.8           | 346.4            | 751.7            | 1431.6           | 529.2            | 277.8            | 338.0            | 4710.8           | 229.9            |
+| **100_0**        | 401.0            | 14383.5          | 20526.0          | 250.9            | 202.0            | 6386.2           | 5106.8           | 1376.7           | 2614.1           | 5106.8           | 562.8            |
+| **100_1**        | 1212.0           | 10575.6          | 15624.3          | 699.1            | 1699.4           | 5264.6           | 4358.6           | 1481.7           | 2393.4           | 6144.6           | 612.7            |
+| **100_2**        | 1453.1           | 9929.7           | 14152.5          | 828.1            | 2512.0           | 4331.4           | 3752.0           | 1465.3           | 2122.2           | 8531.6           | 645.0            |
+| **100_4**        | 1651.7           | 8212.2           | 13357.5          | 926.3            | 2706.8           | 4255.7           | 2938.5           | 1318.0           | 1818.3           | 18243.9          | 662.6            |
+| **100_8**        | 1672.8           | 5756.9           | 13265.8          | 930.5            | 2907.1           | 5212.9           | 2045.4           | 1003.0           | 1286.8           | 29479.6          | 631.7            |
+</details>
+
+<br/><br/><br/><br/><br/>
+
 # Corrélations entre la taille des sauts et d'autres données
 > [NOTE]
 > Ces résultats ne sont intéréssants que sur les algorithmes Greedy puisque les algorithmes Hill Climb ne font que des saut d'un seul bit.
