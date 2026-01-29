@@ -23,8 +23,8 @@ class DirInfos:
     def __repr__(self):
         return "(" + self.current_dir + ", " + str(self.next_dir) + ", " + str(self.files) + ")"
 
-files = list(os.walk(dir_path+"\\data"))
-files: list[DirInfos] = [DirInfos(f[0].removeprefix(dir_path+"\\data"), f[1], f[2]) for f in files]
+files = list(os.walk(dir_path+"/data"))
+files: list[DirInfos] = [DirInfos(f[0].removeprefix(dir_path+"/data"), f[1], f[2]) for f in files]
 files: dict[str, DirInfos] = { d.current_dir : d for d in files }
 
 class Ptr:
@@ -94,7 +94,7 @@ def file_selector() -> tuple[list[str], str]:
             if b.state and b.path == None:
                 b.button.color = "#d6ab2b"
                 b.button.hovercolor = "#f5c842"
-            elif b.state and b.path.startswith("\\evolution"):
+            elif b.state and b.path.startswith("/evolution"):
                 b.button.color = "#5a83c4"
                 b.button.hovercolor = "#6491d9"
             elif b.state:
@@ -109,10 +109,10 @@ def file_selector() -> tuple[list[str], str]:
     
     def update_text(path: str):
         file_content: str = ""
-        with open(dir_path + "\\data\\" + path.removeprefix("\\")) as f: file_content = f.read()
-        if (path.startswith("\\evolution")):
+        with open(dir_path + "/data/" + path.removeprefix("/")) as f: file_content = f.read()
+        if (path.startswith("/evolution")):
             file_content = file_content.split("\n/*scores*/\n")[0]
-        elif (path.startswith("\\local_search")):
+        elif (path.startswith("/local_search")):
             file_content = "can't open file"
         text.set_text(file_content)
         text_slider_factor.set(file_content.count("\n") * 0.1)
@@ -132,17 +132,17 @@ def file_selector() -> tuple[list[str], str]:
     def add_buttons(current_dir: str = '', indent: int = 0):
         for dir in files[current_dir].next_dir:
             buttons_axes.append(fig.add_axes([0.05, 0, 0.4, 0.18]))
-            buttons.append(ButtonToggle(buttons_axes[-1], dir, switch_dir_update, current_dir + "\\" + dir))
+            buttons.append(ButtonToggle(buttons_axes[-1], dir, switch_dir_update, current_dir + "/" + dir))
             buttons[-1].parent_dir = current_dir
             buttons[-1].path = None
             buttons[-1].indent = indent
-            dir_states[current_dir + "\\" + dir] = False
-            add_buttons(current_dir + "\\" + dir, indent + 1)
+            dir_states[current_dir + "/" + dir] = False
+            add_buttons(current_dir + "/" + dir, indent + 1)
         for f in files[current_dir].files:
             buttons_axes.append(fig.add_axes([0.05, 0, 0.4, 0.18]))
-            buttons.append(ButtonToggle(buttons_axes[-1], f.removesuffix(".rundata"), update_text, current_dir+"\\"+f))
+            buttons.append(ButtonToggle(buttons_axes[-1], f.removesuffix(".rundata"), update_text, current_dir+"/"+f))
             buttons[-1].parent_dir = current_dir
-            buttons[-1].path = current_dir+"\\"+f
+            buttons[-1].path = current_dir+"/"+f
             buttons[-1].indent = indent
     add_buttons()
     
@@ -178,10 +178,10 @@ def file_selector() -> tuple[list[str], str]:
     result = []
     for b in buttons:
         if (b.state and b.path != None):
-            result.append(dir_path + "\\data\\" + b.path.removeprefix("\\"))
-            if (b.path.startswith("\\evolution") and data_type in ["evolution", ""]):
+            result.append(dir_path + "/data/" + b.path.removeprefix("/"))
+            if (b.path.startswith("/evolution") and data_type in ["evolution", ""]):
                 data_type = "evolution"
-            elif (b.path.startswith("\\local_search") and data_type in ["local_search", ""]):
+            elif (b.path.startswith("/local_search") and data_type in ["local_search", ""]):
                 data_type = "local_search"
             else:
                 print("ERROR: please select files of the same type")

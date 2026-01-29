@@ -39,6 +39,7 @@ results
 python/data/*
 python/output/*
 python/__pycache__
+.venv
 
 presets/*
 !presets/template.md

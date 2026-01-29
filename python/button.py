@@ -75,8 +75,12 @@ class ButtonCycle:
         
     def get_value(self) -> str:
         return self.values[self.index]
+    def set_values(self, values: list[str]):
+        self.values = values
     def get_label(self) -> str:
         return self.labels[self.index]
+    def set_labels(self, labels: list[str]):
+        self.labels = labels
 
     def set_visible(self, state: bool):
         self.axes.set_visible(state)

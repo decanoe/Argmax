@@ -17,6 +17,7 @@ from matplotlib.backend_bases import MouseEvent
 from matplotlib.text import Annotation
 from button import ButtonCycle, ButtonCheck
 
+FULL_SCREEN: bool = False
 DATA_TYPE: ButtonCycle = None
 PLOT_TYPE: ButtonCycle = None
 N: ButtonCycle = None
@@ -30,6 +31,19 @@ AXIS2_WHEN: ButtonCycle = None
 X_SCALE: ButtonCycle = None
 
 ALGO_KEYS: list[str] = []
+LABEL_TRANSLATIONS: dict[str, str] = {
+    "greedy_all_best": "GJ_full_best",
+    "greedy_all_first": "GJ_full_first",
+    "greedy_all_least": "GJ_full_least",
+    "greedy_improve_best": "GJ_improve_best",
+    "greedy_improve_first": "GJ_improve_first",
+    "greedy_improve_least": "GJ_improve_least",
+    "hc_first": None,
+    "hc_cycle": None,
+    "hc_random": "HC_first",
+    "hc_least": "HC_least",
+    "hc_best": "HC_best",
+}
 
 # ===============================================================================================
 
@@ -51,7 +65,6 @@ class NKRunInfo:
     @classmethod
     def from_file(cls, path: str):
         name = os.path.basename(path)
-        with open(path) as f: data = pd.read_csv(io.StringIO(f.read()), sep = "\t")
         
         temp = name.removesuffix(".rundata").split("_")
         algo, instance = "_".join(temp[:-1]), int(temp[-1])
@@ -60,6 +73,10 @@ class NKRunInfo:
         dir = os.path.dirname(dir)
         n = int(os.path.basename(dir).removeprefix("N"))
         
+        if (LABEL_TRANSLATIONS[algo] == None):
+            return None
+        
+        with open(path) as f: data = pd.read_csv(io.StringIO(f.read()), sep = "\t")
         result = cls(n, k, algo, instance, name)
         result.data = data
         return result
@@ -69,16 +86,39 @@ class NKRunInfo:
 NK_file_infos: dict[int, dict[int, dict[str, dict[int, NKRunInfo]]]] = {}
 
 from tqdm import tqdm
-dirs = list(os.walk(dir_path+"\\data\\local_search\\NK"))
+dirs = list(os.walk(dir_path+"/data/local_search/NK"))
 for i in tqdm(range(len(dirs))):
     for f in dirs[i][2]:
-        info: NKRunInfo = NKRunInfo.from_file(dirs[i][0] + "\\" + f)
-        NK_file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, {})[info.instance] = info
+        info: NKRunInfo = NKRunInfo.from_file(dirs[i][0] + "/" + f)
+        if (info != None):
+            NK_file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, {})[info.instance] = info
 
 N_keys = sorted(NK_file_infos.keys())
 K_keys = sorted(NK_file_infos[N_keys[0]].keys())
 ALGO_KEYS = sorted(NK_file_infos[N_keys[0]][K_keys[0]].keys())
-ALGO_COLORS = { ALGO_KEYS[i]: plt.cm.rainbow(np.linspace(0, 1, len(ALGO_KEYS)))[i] for i in range(len(ALGO_KEYS)) }
+# ALGO_COLORS = { ALGO_KEYS[i]: plt.cm.rainbow(np.linspace(0, 1, len(ALGO_KEYS)))[i] for i in range(len(ALGO_KEYS)) }
+ALGO_COLORS = {
+    "greedy_all_best": "blue",
+    "greedy_all_first": "green",
+    "greedy_all_least": "red",
+    "greedy_improve_best": "cyan",
+    "greedy_improve_first": "lime",
+    "greedy_improve_least": "orange",
+    "hc_random": "blue",
+    "hc_least": "green",
+    "hc_best": "red",
+}
+ALGO_LINESTYLE = {
+    "greedy_all_best": "-",
+    "greedy_all_first": "-",
+    "greedy_all_least": "-",
+    "greedy_improve_best": "-",
+    "greedy_improve_first": "-",
+    "greedy_improve_least": "-",
+    "hc_random": "--",
+    "hc_least": "--",
+    "hc_best": "--",
+}
 
 def NK_plot_anytime_avg(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     lines = []
@@ -111,8 +151,8 @@ def NK_plot_anytime_avg(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
     sorted_algos = sorted(ALGO_KEYS, key=lambda algo:max(all_points_per_algo[algo].values()), reverse=True)
     for algo in sorted_algos:
         x, y = zip(*sorted(all_points_per_algo[algo].items()))
-        line, = ax.plot(x, y, label=algo, color = ALGO_COLORS[algo])
-        legends.append(algo)
+        line, = ax.plot(x, y, label=LABEL_TRANSLATIONS[algo], color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo])
+        legends.append(LABEL_TRANSLATIONS[algo])
         lines.append(line)
         
     ax.set_xlabel("budget")
@@ -146,8 +186,8 @@ def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], li
             all_x.append(max_x)
             all_y.append(all_y[-1])
         
-        line, = ax.plot(all_x, all_y, label=algo, color = ALGO_COLORS[algo])
-        legends.append(algo)
+        line, = ax.plot(all_x, all_y, label=LABEL_TRANSLATIONS[algo], color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo])
+        legends.append(LABEL_TRANSLATIONS[algo])
         lines.append(line)
         
     ax.set_xlabel("budget")
@@ -155,6 +195,7 @@ def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], li
     ax.grid()
     return lines, legends
 def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+    lines = []
     legends = []
     
     axis1: str = AXIS1.get_value()
@@ -183,25 +224,27 @@ def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
             all_y += list(info.data[info.data.size_of_the_jump != 0][axis2].to_numpy())
             max_val = max(max_val, info.data[info.data.size_of_the_jump != 0][axis1].max(), info.data[info.data.size_of_the_jump != 0][axis2].max())
         
-        p, = ax.plot(all_x, all_y, 'o', markersize=3, label=algo, alpha = min(1, 150 / len(all_x)))
-        legends.append(algo)
+        p, = ax.plot(all_x, all_y, linestyle="", marker='o', color = ALGO_COLORS[algo], markersize=3, label=LABEL_TRANSLATIONS[algo], alpha = min(1, 150 / len(all_x)))
+        legends.append("")
+        lines.append(p)
         #region aproximation
-        color = p.get_color()
         theta = np.polyfit(all_x, all_y, deg=1)
         model = np.poly1d(theta)
         x = np.linspace(min(all_x), max(all_x), 100)
-        ax.plot(x, model(x), "--", c=color)
-        legends.append("_" + algo + "_approximation")
+        line, = ax.plot(x, model(x), color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo])
+        legends.append("_" + LABEL_TRANSLATIONS[algo] + "_approximation")
+        lines.append(line)
         #endregion
     
     if (not(axis1.startswith("fitness")) and not(axis2.startswith("fitness"))):
-        ax.plot([0, max_val], [0, max_val], color = "lightgrey")
+        line, = ax.plot([0, max_val], [0, max_val], color = "lightgrey")
         legends.append("x=y")
+        lines.append(line)
     
     ax.set_xlabel(AXIS1.get_label())
     ax.set_ylabel(AXIS2.get_label())
     ax.grid()
-    return [], legends
+    return lines, legends
 def NK_plot(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     if (PLOT_TYPE.get_value() == "anytime"):
         if (I.get_value() == "avg"):
@@ -216,17 +259,18 @@ def add_spaces(value: float, str_size: int):
 def NK_generate_table():
     CELL_SIZE = 16
     
-    avg_content: str = "| " + " | ".join([add_spaces(algo, CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
+    avg_content: str = "| " + " | ".join([add_spaces(LABEL_TRANSLATIONS.get(algo, algo), CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
     avg_content += " |\n| " + " | ".join(["-" * CELL_SIZE] * (len(ALGO_KEYS) + 1))
     budgets: list[int] = [100000, 50000, 10000, 5000, 1000]
     best_budget_content: list[str] = [avg_content for _ in budgets]
     
     for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
-        for k, k_data in n_data.items():
+        for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
             # region avg
             avg_content += " |\n| " + add_spaces(f"**{n}_{k}**", CELL_SIZE)
             values = []
-            for algo, algo_data in k_data.items():
+            for algo in ALGO_KEYS:
+                algo_data = k_data[algo]
                 values.append(0)
                 count = 0
                 for i_data in algo_data.values():
@@ -238,7 +282,7 @@ def NK_generate_table():
             best = max(values)
             for v in values:
                 if (v == best):
-                    avg_content += " | " + add_spaces(f"<b>{round(v, 6)}</b>", CELL_SIZE)
+                    avg_content += " | " + add_spaces(f"<ins>{round(v, 6)}</ins>", CELL_SIZE)
                 else:
                     avg_content += " | " + add_spaces(round(v, 6), CELL_SIZE)
             # endregion
@@ -267,13 +311,14 @@ def NK_generate_table():
 def NK_avg_budget_per_algo():
     CELL_SIZE = 16
     
-    avg_content: str = "| " + " | ".join([add_spaces(algo, CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
+    avg_content: str = "| " + " | ".join([add_spaces(LABEL_TRANSLATIONS.get(algo, algo), CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
     avg_content += " |\n| " + " | ".join(["-" * (CELL_SIZE-1) + ":"] * (len(ALGO_KEYS) + 1))
     
     for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
-        for k, k_data in n_data.items():
+        for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
             avg_content += " |\n| " + add_spaces(f"**{n}_{k}**", CELL_SIZE)
-            for algo_data in k_data.values():
+            for algo in ALGO_KEYS:
+                algo_data = k_data[algo]
                 value: float = 0
                 count: int = 0
                 for i_data in algo_data.values():
@@ -284,8 +329,8 @@ def NK_avg_budget_per_algo():
     
     with open(dir_path + "/output/budgets.txt", "w") as f: f.write(avg_content + " |")
 
-# NK_avg_budget_per_algo()
-# NK_generate_table()
+NK_avg_budget_per_algo()
+NK_generate_table()
 # endregion
 
 # ===============================================================================================
@@ -309,7 +354,10 @@ def update(event = None):
     lines, legends = plot(fig, ax)
     
     if len(legends) != 0:
-        leg = ax.legend(legends)
+        leg = ax.legend(
+            [lines[i] for i in range(len(legends)) if legends[i] != ""],
+            [l for l in legends if l != ""]
+            )
         for lh in leg.legend_handles:
             lh.set_alpha(1)
     
@@ -348,18 +396,34 @@ def update_NK():
     K_keys = sorted(NK_file_infos[N_keys[0]].keys())
     I_keys = sorted(NK_file_infos[N_keys[0]][K_keys[0]][ALGO_KEYS[0]].keys())
     
-    N = ButtonCycle(fig.add_axes([0.1, 0.14, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, update)
-    K = ButtonCycle(fig.add_axes([0.21, 0.14, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, update)
-    I = ButtonCycle(fig.add_axes([0.32, 0.14, 0.1, 0.05]), ["I" + str(i) for i in I_keys] + ["AVG"], I_keys + ["avg"], update)
+    if (N == None):
+        N = ButtonCycle(fig.add_axes([0.1, 0.14, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, update)
+    else:
+        N.set_labels(["N" + str(i) for i in N_keys])
+        N.set_values(N_keys)
+    
+    if (K == None):
+        K = ButtonCycle(fig.add_axes([0.21, 0.14, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, update)
+    else:
+        K.set_labels(["K" + str(i) for i in K_keys])
+        K.set_values(K_keys)
+    
+    if (I == None):
+        I = ButtonCycle(fig.add_axes([0.32, 0.14, 0.1, 0.05]), ["I" + str(i) for i in I_keys] + ["AVG"], I_keys + ["avg"], update)
+    else:
+        I.set_labels(["I" + str(i) for i in I_keys] + ["AVG"])
+        I.set_values(I_keys + ["avg"])
 # endregion =====================================================================================
 
 # region permanent buttons ======================================================================
 def update_visibility():
     for b in [AXIS1, AXIS2, SELECTED_ALGOS]:
-        b.set_visible(PLOT_TYPE.get_value() == "correlation")
+        b.set_visible(PLOT_TYPE.get_value() == "correlation" and not(FULL_SCREEN))
+    for b in [X_SCALE]:
+        b.set_visible(PLOT_TYPE.get_value() != "correlation" and not(FULL_SCREEN))
     
-    AXIS1_WHEN.set_visible(PLOT_TYPE.get_value() == "correlation" and AXIS1.get_label() != "jump")
-    AXIS2_WHEN.set_visible(PLOT_TYPE.get_value() == "correlation" and AXIS2.get_label() != "jump")
+    AXIS1_WHEN.set_visible(PLOT_TYPE.get_value() == "correlation" and AXIS1.get_label() != "jump" and not(FULL_SCREEN))
+    AXIS2_WHEN.set_visible(PLOT_TYPE.get_value() == "correlation" and AXIS2.get_label() != "jump" and not(FULL_SCREEN))
     
     update()
 def update_visibility_data_type():
@@ -367,7 +431,7 @@ def update_visibility_data_type():
         update_NK()
     
     for b in [K]:
-        b.set_visible(DATA_TYPE.get_value() == "NK")
+        b.set_visible(DATA_TYPE.get_value() == "NK" and not(FULL_SCREEN))
     update_visibility()
 DATA_TYPE = ButtonCycle(fig.add_axes([0.1, 0.2, 0.3, 0.05]), ["NK", "SAT"], callback=update_visibility_data_type)
 PLOT_TYPE = ButtonCycle(fig.add_axes([0.6, 0.2, 0.3, 0.05]), ["anytime", "correlation"], callback=update_visibility)
@@ -379,6 +443,27 @@ AXIS2 = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["fitness", "improvi
 AXIS1_WHEN = ButtonCycle(fig.add_axes([0.86, 0.14, 0.09, 0.05]), ["after jump", "before jump"], ["_after_jump", "_before_jump"], callback=update)
 AXIS2_WHEN = ButtonCycle(fig.add_axes([0.86, 0.08, 0.09, 0.05]), ["after jump", "before jump"], ["_after_jump", "_before_jump"], callback=update)
 SELECTED_ALGOS = ButtonCheck(fig.add_axes([0.6, 0.02, 0.15, 0.17]), ALGO_KEYS, update)
+# endregion =====================================================================================
+
+# region full_screen ============================================================================
+def switch_full_screen(key: str):
+    global FULL_SCREEN, fig
+    
+    if (key != "' '"):
+        return
+    
+    FULL_SCREEN = not(FULL_SCREEN)
+    if (FULL_SCREEN):
+        fig.subplots_adjust(left=0.035, right=0.98, bottom=0.07, top=0.95)
+    else:
+        fig.subplots_adjust(left=0.1, right=0.9, bottom=0.35, top=0.95)
+    
+    for b in [DATA_TYPE, PLOT_TYPE, X_SCALE, AXIS1, AXIS2, AXIS1_WHEN, AXIS2_WHEN, SELECTED_ALGOS, N, K, I]:
+        b.set_visible(not(FULL_SCREEN))
+    update_visibility_data_type()
+    
+fig.canvas.mpl_connect('key_press_event', lambda evt: switch_full_screen(repr(evt.key)))
+# fig.canvas.mpl_connect('key_press_event', lambda evt: print(repr(evt.key)))
 # endregion =====================================================================================
 
 update_visibility_data_type()
