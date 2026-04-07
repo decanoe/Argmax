@@ -308,29 +308,96 @@ def NK_generate_table():
     with open(dir_path + "/output/avg.txt", "w") as f: f.write(avg_content + " |")
     for budget_index in range(len(budgets)):
         with open(dir_path + f"/output/best_{budgets[budget_index]//1000}_000.txt", "w") as f: f.write(best_budget_content[budget_index] + " |")
-def NK_avg_budget_per_algo():
+def NK_avg_budget_per_algo_md():
     CELL_SIZE = 16
+    COUNT_PER_INSTANCE = 2
     
     avg_content: str = "| " + " | ".join([add_spaces(LABEL_TRANSLATIONS.get(algo, algo), CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
-    avg_content += " |\n| " + " | ".join(["-" * (CELL_SIZE-1) + ":"] * (len(ALGO_KEYS) + 1))
+    avg_content += " |\n| " + " | ".join(["-" * CELL_SIZE] * (len(ALGO_KEYS) + 1))
     
     for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
         for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
             avg_content += " |\n| " + add_spaces(f"**{n}_{k}**", CELL_SIZE)
+            line_values = []
+            
             for algo in ALGO_KEYS:
                 algo_data = k_data[algo]
                 value: float = 0
                 count: int = 0
-                for i_data in algo_data.values():
+                for i, i_data in algo_data.items():
                     ends = i_data.data[(i_data.data.size_of_the_jump == 0) * (i_data.data.in_run_budget != 1) * (i_data.data.budget != i_data.data.budget.max())]
-                    count += len(ends)
-                    value += ends.in_run_budget.sum()
-                avg_content += " | " + add_spaces(round(value / count, 1), CELL_SIZE)
+                    nb_ends = min(COUNT_PER_INSTANCE, len(ends))
+                    if (nb_ends < COUNT_PER_INSTANCE):
+                        print(f"Warning : not enough ends to do budget average on {n},{k} {algo}_{i} (only got {nb_ends})")
+                    
+                    count += nb_ends
+                    value += ends.in_run_budget[:nb_ends].sum()
+                line_values.append(round(value / count, 1))
+            
+            for value in line_values:
+                if value == min(line_values):
+                    avg_content += " | " + add_spaces("<ins>" + str(value) + "</ins>", CELL_SIZE)
+                else:
+                    avg_content += " | " + add_spaces(value, CELL_SIZE)
     
-    with open(dir_path + "/output/budgets.txt", "w") as f: f.write(avg_content + " |")
+    with open(dir_path + "/../docs/tables/budgets.txt", "w") as f: f.write(avg_content + " |")
+def NK_avg_budget_per_algo_latex():
+    CELL_SIZE = 7
+    COUNT_PER_INSTANCE = 2
+    
+    header: str = """\\begin{table}[ht]
+\\caption{Mean evaluation budget per single trajectory. Data averaged over """ + str(COUNT_PER_INSTANCE) + """ independent runs on 10 problem instances per $(N,K)$ pair.}
+\\label{tab:mean_budget}
+\\centering
+\\setlength{\\tabcolsep}{4pt}
+\\begin{scriptsize}
+\\begin{tabular}{l | c c c | c c c | c c c}
+\\hline
+Instances & \\multicolumn{3}{c|}{\\Full} & \\multicolumn{3}{c|}{\\Improve} & \\multicolumn{3}{c}{\\HC} \\\\
+$(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\First & \\Least \\\\
+\\hline
+"""
+    footer: str = """\\end{tabular}
+\\end{scriptsize}
+\\end{table}"""
+    
+    body: str = ""
+    
+    for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
+        for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
+            body += "\\textbf{" + str(n) + ", " + str(k) + "} "
+            line_values = []
+            
+            for algo_type in ["greedy_all_", "greedy_improve_", "hc_"]:
+                for algo_param in ["best", "first", "least"]:
+                    algo: str = (algo_type + algo_param).replace("hc_first", "hc_random")
+                    algo_data = k_data[algo]
+                    value: float = 0
+                    count: int = 0
+                    for i, i_data in algo_data.items():
+                        ends = i_data.data[(i_data.data.size_of_the_jump == 0) * (i_data.data.in_run_budget != 1) * (i_data.data.budget != i_data.data.budget.max())]
+                        nb_ends = min(COUNT_PER_INSTANCE, len(ends))
+                        if (nb_ends < COUNT_PER_INSTANCE):
+                            print(f"Warning : not enough ends to do budget average on {n},{k} {algo}_{i} (only got {nb_ends})")
+                        
+                        count += nb_ends
+                        value += ends.in_run_budget[:nb_ends].sum()
+                    line_values.append(round(value / count, 1))
+            
+            for value in line_values:
+                if value == min(line_values):
+                    body += "& " + add_spaces("\\underline{" + str(value) + "}", CELL_SIZE) + " "
+                else:
+                    body += "& " + add_spaces(value, CELL_SIZE) + " "
+            body += " \\\\\n"
+        body += "\\hline\n"
+    
+    with open(dir_path + "/../docs/tables/budgets.tex", "w") as f: f.write(header + body + footer)
 
-NK_avg_budget_per_algo()
+NK_avg_budget_per_algo_md()
+NK_avg_budget_per_algo_latex()
 NK_generate_table()
+exit()
 # endregion
 
 # ===============================================================================================

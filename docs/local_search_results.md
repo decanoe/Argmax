@@ -1,6 +1,10 @@
 > [!TIP]
 > Une liste complete des algorithmes est présente [ici](algorithmes.md)
 
+> [!TIP]
+> Les tableaux sont disponibles en latex [ici](tables)
+> Et les graphiques sont disponibles en pdf [ici](tables)
+
 # Comparaisons des scores pour chaque algorithmes
 ## Evolution du score en fonction du budget
 > [NOTE]
@@ -118,23 +122,25 @@ Globalement, sur des instances de petite taille (N = 50), les Hill Climber sont 
 
 # Comparaisons des budgets moyens pour chaque algorithmes
 > [NOTE]
-> La moyenne est calculée sur 10 instances différentes par paire de N, K et autant d'execution nécessaire pour couvrir un budget de 100 000 tests
+> La moyenne est calculée sur 2 runs par instances et par paire de N, K.
 <details>
 <summary>Voir les valeurs</summary>
 
 | instance (N_K)   | GJ_full_best     | GJ_full_first    | GJ_full_least    | GJ_improve_best  | GJ_improve_first | GJ_improve_least | HC_best          | HC_least         | HC_first         |
-| ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: | ---------------: |
-| **50_0**         | 201.0            | 3588.7           | 5194.1           | 126.0            | 102.0            | 1641.9           | 1308.2           | 1308.2           | 232.5            |
-| **50_1**         | 493.5            | 2509.6           | 3996.1           | 286.3            | 500.2            | 1394.1           | 1120.3           | 1505.8           | 240.5            |
-| **50_2**         | 572.8            | 2390.8           | 3518.2           | 329.2            | 741.6            | 1220.1           | 941.0            | 2058.6           | 247.6            |
-| **50_4**         | 632.8            | 2059.8           | 3577.7           | 361.7            | 791.4            | 1356.8           | 761.7            | 3931.6           | 253.1            |
-| **50_8**         | 604.8            | 1465.9           | 3512.8           | 346.4            | 751.7            | 1431.6           | 529.2            | 4710.8           | 229.9            |
-| **100_0**        | 401.0            | 14383.5          | 20526.0          | 250.9            | 202.0            | 6386.2           | 5106.8           | 5106.8           | 562.8            |
-| **100_1**        | 1212.0           | 10575.6          | 15624.3          | 699.1            | 1699.4           | 5264.6           | 4358.6           | 6144.6           | 612.7            |
-| **100_2**        | 1453.1           | 9929.7           | 14152.5          | 828.1            | 2512.0           | 4331.4           | 3752.0           | 8531.6           | 645.0            |
-| **100_4**        | 1651.7           | 8212.2           | 13357.5          | 926.3            | 2706.8           | 4255.7           | 2938.5           | 18243.9          | 662.6            |
-| **100_8**        | 1672.8           | 5756.9           | 13265.8          | 930.5            | 2907.1           | 5212.9           | 2045.4           | 29479.6          | 631.7            |
+| ---------------- | ---------------- | ---------------- | ---------------- | ---------------- | ---------------- | ---------------- | ---------------- | ---------------- | ---------------- |
+| **50_0**         | 201.0            | 3564.8           | 5351.0           | 128.1            | <ins>102.0</ins> | 1793.6           | 1406.0           | 1406.0           | 225.2            |
+| **50_1**         | 476.0            | 2739.3           | 4101.0           | 286.0            | 541.2            | 1428.4           | 1158.5           | 1548.5           | <ins>238.8</ins> |
+| **50_2**         | 546.0            | 2237.4           | 3611.0           | 313.8            | 737.2            | 1072.4           | 891.0            | 1901.0           | <ins>235.7</ins> |
+| **50_4**         | 696.0            | 2096.8           | 3626.0           | 388.0            | 858.2            | 1291.2           | 798.5            | 3898.5           | <ins>253.6</ins> |
+| **50_8**         | 636.0            | 1483.2           | 4036.0           | 349.6            | 777.0            | 1476.2           | 496.0            | 5286.0           | <ins>197.4</ins> |
+| **100_0**        | 401.0            | 14478.4          | 20501.0          | 250.4            | <ins>202.0</ins> | 6296.2           | 5041.0           | 5041.0           | 581.9            |
+| **100_1**        | 1181.0           | 11224.5          | 16351.0          | 702.2            | 1796.0           | 5136.4           | 4251.0           | 6111.0           | <ins>651.6</ins> |
+| **100_2**        | 1501.0           | 10126.8          | 13961.0          | 810.3            | 2283.8           | 4411.2           | 3851.0           | 8631.0           | <ins>631.3</ins> |
+| **100_4**        | 1651.0           | 8174.2           | 13441.0          | 934.6            | 2604.9           | 4120.3           | 3046.0           | 18596.0          | <ins>695.4</ins> |
+| **100_8**        | 1641.0           | 6069.9           | 12681.0          | 929.8            | 3021.3           | 5520.0           | 2036.0           | 29381.0          | <ins>638.2</ins> |
 </details>
+
+Seulement 2 runs sont utilisés par instances car certains algorithmes Least n'ont pu finir que 2 runs. Prendre toute les runs effectuées sur chaque instance "cacherait" les instances compliquées.
 
 <br/><br/><br/><br/><br/>
 
