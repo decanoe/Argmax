@@ -45,3 +45,4 @@ L'ensemble des résultats sont répertoriés [ici](docs/local_search_results.md)
 ## Derniers ajouts
 - réécriture des tableaux de budgets moyens ([ici](docs/local_search_results.md))
 - ajouts des tableaux en latex ([ici](docs/tables))
+- réécriture des tableaux de scores moyens et maximal par budget ([ici](docs/local_search_results.md))
