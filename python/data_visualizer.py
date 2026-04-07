@@ -295,7 +295,7 @@ def NK_generate_avg_table_latex():
     CELL_SIZE = 7
     
     header: str = """\\begin{table}[ht]
-\\caption{Mean fitness score per execution. Results are averaged over 10 instances per $(N,K)$ pair. The best results for each instance are underlined.}
+\\caption{Mean fitness score per execution. Results are averaged over """ + str(COUNT_PER_INSTANCE * 10) + """ instances per $(N,K)$ pair. The best results for each instance are underlined.}
 \\label{tab:mean_scores}
 \\centering
 \\setlength{\\tabcolsep}{4pt} % Ajustement de l'espacement des colonnes
@@ -388,8 +388,9 @@ def NK_generate_budget_tables_latex():
 \\caption{""" + budget_text + """}
 \\label{""" + budget_label + """}
 \\centering
+\\setlength{\\tabcolsep}{4pt} % Ajustement de l'espacement des colonnes
 \\begin{scriptsize}
-\\begin{tabular}{l | c | c | c | c | c | c | c | c | c}
+\\begin{tabular}{l | c c c | c c c | c c c}
 \\hline
 Instances & \\multicolumn{3}{c|}{\\Full} & \\multicolumn{3}{c|}{\\Improve} & \\multicolumn{3}{c}{\\HC} \\\\
 $(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\First & \\Least \\\\
@@ -461,7 +462,7 @@ def NK_avg_budget_per_algo_md():
                         print(f"Warning : not enough ends to do budget average on {n},{k} {algo}_{i} (only got {nb_ends})")
                     
                     count += nb_ends
-                    value += ends.in_run_budget[:nb_ends].sum()
+                    value += float(ends.in_run_budget[:nb_ends].sum())
                 line_values.append(round(value / count, 1))
             
             for value in line_values:
@@ -510,7 +511,7 @@ $(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\F
                             print(f"Warning : not enough ends to do budget average on {n},{k} {algo}_{i} (only got {nb_ends})")
                         
                         count += nb_ends
-                        value += ends.in_run_budget[:nb_ends].sum()
+                        value += float(ends.in_run_budget[:nb_ends].sum())
                     line_values.append(round(value / count, 1))
             
             for value in line_values:
@@ -523,15 +524,14 @@ $(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\F
     
     with open(dir_path + "/output/budgets.tex", "w") as f: f.write(header + body + footer)
 
-NK_avg_budget_per_algo_md()
-NK_avg_budget_per_algo_latex()
+# NK_avg_budget_per_algo_md()
+# NK_avg_budget_per_algo_latex()
 
-NK_generate_avg_table_md()
-NK_generate_avg_table_latex()
+# NK_generate_avg_table_md()
+# NK_generate_avg_table_latex()
 
-NK_generate_budget_tables_md()
-NK_generate_budget_tables_latex()
-exit()
+# NK_generate_budget_tables_md()
+# NK_generate_budget_tables_latex()
 # endregion
 
 # ===============================================================================================
