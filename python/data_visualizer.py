@@ -32,6 +32,7 @@ AXIS1: ButtonCycle = None
 AXIS2: ButtonCycle = None
 AXIS1_WHEN: ButtonCycle = None
 AXIS2_WHEN: ButtonCycle = None
+REGRESSION: ButtonCycle = None
 X_SCALE: ButtonCycle = None
 LEGEND_POSITION: ButtonCycle = None
 
@@ -247,7 +248,7 @@ def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
         legends.append("")
         lines.append(p)
         #region aproximation
-        theta = np.polyfit(all_x, all_y, deg=1)
+        theta = np.polyfit(all_x, all_y, deg=REGRESSION.get_value())
         model = np.poly1d(theta)
         x = np.linspace(min(all_x), max(all_x), 100)
         line, = ax.plot(x, model(x), color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo])
@@ -644,7 +645,7 @@ def update_NK():
 
 # region permanent buttons ======================================================================
 def update_visibility():
-    for b in [AXIS1, AXIS2, SELECTED_ALGOS]:
+    for b in [AXIS1, AXIS2, REGRESSION, SELECTED_ALGOS]:
         b.set_visible(PLOT_TYPE.get_value() == "correlation" and not(FULL_SCREEN))
     for b in [X_SCALE]:
         b.set_visible(PLOT_TYPE.get_value() != "correlation" and not(FULL_SCREEN))
@@ -670,7 +671,9 @@ AXIS1 = ButtonCycle(fig.add_axes([0.76, 0.14, 0.09, 0.05]), ["jump", "fitness", 
 AXIS2 = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["fitness", "improving neighbors", "jump"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=update_visibility)
 AXIS1_WHEN = ButtonCycle(fig.add_axes([0.86, 0.14, 0.09, 0.05]), ["after jump", "before jump"], ["_after_jump", "_before_jump"], callback=update)
 AXIS2_WHEN = ButtonCycle(fig.add_axes([0.86, 0.08, 0.09, 0.05]), ["after jump", "before jump"], ["_after_jump", "_before_jump"], callback=update)
+REGRESSION = ButtonCycle(fig.add_axes([0.76, 0.02, 0.09, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=update)
 SELECTED_ALGOS = ButtonCheck(fig.add_axes([0.6, 0.02, 0.15, 0.17]), ALGO_KEYS, update)
+
 # endregion =====================================================================================
 
 # region full_screen ============================================================================
@@ -688,7 +691,7 @@ def switch_full_screen(key: str):
         fig.subplots_adjust(left=0.1, right=0.9, bottom=0.35, top=0.95)
         plt.rcParams.update({'font.size': 10})
     
-    for b in [DATA_TYPE, PLOT_TYPE, X_SCALE, LEGEND_POSITION, AXIS1, AXIS2, AXIS1_WHEN, AXIS2_WHEN, SELECTED_ALGOS, N, K, I]:
+    for b in [DATA_TYPE, PLOT_TYPE, X_SCALE, LEGEND_POSITION, AXIS1, AXIS2, AXIS1_WHEN, AXIS2_WHEN, REGRESSION, SELECTED_ALGOS, N, K, I]:
         b.set_visible(not(FULL_SCREEN))
     update_visibility_data_type()
     
@@ -697,4 +700,5 @@ fig.canvas.mpl_connect('key_press_event', lambda evt: switch_full_screen(repr(ev
 # endregion =====================================================================================
 
 update_visibility_data_type()
+SELECTED_ALGOS.check_all([algo for algo in ALGO_KEYS if LABEL_TRANSLATIONS.get(algo, algo).startswith("GJ")], True)
 plt.show()
