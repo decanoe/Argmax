@@ -16,6 +16,10 @@ from matplotlib.widgets import Slider, Button
 from matplotlib.backend_bases import MouseEvent
 from matplotlib.text import Annotation
 from button import ButtonCycle, ButtonCheck
+plt.rcParams.update({
+    "savefig.directory": dir_path.removesuffix("python") + "docs/graphs",
+    "savefig.format": "pdf",
+})
 
 FULL_SCREEN: bool = False
 DATA_TYPE: ButtonCycle = None
@@ -29,6 +33,7 @@ AXIS2: ButtonCycle = None
 AXIS1_WHEN: ButtonCycle = None
 AXIS2_WHEN: ButtonCycle = None
 X_SCALE: ButtonCycle = None
+LEGEND_POSITION: ButtonCycle = None
 
 ALGO_KEYS: list[str] = []
 LABEL_TRANSLATIONS: dict[str, str] = {
@@ -77,6 +82,9 @@ class NKRunInfo:
             return None
         
         with open(path) as f: data = pd.read_csv(io.StringIO(f.read()), sep = "\t")
+        data.fitness_before_jump /= n
+        data.fitness_after_jump /= n
+        
         result = cls(n, k, algo, instance, name)
         result.data = data
         return result
@@ -120,17 +128,18 @@ ALGO_LINESTYLE = {
     "hc_best": "--",
 }
 
-def NK_plot_anytime_avg(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
-    lines = []
-    legends = []
-    if (X_SCALE.get_value() == "log scale"):
-        ax.set_xscale('log')
-        
+# for each (N, K), for each algo, a list of pair (budget, score) of score increase steps
+NK_AVG_POINTS: dict[tuple[int, int], dict[str, dict[int, int]]] = {}
+def construct_NK_avg_points(n: int, k: int) -> dict[str, dict[int, int]]:
+    global NK_AVG_POINTS
+    if ((n, k) in NK_AVG_POINTS):
+        return NK_AVG_POINTS.get((n, k))
+    
     all_points_per_algo: dict[str, dict[int, int]] = {}
     for algo in ALGO_KEYS:
         all_points: dict[int, int] = {}
         
-        for i, runinfo in NK_file_infos[N.get_value()][K.get_value()][algo].items():
+        for runinfo in NK_file_infos[n][k][algo].values():
             data = runinfo.data
             
             temp = data
@@ -141,13 +150,23 @@ def NK_plot_anytime_avg(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
             all_points.setdefault(data.budget.max(), 0)
         
         for x in all_points.keys():
-            for i, runinfo in NK_file_infos[N.get_value()][K.get_value()][algo].items():
+            for runinfo in NK_file_infos[n][k][algo].values():
                 data = runinfo.data
                 all_points[x] += data[data.budget <= x].fitness_after_jump.max()
-            all_points[x] /= len(NK_file_infos[N.get_value()][K.get_value()][algo])
+            all_points[x] /= len(NK_file_infos[n][k][algo])
         
         all_points_per_algo[algo] = all_points
     
+    NK_AVG_POINTS[(n, k)] = all_points_per_algo
+    return all_points_per_algo
+def NK_plot_anytime_avg(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+    lines = []
+    legends = []
+    if (X_SCALE.get_value() == "log scale"):
+        ax.set_xscale('log')
+        
+    all_points_per_algo: dict[str, dict[int, int]] = construct_NK_avg_points(N.get_value(), K.get_value())
+
     sorted_algos = sorted(ALGO_KEYS, key=lambda algo:max(all_points_per_algo[algo].values()), reverse=True)
     for algo in sorted_algos:
         x, y = zip(*sorted(all_points_per_algo[algo].items()))
@@ -280,7 +299,7 @@ def NK_generate_avg_table_md():
                         print(f"Warning : not enough ends to do budget average on {n},{k} {algo}_{i} (only got {nb_ends})")
                     
                     count += nb_ends
-                    values[-1] += ends.fitness_after_jump[:nb_ends].sum() / n
+                    values[-1] += ends.fitness_after_jump[:nb_ends].sum()
                 values[-1] /= count
                 values[-1] = round(values[-1], 4)
             
@@ -330,7 +349,7 @@ $(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\F
                             print(f"Warning : not enough ends to do budget average on {n},{k} {algo}_{i} (only got {nb_ends})")
                         
                         count += nb_ends
-                        value += ends.fitness_after_jump[:nb_ends].sum() / n
+                        value += ends.fitness_after_jump[:nb_ends].sum()
                     line_values.append(round(value / count, 4))
             
             for value in line_values:
@@ -360,7 +379,7 @@ def NK_generate_budget_tables_md():
                     algo_data = k_data[algo]
                     values.append(0)
                     for i_data in algo_data.values():
-                        values[-1] += i_data.data[i_data.data.budget <= budgets[budget_index]].fitness_after_jump.max() / n
+                        values[-1] += i_data.data[i_data.data.budget <= budgets[budget_index]].fitness_after_jump.max()
                     values[-1] /= len(algo_data.values())
                     values[-1] = round(values[-1], 4)
                 
@@ -426,7 +445,7 @@ $(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\F
                         
                         line_values.append(0)
                         for i_data in algo_data.values():
-                            line_values[-1] += i_data.data[i_data.data.budget <= budget].fitness_after_jump.max() / n
+                            line_values[-1] += i_data.data[i_data.data.budget <= budget].fitness_after_jump.max()
                         line_values[-1] /= len(algo_data.values())
                         line_values[-1] = round(line_values[-1], 4)
                 
@@ -557,7 +576,8 @@ def update(event = None):
     if len(legends) != 0:
         leg = ax.legend(
             [lines[i] for i in range(len(legends)) if legends[i] != ""],
-            [l for l in legends if l != ""]
+            [l for l in legends if l != ""],
+            loc=LEGEND_POSITION.get_value()
             )
         for lh in leg.legend_handles:
             lh.set_alpha(1)
@@ -573,6 +593,12 @@ def update_annot(line_index: int, ind):
 
 def hover(event):
     vis = annot.get_visible()
+    if (FULL_SCREEN):
+        if (vis):
+            annot.set_visible(False)
+            fig.canvas.draw_idle()
+        return
+    
     if event.inaxes == ax:
         found: bool = False
         
@@ -638,6 +664,7 @@ DATA_TYPE = ButtonCycle(fig.add_axes([0.1, 0.2, 0.3, 0.05]), ["NK", "SAT"], call
 PLOT_TYPE = ButtonCycle(fig.add_axes([0.6, 0.2, 0.3, 0.05]), ["anytime", "correlation"], callback=update_visibility)
 
 X_SCALE = ButtonCycle(fig.add_axes([0.6, 0.14, 0.15, 0.05]), ["log scale", "linear scale"], callback=update)
+LEGEND_POSITION = ButtonCycle(fig.add_axes([0.1, 0.08, 0.1, 0.05]), ["best", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], update)
 
 AXIS1 = ButtonCycle(fig.add_axes([0.76, 0.14, 0.09, 0.05]), ["jump", "fitness", "improving neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=update_visibility)
 AXIS2 = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["fitness", "improving neighbors", "jump"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=update_visibility)
@@ -655,11 +682,13 @@ def switch_full_screen(key: str):
     
     FULL_SCREEN = not(FULL_SCREEN)
     if (FULL_SCREEN):
-        fig.subplots_adjust(left=0.035, right=0.98, bottom=0.07, top=0.95)
+        fig.subplots_adjust(left=0.075, right=0.98, bottom=0.1, top=0.95)
+        plt.rcParams.update({'font.size': 22})
     else:
         fig.subplots_adjust(left=0.1, right=0.9, bottom=0.35, top=0.95)
+        plt.rcParams.update({'font.size': 10})
     
-    for b in [DATA_TYPE, PLOT_TYPE, X_SCALE, AXIS1, AXIS2, AXIS1_WHEN, AXIS2_WHEN, SELECTED_ALGOS, N, K, I]:
+    for b in [DATA_TYPE, PLOT_TYPE, X_SCALE, LEGEND_POSITION, AXIS1, AXIS2, AXIS1_WHEN, AXIS2_WHEN, SELECTED_ALGOS, N, K, I]:
         b.set_visible(not(FULL_SCREEN))
     update_visibility_data_type()
     

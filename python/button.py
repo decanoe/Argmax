@@ -1,7 +1,8 @@
 import os
 import matplotlib.pyplot as plt
+from matplotlib.transforms import Bbox
 from matplotlib.widgets import Button, CheckButtons
-from matplotlib.backend_bases import MouseEvent, MouseButton
+from matplotlib.backend_bases import MouseButton
 
 class ButtonProcessor:
     axes: plt.Axes
@@ -88,12 +89,15 @@ class ButtonCycle:
 class ButtonCheck:
     axes: plt.Axes
     button: CheckButtons
+    position: Bbox
     
     def __init__(self, axes: plt.Axes, labels: list[str], callback = None):
         self.axes = axes
         self.button = CheckButtons(axes, labels)
         self.button.on_clicked(self.process)
         self.callback = callback
+        
+        self.position = axes.get_position()
     
     def process(self, event):
         if (self.callback != None):
@@ -105,4 +109,9 @@ class ButtonCheck:
 
     def set_visible(self, state: bool):
         self.axes.set_visible(state)
+        
+        if (state):
+            self.axes.set_position(self.position)
+        else:
+            self.axes.set_position([100, 100, .1, .1])
     
