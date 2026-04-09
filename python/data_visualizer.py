@@ -32,6 +32,7 @@ AXIS1: ButtonCycle = None
 AXIS2: ButtonCycle = None
 AXIS1_WHEN: ButtonCycle = None
 AXIS2_WHEN: ButtonCycle = None
+CORRELATION_PLOT: ButtonCycle = None
 REGRESSION: ButtonCycle = None
 X_SCALE: ButtonCycle = None
 LEGEND_POSITION: ButtonCycle = None
@@ -214,10 +215,102 @@ def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], li
     ax.set_ylabel("fitness")
     ax.grid()
     return lines, legends
-def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+def _NK_get_single_correlation_points(algo: str, axis1: str, axis2: str) -> tuple[np.ndarray[float], np.ndarray[float]]:
+    infos: list[NKRunInfo] = []
+    if (I.get_value() == "avg"):
+        infos = NK_file_infos[N.get_value()][K.get_value()][algo].values()
+    else:
+        infos = [NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()]]
+        
+    all_x: np.ndarray[float] = np.array([])
+    all_y: np.ndarray[float] = np.array([])
+    for info in infos:
+        data: pd.DataFrame = info.data[info.data.size_of_the_jump != 0]
+
+        temp_x: np.ndarray[float] = data[axis1.replace("_delta", "_after_jump")].to_numpy(copy=True)
+        if (axis1.endswith("_delta")):
+            temp_x -= data[axis1.replace("_delta", "_before_jump")].to_numpy()
+        
+        temp_y: np.ndarray[float] = data[axis2.replace("_delta", "_after_jump")].to_numpy(copy=True)
+        if (axis2.endswith("_delta")):
+            temp_y -= data[axis2.replace("_delta", "_before_jump")].to_numpy()
+        
+        all_x = np.concatenate((all_x, temp_x), axis=None)
+        all_y = np.concatenate((all_y, temp_y), axis=None)
+    
+    return all_x, all_y
+def _NK_plot_correlation_regression(fig: plt.Figure, ax: plt.Axes, axis1: str, axis2: str) -> tuple[list[plt.Line2D], list[str], float]:
     lines = []
     legends = []
     
+    max_val: float = 0
+    for i in range(len(ALGO_KEYS)):
+        algo = ALGO_KEYS[i]
+        if not(SELECTED_ALGOS.button.get_status()[i]):
+            continue
+        
+        all_x, all_y = _NK_get_single_correlation_points(algo, axis1, axis2)
+        max_val = max(max_val, all_x.max(), all_y.max())
+        
+        p, = ax.plot(all_x, all_y, linestyle="", marker='o', color = ALGO_COLORS[algo], markersize=3, label=LABEL_TRANSLATIONS[algo], alpha = min(1, 150 / len(all_x)))
+        legends.append("")
+        lines.append(p)
+        
+        #region aproximation
+        theta = np.polyfit(all_x, all_y, deg=REGRESSION.get_value())
+        model = np.poly1d(theta)
+        x = np.linspace(all_x.min(), all_x.max(), 100)
+        line, = ax.plot(x, model(x), color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo], label = LABEL_TRANSLATIONS[algo] + " regression")
+        legends.append(LABEL_TRANSLATIONS[algo] + " regression")
+        lines.append(line)
+        #endregion
+    
+    return lines, legends, max_val
+def _NK_plot_correlation_mean_std(fig: plt.Figure, ax: plt.Axes, axis1: str, axis2: str) -> tuple[list[plt.Line2D], list[str], float]:
+    lines = []
+    legends = []
+    
+    if (axis1.startswith("fitness") and axis2.startswith("fitness")):
+        return lines, legends, 1
+    
+    max_val: float = 0
+    for i in range(len(ALGO_KEYS)):
+        algo = ALGO_KEYS[i]
+        if not(SELECTED_ALGOS.button.get_status()[i]):
+            continue
+        
+        all_x, all_y = _NK_get_single_correlation_points(algo, axis1, axis2)
+        max_val = max(max_val, all_x.max(), all_y.max())
+        
+        discrete_values: np.ndarray[float] = np.unique(all_y if axis1.startswith("fitness") else all_x)
+        mean: np.ndarray[float] = np.zeros(discrete_values.size)
+        std: np.ndarray[float] = np.zeros(discrete_values.size)
+        
+        for i in range(discrete_values.size):
+            if axis1.startswith("fitness"):
+                mask = (all_y == discrete_values[i])
+                mean[i] = all_x[mask].mean()
+                std[i] = all_x[mask].std()
+            else:
+                mask = (all_x == discrete_values[i])
+                mean[i] = all_y[mask].mean()
+                std[i] = all_y[mask].std()
+        
+        line1, line2 = (None, None)
+        if (axis1.startswith("fitness")):
+            ax.fill_betweenx(discrete_values, mean - std, mean + std, alpha=.5, linewidth=0, color = ALGO_COLORS[algo])
+            line2, = ax.plot(mean, discrete_values, linewidth=2, color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo], label=LABEL_TRANSLATIONS[algo] + " mean")
+        else:
+            ax.fill_between(discrete_values, mean - std, mean + std, alpha=.5, linewidth=0, color = ALGO_COLORS[algo])
+            line2, = ax.plot(discrete_values, mean, linewidth=2, color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo], label=LABEL_TRANSLATIONS[algo] + " mean")
+        
+        legends.append("")
+        lines.append(line1)
+        legends.append(LABEL_TRANSLATIONS[algo] + " mean")
+        lines.append(line2)
+    
+    return lines, legends, max_val
+def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     axis1: str = AXIS1.get_value()
     if (axis1 != "size_of_the_jump"):
         axis1 += AXIS1_WHEN.get_value()
@@ -225,44 +318,20 @@ def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
     if (axis2 != "size_of_the_jump"):
         axis2 += AXIS2_WHEN.get_value()
     
-    max_val: float = 0
-    for i in range(len(ALGO_KEYS)):
-        algo = ALGO_KEYS[i]
-        if not(SELECTED_ALGOS.button.get_status()[i]):
-            continue
-         
-        infos: list[NKRunInfo] = []
-        if (I.get_value() == "avg"):
-            infos = NK_file_infos[N.get_value()][K.get_value()][algo].values()
-        else:
-            infos = [NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()]]
-        
-        all_x: list[float] = []
-        all_y: list[float] = []
-        for info in infos:
-            all_x += list(info.data[info.data.size_of_the_jump != 0][axis1].to_numpy())
-            all_y += list(info.data[info.data.size_of_the_jump != 0][axis2].to_numpy())
-            max_val = max(max_val, info.data[info.data.size_of_the_jump != 0][axis1].max(), info.data[info.data.size_of_the_jump != 0][axis2].max())
-        
-        p, = ax.plot(all_x, all_y, linestyle="", marker='o', color = ALGO_COLORS[algo], markersize=3, label=LABEL_TRANSLATIONS[algo], alpha = min(1, 150 / len(all_x)))
-        legends.append("")
-        lines.append(p)
-        #region aproximation
-        theta = np.polyfit(all_x, all_y, deg=REGRESSION.get_value())
-        model = np.poly1d(theta)
-        x = np.linspace(min(all_x), max(all_x), 100)
-        line, = ax.plot(x, model(x), color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo])
-        legends.append("_" + LABEL_TRANSLATIONS[algo] + "_approximation")
-        lines.append(line)
-        #endregion
-    
-    if (not(axis1.startswith("fitness")) and not(axis2.startswith("fitness"))):
-        line, = ax.plot([0, max_val], [0, max_val], color = "lightgrey")
+    lines = []
+    legends = []
+    max_val = 1
+    if (CORRELATION_PLOT.get_value() == "regression"):
+        lines, legends, max_val = _NK_plot_correlation_regression(fig, ax, axis1, axis2)
+    else:
+        lines, legends, max_val = _NK_plot_correlation_mean_std(fig, ax, axis1, axis2)
+
+    if (not(AXIS1.get_value() == "fitness") and not(AXIS2.get_value() == "fitness") and not(axis1.endswith("delta")) and not(axis2.endswith("delta"))):
+        line, = ax.plot(np.linspace(0, max_val), np.linspace(0, max_val), color = "gray", linestyle = "--", label = "x = y")
         legends.append("x=y")
         lines.append(line)
-    
-    ax.set_xlabel(AXIS1.get_label())
-    ax.set_ylabel(AXIS2.get_label())
+    ax.set_xlabel(AXIS1.get_label() + (" " + AXIS1_WHEN.get_label() if AXIS1.get_label() != "jump size" else ""))
+    ax.set_ylabel(AXIS2.get_label() + (" " + AXIS2_WHEN.get_label() if AXIS2.get_label() != "jump size" else ""))
     ax.grid()
     return lines, legends
 def NK_plot(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
@@ -604,6 +673,8 @@ def hover(event):
         found: bool = False
         
         for index in range(len(lines)):
+            if (lines[index] == None):
+                continue
             cont, ind = lines[index].contains(event)
             if cont:
                 found = True
@@ -645,13 +716,15 @@ def update_NK():
 
 # region permanent buttons ======================================================================
 def update_visibility():
-    for b in [AXIS1, AXIS2, REGRESSION, SELECTED_ALGOS]:
+    for b in [SELECTED_ALGOS, AXIS1, AXIS2, CORRELATION_PLOT]:
         b.set_visible(PLOT_TYPE.get_value() == "correlation" and not(FULL_SCREEN))
     for b in [X_SCALE]:
         b.set_visible(PLOT_TYPE.get_value() != "correlation" and not(FULL_SCREEN))
     
-    AXIS1_WHEN.set_visible(PLOT_TYPE.get_value() == "correlation" and AXIS1.get_label() != "jump" and not(FULL_SCREEN))
-    AXIS2_WHEN.set_visible(PLOT_TYPE.get_value() == "correlation" and AXIS2.get_label() != "jump" and not(FULL_SCREEN))
+    AXIS1_WHEN.set_visible(PLOT_TYPE.get_value() == "correlation" and AXIS1.get_value() != "size_of_the_jump" and not(FULL_SCREEN))
+    AXIS2_WHEN.set_visible(PLOT_TYPE.get_value() == "correlation" and AXIS2.get_value() != "size_of_the_jump" and not(FULL_SCREEN))
+    
+    REGRESSION.set_visible(PLOT_TYPE.get_value() == "correlation" and CORRELATION_PLOT.get_value() == "regression" and not(FULL_SCREEN))
     
     update()
 def update_visibility_data_type():
@@ -667,12 +740,15 @@ PLOT_TYPE = ButtonCycle(fig.add_axes([0.6, 0.2, 0.3, 0.05]), ["anytime", "correl
 X_SCALE = ButtonCycle(fig.add_axes([0.6, 0.14, 0.15, 0.05]), ["log scale", "linear scale"], callback=update)
 LEGEND_POSITION = ButtonCycle(fig.add_axes([0.1, 0.08, 0.1, 0.05]), ["best", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], update)
 
-AXIS1 = ButtonCycle(fig.add_axes([0.76, 0.14, 0.09, 0.05]), ["jump", "fitness", "improving neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=update_visibility)
-AXIS2 = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["fitness", "improving neighbors", "jump"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=update_visibility)
-AXIS1_WHEN = ButtonCycle(fig.add_axes([0.86, 0.14, 0.09, 0.05]), ["after jump", "before jump"], ["_after_jump", "_before_jump"], callback=update)
-AXIS2_WHEN = ButtonCycle(fig.add_axes([0.86, 0.08, 0.09, 0.05]), ["after jump", "before jump"], ["_after_jump", "_before_jump"], callback=update)
-REGRESSION = ButtonCycle(fig.add_axes([0.76, 0.02, 0.09, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=update)
 SELECTED_ALGOS = ButtonCheck(fig.add_axes([0.6, 0.02, 0.15, 0.17]), ALGO_KEYS, update)
+
+AXIS1 = ButtonCycle(fig.add_axes([0.76, 0.14, 0.09, 0.05]), ["jump size", "fitness", "improving neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=update_visibility)
+AXIS2 = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["fitness", "improving neighbors", "jump size"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=update_visibility)
+AXIS1_WHEN = ButtonCycle(fig.add_axes([0.86, 0.14, 0.09, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=update)
+AXIS2_WHEN = ButtonCycle(fig.add_axes([0.86, 0.08, 0.09, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=update)
+
+CORRELATION_PLOT = ButtonCycle(fig.add_axes([0.76, 0.02, 0.09, 0.05]), ["regression", "mean+std"], callback=update_visibility)
+REGRESSION = ButtonCycle(fig.add_axes([0.86, 0.02, 0.09, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=update)
 
 # endregion =====================================================================================
 
