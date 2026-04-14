@@ -56,9 +56,9 @@ namespace Argmax {
     float standard_derivation(std::vector<std::unique_ptr<ReversibleInstance>>& population);
     float standard_derivation(std::vector<InstanceGenWrapper>& population);
 
-    void hill_climb(std::unique_ptr<ReversibleInstance>& instance, unsigned int max_iter = 1024);
-    void tabu_search(std::unique_ptr<ReversibleInstance>& instance, size_t black_list_size = 3, unsigned int max_iter = 1024);
-    void one_lambda_search(std::unique_ptr<ReversibleInstance>& instance, unsigned int nb_mutation_to_test, unsigned int max_iter = 1024, bool debug = false);
+    void hill_climb(std::unique_ptr<ReversibleInstance>& instance, std::mt19937& rand, unsigned int max_iter = 1024);
+    void tabu_search(std::unique_ptr<ReversibleInstance>& instance, std::mt19937& rand, size_t black_list_size = 3, unsigned int max_iter = 1024);
+    void one_lambda_search(std::unique_ptr<ReversibleInstance>& instance, std::mt19937& rand, unsigned int nb_mutation_to_test, unsigned int max_iter = 1024, bool debug = false);
     
-    std::unique_ptr<ReversibleInstance> evolution(std::function<std::unique_ptr<ReversibleInstance>()> spawner, evolution_parameters parameters, std::ostream* out = nullptr);
+    std::unique_ptr<ReversibleInstance> evolution(std::function<std::unique_ptr<ReversibleInstance>()> spawner, evolution_parameters parameters, std::mt19937& rand, std::ostream* out = nullptr);
 }

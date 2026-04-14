@@ -86,10 +86,10 @@ bool change_to_better_neighbor(ReversibleInstance *instance)
     instance->mutate_arg(best);
     return true;
 }
-void Argmax::hill_climb(std::unique_ptr<ReversibleInstance> &instance, unsigned int max_iter)
+void Argmax::hill_climb(std::unique_ptr<ReversibleInstance> &instance, std::mt19937& rand, unsigned int max_iter)
 {
     unsigned int i = 0;
-    ReversibleInstance *r_instance = dynamic_cast<ReversibleInstance *>(instance.get());
+    ReversibleInstance *r_instance = dynamic_cast<ReversibleInstance*>(instance.get());
     if (r_instance != nullptr)
         while (change_to_better_neighbor(r_instance) && ++i < max_iter)
             ;
@@ -104,7 +104,7 @@ void Argmax::hill_climb(std::unique_ptr<ReversibleInstance> &instance, unsigned 
 /// @param instance
 /// @param black_list a list of the index of arguments not allowed to change
 /// @return index of the argument changed (-1 if no neighbor exists)
-int change_to_best_neighbor(std::unique_ptr<ReversibleInstance> &instance, const std::list<int> &black_list)
+int change_to_best_neighbor(std::unique_ptr<ReversibleInstance> &instance, std::mt19937& rand, const std::list<int> &black_list)
 {
     std::unique_ptr<ReversibleInstance> best = nullptr;
     float score = instance->score();
@@ -138,7 +138,7 @@ int change_to_best_neighbor(std::unique_ptr<ReversibleInstance> &instance, const
     instance = std::move(best);
     return index;
 }
-int change_to_best_neighbor(ReversibleInstance *instance, const std::list<int> &black_list)
+int change_to_best_neighbor(ReversibleInstance *instance, std::mt19937& rand, const std::list<int> &black_list)
 {
     int index = -1;
     float score = 0;
@@ -166,7 +166,7 @@ int change_to_best_neighbor(ReversibleInstance *instance, const std::list<int> &
         instance->mutate_arg(index);
     return index;
 }
-void Argmax::tabu_search(std::unique_ptr<ReversibleInstance> &instance, size_t black_list_size, unsigned int max_iter)
+void Argmax::tabu_search(std::unique_ptr<ReversibleInstance> &instance, std::mt19937& rand, size_t black_list_size, unsigned int max_iter)
 {
     std::list<int> black_list;
     std::unique_ptr<ReversibleInstance> best = instance->clone();
@@ -176,9 +176,9 @@ void Argmax::tabu_search(std::unique_ptr<ReversibleInstance> &instance, size_t b
     {
         int index = 0;
         if (r_instance != nullptr)
-            index = change_to_best_neighbor(r_instance, black_list);
+            index = change_to_best_neighbor(r_instance, rand, black_list);
         else
-            index = change_to_best_neighbor(instance, black_list);
+            index = change_to_best_neighbor(instance, rand, black_list);
 
         if (instance->score() > best->score())
             best = instance->clone();
@@ -196,7 +196,7 @@ void Argmax::tabu_search(std::unique_ptr<ReversibleInstance> &instance, size_t b
 /* #endregion */
 
 /* #region LAMBDA_SEARCH */
-void change_to_best_neighbor(std::unique_ptr<ReversibleInstance> &instance, unsigned int nb_mutation_to_test)
+void change_to_best_neighbor(std::unique_ptr<ReversibleInstance> &instance, std::mt19937& rand, unsigned int nb_mutation_to_test)
 {
     std::unique_ptr<ReversibleInstance> best = nullptr;
     float score = 0;
@@ -204,7 +204,7 @@ void change_to_best_neighbor(std::unique_ptr<ReversibleInstance> &instance, unsi
     for (unsigned int i = 0; i < nb_mutation_to_test; i++)
     {
         std::unique_ptr<ReversibleInstance> mutation = instance->clone();
-        unsigned int tested_index = RandomUtils::get_index(instance->nb_args());
+        unsigned int tested_index = RandomUtils::get_index(instance->nb_args(), rand);
         mutation->mutate_arg(tested_index);
         float mutation_score = mutation->score();
 
@@ -224,14 +224,14 @@ void change_to_best_neighbor(std::unique_ptr<ReversibleInstance> &instance, unsi
     instance = std::move(best);
     return;
 }
-void change_to_best_neighbor(ReversibleInstance *instance, unsigned int nb_mutation_to_test)
+void change_to_best_neighbor(ReversibleInstance *instance, std::mt19937& rand, unsigned int nb_mutation_to_test)
 {
     int index = -1;
     float score = 0;
 
     for (unsigned int i = 0; i < nb_mutation_to_test; i++)
     {
-        unsigned int tested_index = RandomUtils::get_index(instance->nb_args());
+        unsigned int tested_index = RandomUtils::get_index(instance->nb_args(), rand);
         instance->mutate_arg(tested_index);
         float mutation_score = instance->score();
 
@@ -249,7 +249,7 @@ void change_to_best_neighbor(ReversibleInstance *instance, unsigned int nb_mutat
     instance->mutate_arg(index);
     return;
 }
-void Argmax::one_lambda_search(std::unique_ptr<ReversibleInstance> &instance, unsigned int nb_mutation_to_test, unsigned int max_iter, bool debug)
+void Argmax::one_lambda_search(std::unique_ptr<ReversibleInstance> &instance, std::mt19937& rand, unsigned int nb_mutation_to_test, unsigned int max_iter, bool debug)
 {
     std::unique_ptr<ReversibleInstance> best = instance->clone();
 
@@ -259,9 +259,9 @@ void Argmax::one_lambda_search(std::unique_ptr<ReversibleInstance> &instance, un
     for (size_t i = 0; i < max_iter; i++)
     {
         if (r_instance != nullptr)
-            change_to_best_neighbor(r_instance, nb_mutation_to_test);
+            change_to_best_neighbor(r_instance, rand, nb_mutation_to_test);
         else
-            change_to_best_neighbor(instance, nb_mutation_to_test);
+            change_to_best_neighbor(instance, rand, nb_mutation_to_test);
 
         if (instance->score() > best->score())
             best = instance->clone();
@@ -444,7 +444,7 @@ float get_frequency_score(ReversibleInstance *instance, const std::unique_ptr<st
     return result;
 }
 
-std::unique_ptr<ReversibleInstance> Argmax::evolution(std::function<std::unique_ptr<ReversibleInstance>()> spawner, evolution_parameters parameters, std::ostream *out)
+std::unique_ptr<ReversibleInstance> Argmax::evolution(std::function<std::unique_ptr<ReversibleInstance>()> spawner, evolution_parameters parameters, std::mt19937& rand, std::ostream *out)
 {
     /* #region output initialization */
     std::unique_ptr<std::stringstream> score_out = nullptr;
@@ -568,24 +568,24 @@ std::unique_ptr<ReversibleInstance> Argmax::evolution(std::function<std::unique_
             for (unsigned int i = 0; i < parameters.spawn_per_parent && current_spawn_count < parameters.population_spawn_size; i++)
             {
                 auto spawning_child_start = std::chrono::system_clock::now();
-                std::unique_ptr<ReversibleInstance> instance = population[parent_1].instance->breed(population[parent_2].instance);
+                std::unique_ptr<ReversibleInstance> instance = population[parent_1].instance->breed(population[parent_2].instance, rand);
 
                 // mutate offspring
                 for (unsigned int arg = 0; arg < instance->nb_args(); arg++)
-                    instance->mutate_arg(arg, parameters.mutation_probability);
+                    instance->mutate_arg(arg, parameters.mutation_probability, rand);
                 spawning_child_elapsed += get_time_from(spawning_child_start);
 
                 auto child_algo_start = std::chrono::system_clock::now();
                 switch (parameters.run_algo_on_child)
                 {
                 case evolution_parameters::ChildAlgo::hill_climb:
-                    hill_climb(instance, parameters.child_algo_budget / instance->nb_args());
+                    hill_climb(instance, rand, parameters.child_algo_budget / instance->nb_args());
                     break;
                 case evolution_parameters::ChildAlgo::tabu_search:
-                    tabu_search(instance, parameters.child_algo_parameter, parameters.child_algo_budget / instance->nb_args());
+                    tabu_search(instance, rand, parameters.child_algo_parameter, parameters.child_algo_budget / instance->nb_args());
                     break;
                 case evolution_parameters::ChildAlgo::lambda_mutation:
-                    one_lambda_search(instance, parameters.child_algo_parameter, parameters.child_algo_budget / parameters.child_algo_parameter);
+                    one_lambda_search(instance, rand, parameters.child_algo_parameter, parameters.child_algo_budget / parameters.child_algo_parameter);
                     break;
                 default:
                     break;

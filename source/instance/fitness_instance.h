@@ -4,6 +4,7 @@
 #include <functional>
 #include "reversible_instance.h"
 #include "../utils/random_utils.h"
+#include <random>
 
 class FitnessInstance: public ReversibleInstance {
 protected:
@@ -19,7 +20,7 @@ public:
     FitnessInstance(const FitnessInstance&);
     
     /// @brief randomizes the variables states in place and returns itself
-    FitnessInstance& randomize();
+    FitnessInstance& randomize(std::mt19937& rand);
 
     /// @param index The index of the value to return (generates an error if it's out of range)
     /// @return The value of the variable 
@@ -41,16 +42,16 @@ public:
     float score_const() const override;
     unsigned int nb_args_max() const override;
     void mutate_arg(unsigned int index) override;
-    void mutate_arg(unsigned int index, float probability) override;
+    void mutate_arg(unsigned int index, float probability, std::mt19937& rand) override;
     bool revert_last_mutation() override;
 
     float get_coord(unsigned int index) const override;
     std::vector<float> to_normalized_point() const override;
     std::vector<std::string> to_debug_point() const override;
 
-    std::unique_ptr<ReversibleInstance> breed(const std::unique_ptr<ReversibleInstance>& other) override;
+    std::unique_ptr<ReversibleInstance> breed(const std::unique_ptr<ReversibleInstance>& other, std::mt19937& rand) override;
     std::unique_ptr<ReversibleInstance> clone() const override;
-    std::unique_ptr<ReversibleInstance> randomize_clone() const override;
+    std::unique_ptr<ReversibleInstance> randomize_clone(std::mt19937& rand) const override;
     
     std::ostream& cout(std::ostream& c) const override;
     friend std::ostream& operator<<(std::ostream&, const FitnessInstance&);

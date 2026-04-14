@@ -5,16 +5,16 @@ FitnessInstance::FitnessInstance(const FitnessInstance& s): assignation(s.assign
 FitnessInstance::FitnessInstance(std::function<float(const std::vector<bool>&)> fitness_function, unsigned int length, std::vector<bool> assignation): assignation(assignation), length(length), fitness_function(fitness_function) {}
 FitnessInstance::FitnessInstance(std::function<float(const std::vector<bool>&)> fitness_function, unsigned int length): assignation(length, false), length(length), fitness_function(fitness_function) {}
 
-FitnessInstance& FitnessInstance::randomize() {
+FitnessInstance& FitnessInstance::randomize(std::mt19937& rand) {
     for (size_t i = 0; i < assignation.size(); i++)
-        assignation[i] = RandomUtils::get_bool(0.5f);
+        assignation[i] = RandomUtils::get_bool(0.5f, rand);
     
     stored_score = NAN;
     return *this;
 }
-std::unique_ptr<ReversibleInstance> FitnessInstance::randomize_clone() const {
+std::unique_ptr<ReversibleInstance> FitnessInstance::randomize_clone(std::mt19937& rand) const {
     auto temp = std::make_unique<FitnessInstance>(fitness_function, length, assignation);
-    temp->randomize();
+    temp->randomize(rand);
     return temp;
 }
 
@@ -72,8 +72,8 @@ void FitnessInstance::mutate_arg(unsigned int index) {
     set(index, !get(index));
     last_mutation = index;
 }
-void FitnessInstance::mutate_arg(unsigned int index, float probability) {
-    if (RandomUtils::get_bool(probability)) mutate_arg(index);
+void FitnessInstance::mutate_arg(unsigned int index, float probability, std::mt19937& rand) {
+    if (RandomUtils::get_bool(probability, rand)) mutate_arg(index);
 }
 bool FitnessInstance::revert_last_mutation() {
     if (std::isnan(last_score)) return false;
@@ -97,14 +97,14 @@ std::vector<float> FitnessInstance::to_normalized_point() const {
     return result;
 }
 
-std::unique_ptr<ReversibleInstance> FitnessInstance::breed(const std::unique_ptr<ReversibleInstance>& other_inst) {
+std::unique_ptr<ReversibleInstance> FitnessInstance::breed(const std::unique_ptr<ReversibleInstance>& other_inst, std::mt19937& rand) {
     FitnessInstance* other = dynamic_cast<FitnessInstance*>(other_inst.get());
     if (other == nullptr) { std::cerr << "Instance is of wrong type, expected FitnessInstance !"; exit(-1); }
 
     FitnessInstance* result = new FitnessInstance(*this);
     for (size_t i = 0; i < assignation.size(); i++)
         if (other->assignation[i] == assignation[i])    result->assignation[i] = assignation[i];
-        else                                            result->assignation[i] = RandomUtils::get_bool(0.5f);
+        else                                            result->assignation[i] = RandomUtils::get_bool(0.5f, rand);
     
     result->stored_score = NAN;
     return std::unique_ptr<FitnessInstance>(result);

@@ -12,7 +12,7 @@ private:
     std::vector<std::set<unsigned int>> neighbors;
 public:
     NK(const std::string& path);
-    NK(unsigned int n, unsigned int k);
+    NK(unsigned int n, unsigned int k, std::mt19937& rand);
 
     void save_to_file(const std::string& path) const;
     float evaluate(const std::vector<bool>& assignation) const;

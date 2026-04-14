@@ -32,8 +32,8 @@ str     selection_criterion = first
 int     budget = 1024
 # first / best
 str     selection_criterion = first
-# full / improve / half
-str     neighborhood_scope = full
+# all / improve / half
+str     neighborhood_scope = all
 
 # <!-- #endregion -->
 # <!-- #region ==================== tabu_search parameters ===================================== -->

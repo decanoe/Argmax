@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include <random>
 
 class ReversibleInstance
 {
@@ -26,13 +27,13 @@ public:
     virtual unsigned int nb_args_max() const = 0;
     virtual unsigned int nb_args() const { return nb_args_max(); }
     virtual void mutate_arg(unsigned int index) = 0;
-    virtual void mutate_arg(unsigned int index, float probability) = 0;
+    virtual void mutate_arg(unsigned int index, float probability, std::mt19937& rand) = 0;
     virtual bool revert_last_mutation() = 0;
 
-    virtual std::unique_ptr<ReversibleInstance> breed(const std::unique_ptr<ReversibleInstance>& other) = 0;
+    virtual std::unique_ptr<ReversibleInstance> breed(const std::unique_ptr<ReversibleInstance>& other, std::mt19937& rand) = 0;
     virtual std::unique_ptr<ReversibleInstance> clone() const = 0;
 
-    virtual std::unique_ptr<ReversibleInstance> randomize_clone() const = 0;
+    virtual std::unique_ptr<ReversibleInstance> randomize_clone(std::mt19937& rand) const = 0;
 
     virtual std::ostream& cout(std::ostream& c) const = 0;
 };

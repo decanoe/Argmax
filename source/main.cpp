@@ -3,7 +3,9 @@
 #include <filesystem>
 #include <regex>
 #include <thread>
+#include <mutex>
 #include <sstream>
+#include <random>
 
 #include "algo/argmax.h"
 #include "algo/local_search.h"
@@ -28,37 +30,35 @@ void path_message() {
     exit(1);
 }
 
-unsigned int run(const FileData& file_data, std::unique_ptr<ReversibleInstance>& instance, std::ostream* output_file = nullptr, unsigned int used_budget = 0) {
+unsigned int run(const FileData& file_data, std::unique_ptr<ReversibleInstance>& instance, std::mt19937& rand, std::ostream* output_file = nullptr, unsigned int used_budget = 0) {
     if (file_data.get_string("algorithm") == "hill_climb")
-        return LocalSearch::hill_climb(instance, LocalSearch::get_HC_Selection_Criterion(file_data.get_string("selection_criterion")), file_data.get_int("budget"), used_budget, output_file, used_budget==0);
+        return LocalSearch::hill_climb(instance, LocalSearch::get_HC_Selection_Criterion(file_data.get_string("selection_criterion")), rand, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
     else if (file_data.get_string("algorithm") == "greedy_jumper")
-        return LocalSearch::greedy_jumper(instance, LocalSearch::get_GJ_Selection_Criterion(file_data.get_string("selection_criterion")), LocalSearch::get_GJ_Neighborhood_Scope(file_data.get_string("neighborhood_scope")), file_data.get_int("budget"), used_budget, output_file, used_budget==0);
-    else if (file_data.get_string("algorithm") == "tabu_search") {
-        Argmax::tabu_search(instance, file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
-    }
-    else if (file_data.get_string("algorithm") == "one_lambda_search") {
-        Argmax::one_lambda_search(instance, file_data.get_int("nb_mutation_to_test"), file_data.get_int("nb_iteration_max"), true);
-    }
-    else if (file_data.get_string("algorithm") == "evolution") {
-        instance = std::move(Argmax::evolution([&instance]() -> std::unique_ptr<ReversibleInstance> { return instance->randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file));
-    }
-
+        return LocalSearch::greedy_jumper(instance, LocalSearch::get_GJ_Selection_Criterion(file_data.get_string("selection_criterion")), LocalSearch::get_GJ_Neighborhood_Scope(file_data.get_string("neighborhood_scope")), rand, file_data.get_int("budget"), used_budget, output_file, used_budget==0);
+    // else if (file_data.get_string("algorithm") == "tabu_search")
+    //     Argmax::tabu_search(instance, file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
+    // else if (file_data.get_string("algorithm") == "one_lambda_search")
+    //     Argmax::one_lambda_search(instance, file_data.get_int("nb_mutation_to_test"), file_data.get_int("nb_iteration_max"), true);
+    // else if (file_data.get_string("algorithm") == "evolution")
+    //     instance = std::move(Argmax::evolution([&instance]() -> std::unique_ptr<ReversibleInstance> { return instance->randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file));
     return 0;
 }
-void run_on_nk(const FileData& file_data, std::ostream* output_file = nullptr) {
+void run_on_nk(const FileData& file_data, std::mt19937& rand, std::ostream* output_file = nullptr) {
     std::shared_ptr<NK> nk = nullptr;
     if (file_data.contains_string("instance")) { std::cout << "reading file..." << std::endl; nk = std::shared_ptr<NK>(new NK(file_data.get_string("instance"))); }
-    else                                        nk = std::shared_ptr<NK>(new NK(file_data.get_int("N"), file_data.get_int("K")));
+    else {
+        nk = std::shared_ptr<NK>(new NK(file_data.get_int("N"), file_data.get_int("K"), rand));
+    }
     
     FitnessInstance instance = FitnessInstance([&nk](const std::vector<bool>& a) -> float { return nk->evaluate(a); }, nk->get_nb_variables());
-    instance.randomize();
+    instance.randomize(rand);
     
     std::unique_ptr<ReversibleInstance> temp = std::unique_ptr<FitnessInstance>(new FitnessInstance(std::move(instance)));
-    unsigned int used_budget = run(file_data, temp, output_file);
+    unsigned int used_budget = run(file_data, temp, rand, output_file);
     while (file_data.get_bool("iterate", false) && used_budget < file_data.get_uint("budget", 0))
     {
-        std::unique_ptr<ReversibleInstance> temp2 = temp->randomize_clone();
-        used_budget = run(file_data, temp2, output_file, used_budget);
+        std::unique_ptr<ReversibleInstance> temp2 = temp->randomize_clone(rand);
+        used_budget = run(file_data, temp2, rand, output_file, used_budget);
         if (temp2->score() > temp->score()) temp = std::move(temp2);
     }
     
@@ -66,7 +66,7 @@ void run_on_nk(const FileData& file_data, std::ostream* output_file = nullptr) {
 
     std::cout << "max score: " << result << " : " << result.score() << "\n";
 }
-std::string execute_file(const FileData file_data) {
+std::string execute_file(const FileData& file_data, std::mt19937& rand) {
     srand(file_data.get_seed());
     std::ostringstream* output_file = nullptr;
     std::string output_file_path = "";
@@ -84,7 +84,7 @@ std::string execute_file(const FileData file_data) {
         output_file = new std::ostringstream();
     }
 
-    run_on_nk(file_data, output_file);
+    run_on_nk(file_data, rand, output_file);
     
     if (output_file != nullptr) {
         std::filesystem::create_directories(std::filesystem::path(output_file_path).parent_path());
@@ -105,17 +105,35 @@ std::string execute_file(const FileData file_data) {
 }
 
 void create_all_NK_instances() {
+    std::random_device rd;
+    std::mt19937 rand(rd());
     for (unsigned int N : { 50, 100, 200, 400, 800, 1000 })
     for (unsigned int K : { 0, 1, 2, 4, 8 })
     for (unsigned int I = 0; I < 10; I++)
     {
-        NK nk(N, K);
+        NK nk(N, K, rand);
         nk.save_to_file("./NK/instances/" + std::to_string(N) + "_" + std::to_string(K) + "_" + std::to_string(I) + ".nk");
     }
 }
 
+void worker_thread(std::mutex& mutex, std::list<FileData*>& jobs) {
+    while (true)
+    {
+        FileData* file_data;
+        {
+            std::lock_guard lock(mutex);
+            if (jobs.empty()) break;
+            file_data = jobs.front();
+            jobs.pop_front();
+        }
+        
+        std::mt19937 rand(file_data->get_seed());
+        execute_file(*file_data, rand);
+    }
+}
+
 int main(int argc, char *args[]) {
-    system("chcp 65001");
+    // system("chcp 65001");
     std::cout << "\033[1A\r\033[K";
     if (argc < 2) path_message();
 
@@ -133,34 +151,44 @@ int main(int argc, char *args[]) {
             std::cerr << "\033[1;31mIf you want to create an nk instance you need to put a N, a K and a path to save the instance.\n\033[0m";
             exit(1);
         }
-        srand(time(NULL));
         
-        NK nk(atoi(args[2]), atoi(args[3]));
+        std::random_device rd;
+        std::mt19937 rand(rd());
+        NK nk(atoi(args[2]), atoi(args[3]), rand);
         nk.save_to_file(args[4]);
         return 0;
     }
 
-    auto seed = time(NULL);
+    std::random_device rd;
+    auto seed = rd();
     
     auto files_data = generate_file_data(arg1);
-    // std::list<std::thread> threads;
-    std::string output_file_path = "";
-    for (FileData& file_data : files_data)
-    {
-        file_data.set_default_seed(seed);
-        std::string output_file_path = execute_file(file_data);
 
-        // threads.push_back(std::thread(execute_file, file_data));
+    if (files_data.size() == 1) {
+        std::mt19937 rand(files_data.front().get_seed());
+        std::string output_file_path = execute_file(files_data.front(), rand);
+        if (output_file_path != "") {
+            if (files_data.front().get_string("algorithm") == "evolution")
+                system(("python ./python/evolution_visualizer.py " + output_file_path + " evolution").c_str());
+            else
+                system(("python ./python/evolution_visualizer.py " + output_file_path + " local_search").c_str());
+        }
     }
-    // while (threads.size() != 0) {
-    //     threads.back().join();
-    //     threads.pop_back();
-    // }
-    if (files_data.size() == 1 && output_file_path != "") {
-        if (files_data.front().get_string("algorithm") == "evolution")
-            system(("python ./python/evolution_visualizer.py " + output_file_path + " evolution").c_str());
-        else
-            system(("python ./python/evolution_visualizer.py " + output_file_path + " local_search").c_str());
+    else {
+        std::mutex mutex;
+        std::list<std::thread> threads;
+        std::list<FileData*> file_data_ptrs = std::list<FileData*>();
+        for (FileData& file_data : files_data) {
+            file_data.set_default_seed(seed);
+            file_data_ptrs.push_back(&file_data);
+        }
+
+        for (unsigned int i = 0; i < std::thread::hardware_concurrency(); i++)
+        {
+            threads.push_back(std::thread(worker_thread, std::ref(mutex), std::ref(file_data_ptrs)));
+        }
+        for (std::thread& thread : threads) thread.join();
     }
+    
     return 0;
 }

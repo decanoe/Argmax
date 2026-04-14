@@ -27,13 +27,13 @@ NK::NK(const std::string& path) {
         }
     }
 }
-NK::NK(unsigned int n, unsigned int k): n(n), k(k) {
+NK::NK(unsigned int n, unsigned int k, std::mt19937& rand): n(n), k(k) {
     weights.reserve(n);
     for (unsigned int i = 0; i < n; i++) {
         weights.push_back(std::vector<float>());
         weights[i].reserve(2<<k);
         for (unsigned int j = 0; j < (2U<<k); j++) {
-            float v = RandomUtils::get_index(1000) + 1000 * RandomUtils::get_index(1000);
+            float v = RandomUtils::get_index(1000, rand) + 1000 * RandomUtils::get_index(1000, rand);
             weights[i].push_back(v / 1000000);
         }
     }
@@ -41,7 +41,7 @@ NK::NK(unsigned int n, unsigned int k): n(n), k(k) {
     neighbors.reserve(n);
     for (unsigned int i = 0; i < n; i++) {
         neighbors.push_back({i});
-        for (size_t j = 0; j < k; j++) neighbors[i].insert(RandomUtils::get_index(n, neighbors[i]));
+        for (size_t j = 0; j < k; j++) neighbors[i].insert(RandomUtils::get_index(n, neighbors[i], rand));
     }
 }
 

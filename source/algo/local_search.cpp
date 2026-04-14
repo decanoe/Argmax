@@ -33,15 +33,15 @@ LocalSearch::GJ_Selection_Criterion LocalSearch::get_GJ_Selection_Criterion(cons
 }
 LocalSearch::GJ_Neighborhood_Scope LocalSearch::get_GJ_Neighborhood_Scope(const std::string& string) {
     if (string == "improve") return GJ_Neighborhood_Scope::Improve;
-    else if (string == "full") return GJ_Neighborhood_Scope::Full;
+    else if (string == "all") return GJ_Neighborhood_Scope::Full;
     else if (string == "half") return GJ_Neighborhood_Scope::Half;
     return GJ_Neighborhood_Scope::Full;
 }
 
-unsigned int _get_HC_test_index(LocalSearch::HC_Selection_Criterion criterion, unsigned int default_index, unsigned int iteration_index, const std::set<unsigned int>& visited_indices, unsigned int nb_args) {
+unsigned int _get_HC_test_index(LocalSearch::HC_Selection_Criterion criterion, std::mt19937& rand, unsigned int default_index, unsigned int iteration_index, const std::set<unsigned int>& visited_indices, unsigned int nb_args) {
     switch (criterion)
     {
-    case LocalSearch::HC_Selection_Criterion::Random: return RandomUtils::get_index(nb_args, visited_indices);
+    case LocalSearch::HC_Selection_Criterion::Random: return RandomUtils::get_index(nb_args, visited_indices, rand);
     case LocalSearch::HC_Selection_Criterion::Cycle: return (default_index + iteration_index) % nb_args;
     default: return default_index;
     }
@@ -62,7 +62,7 @@ bool _HC_stop_at_first_improve(LocalSearch::HC_Selection_Criterion criterion) {
     default: return true;
     }
 }
-unsigned int LocalSearch::hill_climb(std::unique_ptr<ReversibleInstance>& instance, HC_Selection_Criterion criterion, unsigned int budget, unsigned int initial_budget, std::ostream* out, bool add_header) {
+unsigned int LocalSearch::hill_climb(std::unique_ptr<ReversibleInstance>& instance, HC_Selection_Criterion criterion, std::mt19937& rand, unsigned int budget, unsigned int initial_budget, std::ostream* out, bool add_header) {
     if (out && add_header) { *out << "budget\tin_run_budget\tfitness_before_jump\tnb_better_neighbors_before_jump\tsize_of_the_jump\tfitness_after_jump\tnb_better_neighbors_after_jump" << "\n"; }
     
     float score = instance->score();
@@ -81,7 +81,7 @@ unsigned int LocalSearch::hill_climb(std::unique_ptr<ReversibleInstance>& instan
         std::set<unsigned int> visited = std::set<unsigned int>();
         for (size_t i = 0; i < instance->nb_args() && used_budget < budget; i++)
         {
-            unsigned int index = _get_HC_test_index(criterion, i, iteration_count, visited, instance->nb_args());
+            unsigned int index = _get_HC_test_index(criterion, rand, i, iteration_count, visited, instance->nb_args());
             visited.insert(index);
 
             instance->mutate_arg(index);
@@ -137,7 +137,7 @@ bool _GJ_stop_at_first_improve(LocalSearch::GJ_Selection_Criterion criterion) {
     default: return true;
     }
 }
-unsigned int LocalSearch::greedy_jumper(std::unique_ptr<ReversibleInstance>& instance, GJ_Selection_Criterion criterion, GJ_Neighborhood_Scope scope, unsigned int budget, unsigned int initial_budget, std::ostream* out, bool add_header) {
+unsigned int LocalSearch::greedy_jumper(std::unique_ptr<ReversibleInstance>& instance, GJ_Selection_Criterion criterion, GJ_Neighborhood_Scope scope, std::mt19937& rand, unsigned int budget, unsigned int initial_budget, std::ostream* out, bool add_header) {
     if (out && add_header) { *out << "budget\tin_run_budget\tfitness_before_jump\tnb_better_neighbors_before_jump\tsize_of_the_jump\tfitness_after_jump\tnb_better_neighbors_after_jump" << "\n"; }
     
     float score = instance->score();
