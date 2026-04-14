@@ -6,24 +6,17 @@ set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-Wall -Werror)
 
 add_executable(${CMAKE_PROJECT_NAME}
-    main.cpp
+    source/main.cpp
 
-    source/argmax.cpp
-    source/local_search.cpp
-    source/file_data.cpp
-    source/random_utils.cpp
-    source/instance.cpp
-    source/fitness_instance.cpp
+    source/algo/argmax.cpp
+    source/algo/local_search.cpp
+    
+    source/arg_file/file_data.cpp
 
-    NK/nk.cpp
+    source/utils/random_utils.cpp
 
-    SAT/clause.cpp
-    SAT/formule.cpp
-    SAT/solution.cpp
+    source/problem/nk.cpp
 
-    FA/card.cpp
-    FA/deck.cpp
-    FA/hand.cpp
-    FA/people.cpp
-    FA/sanctuary.cpp
+    source/instance/reversible_instance.cpp
+    source/instance/fitness_instance.cpp
 )

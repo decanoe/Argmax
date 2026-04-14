@@ -1,0 +1,3 @@
+/home/decanoe/Documents/Scolaire/L3/ProjectArgmax/Argmax/build/CMakeFiles/Argmax.dir
+/home/decanoe/Documents/Scolaire/L3/ProjectArgmax/Argmax/build/CMakeFiles/edit_cache.dir
+/home/decanoe/Documents/Scolaire/L3/ProjectArgmax/Argmax/build/CMakeFiles/rebuild_cache.dir

@@ -1,23 +1,15 @@
 # <!-- #region ==================== problem to run and how to run it =========================== -->
-# FA / SAT / NK
-str     problem = FA
 # (optional) Nb of variables for the NK problem
 int     N = 100
 # (optional) Nb variables linked to the first variable of every function of the NK problem
 int     K = 1
-# hill_climb / tabu_search / one_lambda_search / evolution / mixed_one_lambda_search
+# hill_climb / greedy_jumper / tabu_search / one_lambda_search / evolution / mixed_one_lambda_search
 str     algorithm = evolution
 
 # <!-- #endregion -->
 # <!-- #region ==================== files containing data to run =============================== -->
-# SAT
-str     instance = ./SAT/instances/BMS_k3_n100_m429/BMS_k3_n100_m429_0.cnf
 # NK (optional if parameter were provided)
 str     instance = ./NK/instances/100_1.nk
-# FA
-str     cards = ./FA/data/cards.txt
-str     sanctuaries = ./FA/data/sanctuary.txt
-str     subset = ./FA/subsets/8_7_1.txt
 # <!-- #endregion -->
 # <!-- #region ==================== debug file ================================================= -->
 # whether or not to launch the Python viewer
@@ -33,15 +25,15 @@ bool    override = true
 # <!-- #region ==================== hill_climb parameters ====================================== -->
 int     budget = 1024
 # first / best / one
-str     hc_choice = first
+str     selection_criterion = first
 
 # <!-- #endregion -->
 # <!-- #region ==================== greedy parameters ====================================== -->
 int     budget = 1024
 # first / best
-str     greedy_choice = first
-# all / improve
-str     greedy_type = all
+str     selection_criterion = first
+# full / improve / half
+str     neighborhood_scope = full
 
 # <!-- #endregion -->
 # <!-- #region ==================== tabu_search parameters ===================================== -->
