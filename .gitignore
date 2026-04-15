@@ -40,6 +40,7 @@ python/data/*
 python/output/*
 python/__pycache__
 .venv
+docs/temp.*
 
 presets/*
 !presets/template.md
