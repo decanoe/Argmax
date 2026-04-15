@@ -10,6 +10,8 @@ add_executable(${CMAKE_PROJECT_NAME}
 
     source/algo/argmax.cpp
     source/algo/local_search.cpp
+    source/algo/hill_climber/hill_climber.cpp
+    source/algo/greedy_jumper/greedy_jumper.cpp
     
     source/arg_file/file_data.cpp
 
