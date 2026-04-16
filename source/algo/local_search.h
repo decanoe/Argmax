@@ -10,29 +10,31 @@
 namespace LocalSearch {
     class LocalSearchAlgo {
     public:
-        /// @brief creates a local search algo structure
-        /// @param seed the seed for the random engine
+        LocalSearchAlgo();
+        LocalSearchAlgo(const LocalSearchAlgo&) = delete;
+
+        /// @brief sets the random generator engine
+        /// @param random_generator the random engine to use
+        /// @return itself
+        virtual LocalSearchAlgo* set_seed(std::shared_ptr<std::mt19937> random_generator);
+        /// @brief sets whether the algo should debug infos on the std::cout stream
         /// @param debug should the algo debug infos on std::cout
-        LocalSearchAlgo(unsigned int seed, bool debug);
-        /// @brief creates a local search algo structure with a stream output
-        /// @param seed the seed for the random engine
-        /// @param debug should the algo debug infos on std::cout
+        /// @return itself
+        virtual LocalSearchAlgo* set_debug(bool debug);
+        /// @brief sets the stream output of the algo (for run data saving)
         /// @param out a stream on wich to forward results (or nullprt if not wanted)
         /// @param add_header a boolean set to true if the header need to be added to the output stream
-        LocalSearchAlgo(unsigned int seed, bool debug, std::ostream* out, bool add_header = true);
+        /// @return itself
+        virtual LocalSearchAlgo* set_output(std::ostream* out, bool add_header = true);
 
-        /// @brief sets the seed the random engine
-        /// @param seed the seed for the random engine
-        void set_seed(unsigned int seed);
-
-        /// @brief creates a local search algo structure
-        /// @param random_generator the generator for random values (seeded)
-        /// @param out a stream on wich to forward results (or nullprt if not wanted)
-        /// @param add_header a boolean set to true if the header is not present in the output stream
-        /// @return true if a better neighbor was found
-        virtual unsigned int improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget = 1024, unsigned int initial_budget = 0) = 0;
+        /// @brief runs the local search algo on a specific instance with a given budget
+        /// @param instance the instance to improve
+        /// @param budget the budget limit
+        /// @param initial_budget the budget already used at the start of the run (usefull for iterated runs)
+        /// @return the budget at the end of the improvement
+        virtual unsigned int improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget = 1024, unsigned int initial_budget = 0) const = 0;
     protected:
-        std::mt19937 random_generator;
+        std::shared_ptr<std::mt19937> random_generator;
         // the output stream
         std::ostream* out;
         // should the algo debug infos on std::cout

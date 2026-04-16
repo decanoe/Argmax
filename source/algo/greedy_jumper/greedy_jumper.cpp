@@ -5,61 +5,130 @@ auto cmp = [](std::pair<unsigned int, float> a, std::pair<unsigned int, float> b
     else return a.first < b.first;
 };
 
-LocalSearch::GreedyJumper::Selection_Criterion LocalSearch::GreedyJumper::get_Selection_Criterion(const std::string& string) {
-    if (string == "first") return Selection_Criterion::First;
-    else if (string == "best") return Selection_Criterion::Best;
-    else if (string == "least") return Selection_Criterion::Least;
-    return Selection_Criterion::First;
-}
-LocalSearch::GreedyJumper::Neighborhood_Scope LocalSearch::GreedyJumper::get_Neighborhood_Scope(const std::string& string) {
-    if (string == "improve") return Neighborhood_Scope::Improve;
-    else if (string == "all") return Neighborhood_Scope::Full;
-    else if (string == "half") return Neighborhood_Scope::Half;
-    return Neighborhood_Scope::Full;
-}
+using namespace LocalSearch;
 
-bool LocalSearch::GreedyJumper::keep_variable_in_traj(float variable_score, float initial_score) {
-    switch (scope)
-    {
-    case LocalSearch::GreedyJumper::Neighborhood_Scope::Improve: return variable_score > initial_score;
-    default: return true;
+/* #region ======================================= GreedyJumper::Selection_Criterion ======================================= */
+class GJ_Best_Criterion: public GreedyJumper::Selection_Criterion {
+public:
+    bool do_keep(float tested_score, float init_score, bool first_keep, float iteration_best_score) const override {
+        return (tested_score > init_score) && (first_keep || (tested_score > iteration_best_score));
     }
-}
-bool LocalSearch::GreedyJumper::do_keep(float tested_score, float init_score, bool first_keep, float iteration_best_score) {
-    switch (criterion)
-    {
-    case LocalSearch::GreedyJumper::Selection_Criterion::Least: return (tested_score > init_score) && (first_keep || (tested_score < iteration_best_score));
-    case LocalSearch::GreedyJumper::Selection_Criterion::Best: return (tested_score > init_score) && (first_keep || (tested_score > iteration_best_score));
-    default: return (tested_score > init_score);
+    bool stop_at_first_improve() const override {
+        return false;
     }
-}
-bool LocalSearch::GreedyJumper::stop_at_first_improve() {
-    switch (criterion)
-    {
-    case LocalSearch::GreedyJumper::Selection_Criterion::Least: return false;
-    case LocalSearch::GreedyJumper::Selection_Criterion::Best: return false;
-    default: return true;
+protected:
+};
+class GJ_Least_Criterion: public GreedyJumper::Selection_Criterion {
+public:
+    bool do_keep(float tested_score, float init_score, bool first_keep, float iteration_best_score) const override {
+        return (tested_score > init_score) && (first_keep || (tested_score < iteration_best_score));
     }
+    bool stop_at_first_improve() const override {
+        return false;
+    }
+protected:
+};
+class GJ_First_Criterion: public GreedyJumper::Selection_Criterion {
+public:
+    bool do_keep(float tested_score, float init_score, bool first_keep, float iteration_best_score) const override {
+        return (tested_score > init_score);
+    }
+    bool stop_at_first_improve() const override {
+        return true;
+    }
+protected:
+};
+
+std::shared_ptr<GreedyJumper::Selection_Criterion> GreedyJumper::Selection_Criterion::from_string(const std::string& string) {
+    if (string == "first") return std::make_shared<GJ_First_Criterion>();
+    else if (string == "best") return std::make_shared<GJ_Best_Criterion>();
+    else if (string == "least") return std::make_shared<GJ_Least_Criterion>();
+    
+    return std::make_shared<GJ_First_Criterion>(); // default
 }
-unsigned int LocalSearch::GreedyJumper::improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget, unsigned int initial_budget) {
+/* #endregion */
+/* #region ======================================= GreedyJumper::Selection_Criterion ======================================= */
+class GJ_Full_Scope: public GreedyJumper::Neighborhood_Scope {
+public:
+    void reset() {}
+    unsigned int create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score) override {
+        // create trajectory
+        trajectory.clear();
+        unsigned int used_budget = 0;
+        for (size_t i = 0; i < instance->nb_args(); i++)
+        {
+            instance->mutate_arg(i);
+            used_budget++;
+            trajectory.insert({i, instance->score()});
+            instance->revert_last_mutation();
+        }
+        return used_budget;
+    }
+protected:
+};
+class GJ_Improve_Scope: public GreedyJumper::Neighborhood_Scope {
+public:
+    void reset() {}
+    unsigned int create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score) override {
+        // create trajectory
+        trajectory.clear();
+        unsigned int used_budget = 0;
+        for (size_t i = 0; i < instance->nb_args(); i++)
+        {
+            instance->mutate_arg(i);
+            used_budget++;
+            if (instance->score() > score) trajectory.insert({i, instance->score()});
+            instance->revert_last_mutation();
+        }
+        return used_budget;
+    }
+protected:
+};
+class GJ_Half_Scope: public GreedyJumper::Neighborhood_Scope {
+public:
+    void reset() {}
+    unsigned int create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score) override {
+        // create trajectory
+        trajectory.clear();
+        unsigned int used_budget = 0;
+        for (size_t i = 0; i < instance->nb_args(); i++)
+        {
+            instance->mutate_arg(i);
+            used_budget++;
+            trajectory.insert({i, instance->score()});
+            instance->revert_last_mutation();
+        }
+        while (trajectory.size() > instance->nb_args() / 2) trajectory.erase(std::next(trajectory.rbegin()).base());
+        return used_budget;
+    }
+protected:
+};
+
+std::shared_ptr<GreedyJumper::Neighborhood_Scope> GreedyJumper::Neighborhood_Scope::from_string(const std::string& string) {
+    if (string == "improve") return std::make_shared<GJ_Improve_Scope>();
+    else if (string == "all") return std::make_shared<GJ_Full_Scope>();
+    else if (string == "half") return std::make_shared<GJ_Half_Scope>();
+    
+    return std::make_shared<GJ_Full_Scope>(); // default
+}
+/* #endregion */
+
+/* #region ======================================= GreedyJumper ======================================= */
+GreedyJumper::GreedyJumper(std::shared_ptr<Selection_Criterion> criterion, std::shared_ptr<Neighborhood_Scope> scope): criterion(criterion), scope(scope) {}
+
+unsigned int GreedyJumper::improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget, unsigned int initial_budget) const {
     float score = instance->score();
     unsigned int used_budget = 1 + initial_budget;
     unsigned int better_neighbors = count_better_neighbors(instance);
     unsigned int better_neighbors_after = better_neighbors;
     output_iteration_ends_data(used_budget, (used_budget  - initial_budget), better_neighbors, score);
 
-    std::set<std::pair<unsigned int, float>, decltype(cmp)> trajectory(cmp);
+    GreedyJumper::TrajectorySet trajectory(cmp);
+    this->scope->reset();
     while (used_budget < budget)
     {
         // create trajectory
-        trajectory.clear();
-        for (size_t i = 0; i < instance->nb_args() && used_budget < budget; i++)
-        {
-            instance->mutate_arg(i);
-            used_budget++;
-            if (keep_variable_in_traj(instance->score(), score)) trajectory.insert({i, instance->score()});
-            instance->revert_last_mutation();
-        }
+        used_budget += this->scope->create_trajectory(trajectory, instance, score);
 
         // apply all mutations in trajectory
         for (std::pair<unsigned int, float> pair : trajectory) instance->mutate_arg(pair.first);
@@ -70,10 +139,10 @@ unsigned int LocalSearch::GreedyJumper::improve(std::unique_ptr<ReversibleInstan
         float iteration_best_score = score;
         for (auto pair = trajectory.rbegin(); pair != trajectory.rend(); pair++) {
             used_budget++;
-            if (do_keep(instance->score(), score, iteration_best_count == 0, iteration_best_score)) {
+            if (this->criterion->do_keep(instance->score(), score, iteration_best_count == 0, iteration_best_score)) {
                 iteration_best_score = instance->score();
                 iteration_best_count = count;
-                if (stop_at_first_improve()) break;
+                if (this->criterion->stop_at_first_improve()) break;
             }
             count--;
             instance->mutate_arg(pair->first);
@@ -82,7 +151,7 @@ unsigned int LocalSearch::GreedyJumper::improve(std::unique_ptr<ReversibleInstan
         // apply best jump found
         float old_score = score;
         score = iteration_best_score;
-        if (!stop_at_first_improve()) {
+        if (!this->criterion->stop_at_first_improve()) {
             count = iteration_best_count;
             for (std::pair<unsigned int, float> pair : trajectory) {
                 if (count == 0) break;
@@ -98,6 +167,4 @@ unsigned int LocalSearch::GreedyJumper::improve(std::unique_ptr<ReversibleInstan
     }
     return used_budget;
 }
-
-LocalSearch::GreedyJumper::GreedyJumper(unsigned int seed, Selection_Criterion criterion, Neighborhood_Scope scope, bool debug): LocalSearch::LocalSearchAlgo(seed, debug), criterion(criterion), scope(scope) {}
-LocalSearch::GreedyJumper::GreedyJumper(unsigned int seed, Selection_Criterion criterion, Neighborhood_Scope scope, bool debug, std::ostream* out, bool add_header): LocalSearch::LocalSearchAlgo(seed, debug, out, add_header), criterion(criterion), scope(scope) {}
+/* #endregion */

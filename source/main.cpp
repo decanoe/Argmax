@@ -8,21 +8,11 @@
 #include <random>
 #include <condition_variable>
 
-#include "algo/argmax.h"
-#include "algo/hill_climber/hill_climber.h"
 #include "algo/greedy_jumper/greedy_jumper.h"
+#include "algo/local_search_factory.h"
 #include "arg_file/file_data.h"
 #include "instance/fitness_instance.h"
 #include "problem/nk.h"
-
-std::string timestamp() {
-    time_t rawtime;
-    time(&rawtime);
-    struct tm *timeinfo = localtime(&rawtime);
-    char buffer[80];
-    strftime(buffer, sizeof (buffer), "%Hh%M_%d_%m_%Y", timeinfo);
-    return std::string (buffer);
-}
 
 void path_message() {
     std::cerr << "\033[1;31mIf you want to run an algorithm you need to put a path to a file with all the informations\n\033[0m";
@@ -32,104 +22,98 @@ void path_message() {
     exit(1);
 }
 
-unsigned int run(const FileData& file_data, std::unique_ptr<ReversibleInstance>& instance, unsigned int offset_seed = 0, std::ostream* output_file = nullptr, unsigned int used_budget = 0, bool debug = true) {
-    if (file_data.get_string("algorithm") == "hill_climb") {
-        LocalSearch::HillClimber algo = LocalSearch::HillClimber(
-            file_data.get_seed() + offset_seed,
-            LocalSearch::HillClimber::get_Selection_Criterion(file_data.get_string("selection_criterion")),
-            debug,
-            output_file,
-            used_budget==0);
-        return algo.improve(instance, file_data.get_int("budget"), used_budget);
-    }
-    else if (file_data.get_string("algorithm") == "greedy_jumper") {
-        LocalSearch::GreedyJumper algo = LocalSearch::GreedyJumper(
-            file_data.get_seed() + offset_seed,
-            LocalSearch::GreedyJumper::get_Selection_Criterion(file_data.get_string("selection_criterion")),
-            LocalSearch::GreedyJumper::get_Neighborhood_Scope(file_data.get_string("neighborhood_scope")),
-            debug,
-            output_file,
-            used_budget==0);
-        return algo.improve(instance, file_data.get_int("budget"), used_budget);
-    }
-    // else if (file_data.get_string("algorithm") == "tabu_search")
-    //     Argmax::tabu_search(instance, file_data.get_int("ban_list_size"), file_data.get_int("nb_iteration_max"));
-    // else if (file_data.get_string("algorithm") == "one_lambda_search")
-    //     Argmax::one_lambda_search(instance, file_data.get_int("nb_mutation_to_test"), file_data.get_int("nb_iteration_max"), true);
-    // else if (file_data.get_string("algorithm") == "evolution")
-    //     instance = std::move(Argmax::evolution([&instance]() -> std::unique_ptr<ReversibleInstance> { return instance->randomize_clone(); }, Argmax::evolution_parameters(file_data), output_file));
-    return 0;
+std::string timestamp() {
+    time_t rawtime;
+    time(&rawtime);
+    struct tm *timeinfo = localtime(&rawtime);
+    char buffer[80];
+    strftime(buffer, sizeof (buffer), "%Hh%M_%d_%m_%Y", timeinfo);
+    return std::string (buffer);
 }
-void run_on_nk(const FileData& file_data, std::ostream* output_file = nullptr, bool debug = true) {
+std::string get_output_file_path(const FileData& file_data) {
+    if (file_data.get_bool("debug_screen", false)) {
+        if (file_data.contains_string("label")) return std::regex_replace("./python/data/" + file_data.get_string("label"), std::regex("<timestamp>"), timestamp());
+        else                                    return "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
+    }
+    return "";
+}
+bool do_output_data_exists(const std::string& output_file_path) {
+    if (output_file_path == "") return false;
+
+    std::ifstream file(output_file_path);
+    if (file.good()) {
+        file.close();
+        return true;
+    }
+    return false;
+}
+std::pair<std::string, std::ostringstream*> get_data_output_pair(const FileData& file_data, bool debug = true) {
+    if (file_data.get_bool("debug_screen", false) == false) return {"", nullptr};
+
+    std::string output_file_path = get_output_file_path(file_data);
+    if (do_output_data_exists(output_file_path) && file_data.get_bool("override", false) == false) {
+        if (debug) std::cout << "execution data already saved in " << output_file_path << std::endl;
+        return {output_file_path, nullptr};
+    }
+
+    return {output_file_path, new std::ostringstream()};
+}
+
+std::shared_ptr<NK> get_nk_problem(const FileData& file_data, bool debug = true) {
     std::shared_ptr<NK> nk = nullptr;
     if (file_data.contains_string("instance")) {
         if (debug) std::cout << "reading file..." << std::endl;
-        nk = std::shared_ptr<NK>(new NK(file_data.get_string("instance")));
+        return std::make_shared<NK>(file_data.get_string("instance"));
     }
     else {
+        if (debug) std::cout << "creating problem..." << std::endl;
         std::mt19937 rand(file_data.get_seed());
-        nk = std::shared_ptr<NK>(new NK(file_data.get_int("N"), file_data.get_int("K"), rand));
+        return std::make_shared<NK>(file_data.get_int("N"), file_data.get_int("K"), rand);
     }
+}
 
-    FitnessInstance instance = FitnessInstance([&nk](const std::vector<bool>& a) -> float { return nk->evaluate(a); }, nk->get_nb_variables());
-    {
-        std::mt19937 start_point_randomizer(file_data.get_seed());
-        instance.randomize(start_point_randomizer);
-    }
-    
-    std::unique_ptr<ReversibleInstance> temp = std::unique_ptr<FitnessInstance>(new FitnessInstance(std::move(instance)));
-    unsigned int used_budget = run(file_data, temp, 0, output_file, 0, debug);
-    int iteration = 0;
-    while (file_data.get_bool("iterate", false) && used_budget < file_data.get_uint("budget", 0))
-    {
-        iteration += 1;
-        std::mt19937 start_point_randomizer(file_data.get_seed() + iteration);
-        std::unique_ptr<ReversibleInstance> temp2 = temp->randomize_clone(start_point_randomizer);
+std::string execute_file(const FileData& file_data, bool debug = true) {
+    std::pair<std::string, std::ostringstream*> data_output_pair = get_data_output_pair(file_data, debug);
+    if (data_output_pair.first != "" && data_output_pair.second == nullptr) return data_output_pair.first; // execution data already saved
 
-        used_budget = run(file_data, temp2, iteration, output_file, used_budget, debug);
-        if (temp2->score() > temp->score()) temp = std::move(temp2);
-    }
+    // get algo
+    std::shared_ptr<LocalSearch::LocalSearchAlgo> algo = LocalSearch::create_local_search_algo(file_data);
+    algo->set_debug(debug)
+        ->set_seed(std::make_shared<std::mt19937>(file_data.get_seed()))
+        ->set_output(data_output_pair.second);
     
-    if (debug) {    
-        FitnessInstance result = *dynamic_cast<FitnessInstance*>(temp.get());
+    // get problem
+    std::shared_ptr<NK> nk = get_nk_problem(file_data, debug);
+
+    // create instance
+    std::mt19937 rand = std::mt19937(file_data.get_seed());
+    std::unique_ptr<ReversibleInstance> instance = FitnessInstance([&nk](const std::vector<bool>& a) -> float { return nk->evaluate(a); }, nk->get_nb_variables()).randomize_clone(rand);
+
+    // run
+    algo->improve(instance, file_data.get_int("budget"));
+
+    // run results
+    if (debug) {
+        FitnessInstance result = *dynamic_cast<FitnessInstance*>(instance.get());
         
         std::cout << "max score: " << result << " : " << result.score() << "\n";
     }
-}
-std::string execute_file(const FileData& file_data, bool debug = true) {
-    srand(file_data.get_seed());
-    std::ostringstream* output_file = nullptr;
-    std::string output_file_path = "";
-    if (file_data.get_bool("debug_screen", false)) {
-        if (file_data.contains_string("label")) output_file_path = std::regex_replace("./python/data/" + file_data.get_string("label"), std::regex("<timestamp>"), timestamp());
-        else                                    output_file_path = "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
 
-        std::ifstream infile(output_file_path);
-        if (infile.good() && !file_data.get_bool("override", false)) {
-            if (debug) std::cout << "execution data already saved in " << output_file_path << std::endl;
-            infile.close();
-            return output_file_path;
-        }
-        
-        output_file = new std::ostringstream();
-    }
-
-    run_on_nk(file_data, output_file, debug);
-    
-    if (output_file != nullptr) {
-        std::filesystem::create_directories(std::filesystem::path(output_file_path).parent_path());
-        std::ofstream final_file = std::ofstream(output_file_path);
+    // save run data to real file
+    if (data_output_pair.second != nullptr) {
+        std::filesystem::create_directories(std::filesystem::path(data_output_pair.first).parent_path());
+        std::ofstream final_file = std::ofstream(data_output_pair.first);
         if (!final_file.is_open()) {
-            if (debug) std::cerr << "\033[1;31mERROR: cannot open output file at \"" + output_file_path + "\" !\033[0m\n";
+            if (debug) std::cerr << "\033[1;31mERROR: cannot open output file at \"" + data_output_pair.first + "\" !\033[0m\n";
             exit(1);
         }
 
-        final_file << output_file->str();
+        final_file << data_output_pair.second->str();
         final_file.close();
-        delete output_file;
+        delete data_output_pair.second;
 
-        if (debug) std::cout << "execution data saved in " << output_file_path << std::endl;
-        return output_file_path;
+        if (debug) std::cout << "execution data saved in " << data_output_pair.first << std::endl;
+        return data_output_pair.first;
     }
     return "";
 }
@@ -201,17 +185,13 @@ void progress_bar(std::mutex& mutex, std::condition_variable& condition, std::li
     }
     std::cout << "\r\033[2K";
     cout_bar(1);
-    std::cout << "\t" << total_job_count << " / " << total_job_count << std::endl;
+    std::cout << "\t" << total_job_count << " / " << total_job_count << " (waiting for the last job batch to end)" << std::endl;
 }
 
 int main(int argc, char *args[]) {
     if (argc < 2) path_message();
 
     std::string arg1 = args[1];
-    if (arg1 == "-visualize_evo" || arg1 == "-v_evo") {
-        system("python ./python/evolution_visualizer.py");
-        return 0;
-    }
     if (arg1 == "-visualize" || arg1 == "-v") {
         system("python ./python/data_visualizer.py");
         return 0;
