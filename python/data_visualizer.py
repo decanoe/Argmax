@@ -39,17 +39,20 @@ LEGEND_POSITION: ButtonCycle = None
 
 ALGO_KEYS: list[str] = []
 LABEL_TRANSLATIONS: dict[str, str] = {
-    "greedy_all_best": "GJ_full_best",
+    "greedy_all_best":  "GJ_full_best",
     "greedy_all_first": "GJ_full_first",
     "greedy_all_least": "GJ_full_least",
-    "greedy_improve_best": "GJ_improve_best",
+    "greedy_half_best":     None,#"GJ_half_best",
+    "greedy_half_first":    None,#"GJ_half_first",
+    "greedy_half_least":    None,#"GJ_half_least",
+    "greedy_improve_best":  "GJ_improve_best",
     "greedy_improve_first": "GJ_improve_first",
     "greedy_improve_least": "GJ_improve_least",
-    "hc_first": None,
-    "hc_cycle": None,
-    "hc_random": "HC_first",
-    "hc_least": "HC_least",
-    "hc_best": "HC_best",
+    "hc_first":     None,
+    "hc_cycle":     None,
+    "hc_best":      "HC_best",
+    "hc_random":    "HC_first",
+    "hc_least":     "HC_least",
 }
 
 # ===============================================================================================
@@ -111,53 +114,69 @@ ALGO_COLORS = {
     "greedy_all_best": "blue",
     "greedy_all_first": "green",
     "greedy_all_least": "red",
+    
     "greedy_improve_best": "cyan",
     "greedy_improve_first": "lime",
     "greedy_improve_least": "orange",
-    "hc_random": "blue",
-    "hc_least": "green",
-    "hc_best": "red",
+    
+    "greedy_half_best": "blue",
+    "greedy_half_first": "green",
+    "greedy_half_least": "red",
+    
+    "hc_best": "blue",
+    "hc_random": "green",
+    "hc_least": "red",
 }
 ALGO_LINESTYLE = {
-    "greedy_all_best": "-",
-    "greedy_all_first": "-",
-    "greedy_all_least": "-",
-    "greedy_improve_best": "-",
-    "greedy_improve_first": "-",
-    "greedy_improve_least": "-",
-    "hc_random": "--",
-    "hc_least": "--",
-    "hc_best": "--",
+    "greedy_all_best": "solid",
+    "greedy_all_first": "solid",
+    "greedy_all_least": "solid",
+    
+    "greedy_improve_best": "solid",
+    "greedy_improve_first": "solid",
+    "greedy_improve_least": "solid",
+    
+    "greedy_half_best": "solid",
+    "greedy_half_first": "solid",
+    "greedy_half_least": "solid",
+    
+    "hc_best": "dashed",
+    "hc_random": "dashed",
+    "hc_least": "dashed",
 }
 
-# for each (N, K), for each algo, a list of pair (budget, score) of score increase steps
-NK_AVG_POINTS: dict[tuple[int, int], dict[str, dict[int, int]]] = {}
+# for each (N, K), for each algo, 2 matrices with the first being the budget and the second being the average maximum reached
+NK_AVG_POINTS: dict[tuple[int, int], dict[str, tuple[np.ndarray[int], np.ndarray[float]]]] = {}
 def construct_NK_avg_points(n: int, k: int) -> dict[str, dict[int, int]]:
     global NK_AVG_POINTS
     if ((n, k) in NK_AVG_POINTS):
         return NK_AVG_POINTS.get((n, k))
     
-    all_points_per_algo: dict[str, dict[int, int]] = {}
+    all_points_per_algo: dict[str, (np.ndarray[int], np.ndarray[float])] = {}
     for algo in ALGO_KEYS:
-        all_points: dict[int, int] = {}
+        budget_points: np.ndarray[int] = np.array([])
+        fitness_points: np.ndarray[float] = np.array([])
         
         for runinfo in NK_file_infos[n][k][algo].values():
-            data = runinfo.data
-            
-            temp = data
-            while len(temp) != 0:
-                all_points.setdefault(temp.budget.iloc[0], 0)
-                temp = data[data.fitness_after_jump > temp.fitness_after_jump.iloc[0]]
-            
-            all_points.setdefault(data.budget.max(), 0)
+            budget_points = np.unique(np.concatenate((budget_points, runinfo.data.budget)))
+            budget_points.sort(kind='mergesort')
         
-        for x in all_points.keys():
-            for runinfo in NK_file_infos[n][k][algo].values():
-                data = runinfo.data
-                all_points[x] += data[data.budget <= x].fitness_after_jump.max()
-            all_points[x] /= len(NK_file_infos[n][k][algo])
+        for runinfo in NK_file_infos[n][k][algo].values():
+            temp: np.ndarray[float] = np.array([runinfo.data.budget, runinfo.data.fitness_after_jump])
+            anytime_fitness: np.ndarray[float] = np.maximum.accumulate(temp, axis=1)
+            
+            idx: np.ndarray[int] = np.searchsorted(anytime_fitness[0,:], budget_points, side="right") - 1
+            mask: np.ndarray[bool] = idx < 0
+            idx: np.ndarray[int] = np.clip(idx, 0, len(anytime_fitness[0,:]) - 1)
+            values: np.ndarray[float] = anytime_fitness[1,idx]
+            values[mask] = 0
+            
+            if (fitness_points.shape[0] == 0):
+                fitness_points = values
+            else:
+                fitness_points = np.vstack((fitness_points, values))
         
-        all_points_per_algo[algo] = all_points
+        all_points_per_algo[algo] = (budget_points, fitness_points.mean(axis=0))
     
     NK_AVG_POINTS[(n, k)] = all_points_per_algo
     return all_points_per_algo
@@ -167,11 +186,11 @@ def NK_plot_anytime_avg(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
     if (X_SCALE.get_value() == "log scale"):
         ax.set_xscale('log')
         
-    all_points_per_algo: dict[str, dict[int, int]] = construct_NK_avg_points(N.get_value(), K.get_value())
+    all_points_per_algo: dict[str, tuple[np.ndarray[int], np.ndarray[float]]] = construct_NK_avg_points(N.get_value(), K.get_value())
 
-    sorted_algos = sorted(ALGO_KEYS, key=lambda algo:max(all_points_per_algo[algo].values()), reverse=True)
+    sorted_algos = sorted(ALGO_KEYS, key=lambda algo: all_points_per_algo[algo][1][-1], reverse=True)
     for algo in sorted_algos:
-        x, y = zip(*sorted(all_points_per_algo[algo].items()))
+        x, y = all_points_per_algo[algo]
         line, = ax.plot(x, y, label=LABEL_TRANSLATIONS[algo], color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo])
         legends.append(LABEL_TRANSLATIONS[algo])
         lines.append(line)
