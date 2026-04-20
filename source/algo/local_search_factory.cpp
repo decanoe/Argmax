@@ -8,13 +8,13 @@
 std::shared_ptr<LocalSearch::LocalSearchAlgo> LocalSearch::_create_local_search_algo_no_iter(const FileData& file_data) {
     if (file_data.get_string("algorithm") == "hill_climb") {
         return std::make_shared<HillClimber>(
-            HillClimber::Selection_Criterion::from_string(file_data.get_string("selection_criterion"))
+            HillClimber::Selection_Criterion::from_file_data(file_data)
         );
     }
     else if (file_data.get_string("algorithm") == "greedy_jumper") {
         return std::make_shared<GreedyJumper>(
-            GreedyJumper::Selection_Criterion::from_string(file_data.get_string("selection_criterion")),
-            GreedyJumper::Neighborhood_Scope::from_string(file_data.get_string("neighborhood_scope"))
+            GreedyJumper::Selection_Criterion::from_file_data(file_data),
+            GreedyJumper::Neighborhood_Scope::from_file_data(file_data)
         );
     }
 

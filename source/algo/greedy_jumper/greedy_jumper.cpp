@@ -39,7 +39,8 @@ public:
 protected:
 };
 
-std::shared_ptr<GreedyJumper::Selection_Criterion> GreedyJumper::Selection_Criterion::from_string(const std::string& string) {
+std::shared_ptr<GreedyJumper::Selection_Criterion> GreedyJumper::Selection_Criterion::from_file_data(const FileData& file_data) {
+    std::string string = file_data.get_string("selection_criterion");
     if (string == "first") return std::make_shared<GJ_First_Criterion>();
     else if (string == "best") return std::make_shared<GJ_Best_Criterion>();
     else if (string == "least") return std::make_shared<GJ_Least_Criterion>();
@@ -84,8 +85,10 @@ public:
     }
 protected:
 };
-class GJ_Half_Scope: public GreedyJumper::Neighborhood_Scope {
+class GJ_Fixed_Scope: public GreedyJumper::Neighborhood_Scope {
 public:
+    GJ_Fixed_Scope(float keep_factor): keep_factor(keep_factor) {}
+
     void reset() {}
     unsigned int create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score) override {
         // create trajectory
@@ -98,16 +101,19 @@ public:
             trajectory.insert({i, instance->score()});
             instance->revert_last_mutation();
         }
-        while (trajectory.size() > instance->nb_args() / 2) trajectory.erase(std::next(trajectory.rbegin()).base());
+        while (trajectory.size() > instance->nb_args() * keep_factor) trajectory.erase(std::next(trajectory.rbegin()).base());
         return used_budget;
     }
 protected:
+    float keep_factor = .5;
 };
 
-std::shared_ptr<GreedyJumper::Neighborhood_Scope> GreedyJumper::Neighborhood_Scope::from_string(const std::string& string) {
+std::shared_ptr<GreedyJumper::Neighborhood_Scope> GreedyJumper::Neighborhood_Scope::from_file_data(const FileData& file_data) {
+    std::string string = file_data.get_string("neighborhood_scope");
     if (string == "improve") return std::make_shared<GJ_Improve_Scope>();
     else if (string == "all") return std::make_shared<GJ_Full_Scope>();
-    else if (string == "half") return std::make_shared<GJ_Half_Scope>();
+    else if (string == "half") return std::make_shared<GJ_Fixed_Scope>(.5);
+    else if (string == "fixed") return std::make_shared<GJ_Fixed_Scope>(file_data.get_float("max_flip_factor"));
     
     return std::make_shared<GJ_Full_Scope>(); // default
 }

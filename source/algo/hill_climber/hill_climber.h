@@ -9,7 +9,7 @@ namespace LocalSearch {
             Selection_Criterion() = default;
             Selection_Criterion(const Selection_Criterion&) = delete;
 
-            static std::shared_ptr<Selection_Criterion> from_string(const std::string& string);
+            static std::shared_ptr<Selection_Criterion> from_file_data(const FileData& file_data);
             
             /// @brief sets the random generator engine
             /// @param random_generator the random engine to use

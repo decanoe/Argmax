@@ -11,7 +11,7 @@ namespace LocalSearch {
             Selection_Criterion() = default;
             Selection_Criterion(const Selection_Criterion&) = delete;
 
-            static std::shared_ptr<Selection_Criterion> from_string(const std::string& string);
+            static std::shared_ptr<Selection_Criterion> from_file_data(const FileData& file_data);
         
             /// @brief whether the provided tested score is better than the current one (in regard to the strategy)
             /// @param tested_score the newly tested score
@@ -30,7 +30,7 @@ namespace LocalSearch {
             Neighborhood_Scope() = default;
             Neighborhood_Scope(const Neighborhood_Scope&) = delete;
 
-            static std::shared_ptr<Neighborhood_Scope> from_string(const std::string& string);
+            static std::shared_ptr<Neighborhood_Scope> from_file_data(const FileData& file_data);
             
             /// @brief reset the scope variables to prepare for a new run (usefull for tabu search for example)
             virtual void reset() = 0;

@@ -65,7 +65,8 @@ public:
 protected:
 };
 
-std::shared_ptr<HillClimber::Selection_Criterion> HillClimber::Selection_Criterion::from_string(const std::string& string) {
+std::shared_ptr<HillClimber::Selection_Criterion> HillClimber::Selection_Criterion::from_file_data(const FileData& file_data) {
+    std::string string = file_data.get_string("selection_criterion");
     if (string == "random") return std::make_shared<HC_Random_Criterion>();
     else if (string == "first") return std::make_shared<HC_First_Criterion>();
     else if (string == "cycle") return std::make_shared<HC_Cycle_Criterion>();

@@ -38,22 +38,93 @@ X_SCALE: ButtonCycle = None
 LEGEND_POSITION: ButtonCycle = None
 
 ALGO_KEYS: list[str] = []
-LABEL_TRANSLATIONS: dict[str, str] = {
-    "greedy_all_best":  "GJ_full_best",
-    "greedy_all_first": "GJ_full_first",
-    "greedy_all_least": "GJ_full_least",
-    "greedy_half_best":     None,#"GJ_half_best",
-    "greedy_half_first":    None,#"GJ_half_first",
-    "greedy_half_least":    None,#"GJ_half_least",
-    "greedy_improve_best":  "GJ_improve_best",
-    "greedy_improve_first": "GJ_improve_first",
-    "greedy_improve_least": "GJ_improve_least",
-    "hc_first":     None,
-    "hc_cycle":     None,
-    "hc_best":      "HC_best",
-    "hc_random":    "HC_first",
-    "hc_least":     "HC_least",
-}
+LABEL_TRANSLATIONS: dict[str, str] = {}
+ALGO_COLORS = {}
+ALGO_LINESTYLE = {}
+
+# region greedy_all
+LABEL_TRANSLATIONS["greedy_all_best"] = "GJ_full_best"
+LABEL_TRANSLATIONS["greedy_all_first"] = "GJ_full_first"
+LABEL_TRANSLATIONS["greedy_all_least"] = "GJ_full_least"
+
+ALGO_COLORS["greedy_all_best"] = "blue"
+ALGO_COLORS["greedy_all_first"] = "green"
+ALGO_COLORS["greedy_all_least"] = "red"
+
+ALGO_LINESTYLE["greedy_all_best"] = "solid"
+ALGO_LINESTYLE["greedy_all_first"] = "solid"
+ALGO_LINESTYLE["greedy_all_least"] = "solid"
+# endregion
+
+# region greedy_improve
+LABEL_TRANSLATIONS["greedy_improve_best"] = "GJ_improve_best"
+LABEL_TRANSLATIONS["greedy_improve_first"] = "GJ_improve_first"
+LABEL_TRANSLATIONS["greedy_improve_least"] = "GJ_improve_least"
+
+ALGO_COLORS["greedy_improve_best"] = "cyan"
+ALGO_COLORS["greedy_improve_first"] = "lime"
+ALGO_COLORS["greedy_improve_least"] = "orange"
+
+ALGO_LINESTYLE["greedy_improve_best"] = "solid"
+ALGO_LINESTYLE["greedy_improve_first"] = "solid"
+ALGO_LINESTYLE["greedy_improve_least"] = "solid"
+# endregion
+
+# region hill_climb
+LABEL_TRANSLATIONS["hc_first"] = None
+LABEL_TRANSLATIONS["hc_cycle"] = None
+LABEL_TRANSLATIONS["hc_best"] = "HC_best"
+LABEL_TRANSLATIONS["hc_random"] = "HC_first"
+LABEL_TRANSLATIONS["hc_least"] = "HC_least"
+
+ALGO_COLORS["hc_best"] = ALGO_COLORS["greedy_all_best"]
+ALGO_COLORS["hc_random"] = ALGO_COLORS["greedy_all_first"]
+ALGO_COLORS["hc_least"] = ALGO_COLORS["greedy_all_least"]
+
+ALGO_LINESTYLE["hc_best"] = "dashed"
+ALGO_LINESTYLE["hc_random"] = "dashed"
+ALGO_LINESTYLE["hc_least"] = "dashed"
+# endregion
+
+# region greedy_fixed
+LABEL_TRANSLATIONS["greedy_fixed_best_.5"] = "GJ_1/2_best"
+LABEL_TRANSLATIONS["greedy_fixed_best_.25"] = "GJ_1/4_best"
+LABEL_TRANSLATIONS["greedy_fixed_best_.75"] = "GJ_3/4_best"
+
+LABEL_TRANSLATIONS["greedy_fixed_first_.5"] = "GJ_1/2_first"
+LABEL_TRANSLATIONS["greedy_fixed_first_.25"] = "GJ_1/4_first"
+LABEL_TRANSLATIONS["greedy_fixed_first_.75"] = "GJ_3/4_first"
+
+LABEL_TRANSLATIONS["greedy_fixed_least_.5"] = "GJ_1/2_least"
+LABEL_TRANSLATIONS["greedy_fixed_least_.25"] = "GJ_1/4_least"
+LABEL_TRANSLATIONS["greedy_fixed_least_.75"] = "GJ_3/4_least"
+
+
+ALGO_COLORS["greedy_fixed_best_.5"] = ALGO_COLORS["greedy_all_best"]
+ALGO_COLORS["greedy_fixed_best_.25"] = ALGO_COLORS["greedy_all_best"]
+ALGO_COLORS["greedy_fixed_best_.75"] = ALGO_COLORS["greedy_all_best"]
+
+ALGO_COLORS["greedy_fixed_first_.5"] = ALGO_COLORS["greedy_all_first"]
+ALGO_COLORS["greedy_fixed_first_.25"] = ALGO_COLORS["greedy_all_first"]
+ALGO_COLORS["greedy_fixed_first_.75"] = ALGO_COLORS["greedy_all_first"]
+
+ALGO_COLORS["greedy_fixed_least_.5"] = ALGO_COLORS["greedy_all_least"]
+ALGO_COLORS["greedy_fixed_least_.25"] = ALGO_COLORS["greedy_all_least"]
+ALGO_COLORS["greedy_fixed_least_.75"] = ALGO_COLORS["greedy_all_least"]
+
+
+ALGO_LINESTYLE["greedy_fixed_best_.5"] = "dashdot"
+ALGO_LINESTYLE["greedy_fixed_best_.25"] = "dashdot"
+ALGO_LINESTYLE["greedy_fixed_best_.75"] = "dashdot"
+
+ALGO_LINESTYLE["greedy_fixed_first_.5"] = "dashdot"
+ALGO_LINESTYLE["greedy_fixed_first_.25"] = "dashdot"
+ALGO_LINESTYLE["greedy_fixed_first_.75"] = "dashdot"
+
+ALGO_LINESTYLE["greedy_fixed_least_.5"] = "dashdot"
+ALGO_LINESTYLE["greedy_fixed_least_.25"] = "dashdot"
+ALGO_LINESTYLE["greedy_fixed_least_.75"] = "dashdot"
+# endregion
 
 # ===============================================================================================
 
@@ -109,41 +180,6 @@ for i in tqdm(range(len(dirs))):
 N_keys = sorted(NK_file_infos.keys())
 K_keys = sorted(NK_file_infos[N_keys[0]].keys())
 ALGO_KEYS = sorted(NK_file_infos[N_keys[0]][K_keys[0]].keys())
-# ALGO_COLORS = { ALGO_KEYS[i]: plt.cm.rainbow(np.linspace(0, 1, len(ALGO_KEYS)))[i] for i in range(len(ALGO_KEYS)) }
-ALGO_COLORS = {
-    "greedy_all_best": "blue",
-    "greedy_all_first": "green",
-    "greedy_all_least": "red",
-    
-    "greedy_improve_best": "cyan",
-    "greedy_improve_first": "lime",
-    "greedy_improve_least": "orange",
-    
-    "greedy_half_best": "blue",
-    "greedy_half_first": "green",
-    "greedy_half_least": "red",
-    
-    "hc_best": "blue",
-    "hc_random": "green",
-    "hc_least": "red",
-}
-ALGO_LINESTYLE = {
-    "greedy_all_best": "solid",
-    "greedy_all_first": "solid",
-    "greedy_all_least": "solid",
-    
-    "greedy_improve_best": "solid",
-    "greedy_improve_first": "solid",
-    "greedy_improve_least": "solid",
-    
-    "greedy_half_best": "solid",
-    "greedy_half_first": "solid",
-    "greedy_half_least": "solid",
-    
-    "hc_best": "dashed",
-    "hc_random": "dashed",
-    "hc_least": "dashed",
-}
 
 # for each (N, K), for each algo, 2 matrices with the first being the budget and the second being the average maximum reached
 NK_AVG_POINTS: dict[tuple[int, int], dict[str, tuple[np.ndarray[int], np.ndarray[float]]]] = {}
