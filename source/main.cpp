@@ -223,8 +223,10 @@ int main(int argc, char *args[]) {
             else
                 system(("python ./python/evolution_visualizer.py " + output_file_path + " local_search").c_str());
         }
+        return 0;
     }
-    else {
+
+    if (argc > 2 && std::string(args[2]) == "-t") {
         std::mutex mutex;
         std::condition_variable condition;
         std::list<std::thread> threads;
@@ -233,18 +235,24 @@ int main(int argc, char *args[]) {
             file_data.set_default_seed(seed);
             file_data_ptrs.push_back(&file_data);
         }
-
+        
         // launch threads
         for (unsigned int i = 0; i < std::thread::hardware_concurrency(); i++)
         {
             threads.push_back(std::thread(worker_thread, std::ref(mutex), std::ref(condition), std::ref(file_data_ptrs)));
         }
-
+        
         // progress bar
         threads.push_back(std::thread(progress_bar, std::ref(mutex), std::ref(condition), std::ref(file_data_ptrs), files_data.size()));
-
+        
         // join threads
         for (std::thread& thread : threads) thread.join();
+        return 0;
+    }
+
+    for (FileData& file_data : files_data) {
+        file_data.set_default_seed(seed);
+        execute_file(file_data, true);
     }
     
     return 0;

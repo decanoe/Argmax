@@ -23,8 +23,8 @@ unsigned int IteratedLocalSearch::improve(std::unique_ptr<ReversibleInstance>& i
         std::unique_ptr<ReversibleInstance> temp = instance->randomize_clone(*random_generator);
 
         algo->set_seed(std::shared_ptr<std::mt19937>(new std::mt19937(copied_random_generator)));
-        copied_random_generator();
-        used_budget += algo->improve(temp, budget, used_budget);
+        copied_random_generator(); // step once to make sure the generator is different for each iterated algo call
+        used_budget = algo->improve(temp, budget, used_budget);
 
         if (temp->score() > instance->score()) instance = std::move(temp);
     }
