@@ -2,9 +2,8 @@
 
 using namespace LocalSearch;
 
-/* #region ======================================= GreedyJumper::Selection_Criterion ======================================= */
+/* #region ======================================= HillClimber::Selection_Criterion ======================================= */
 unsigned int HillClimber::Selection_Criterion::get_test_index(unsigned int default_index, unsigned int iteration_index, unsigned int nb_args) { return default_index; }
-HillClimber::Selection_Criterion* HillClimber::Selection_Criterion::set_seed(std::shared_ptr<std::mt19937> random_generator) { return this; }
 
 class HC_Best_Criterion: public HillClimber::Selection_Criterion {
 public:
@@ -25,10 +24,6 @@ protected:
 class HC_Random_Criterion: public HillClimber::Selection_Criterion {
 public:
     HC_Random_Criterion(): visited_indices() {}
-    Selection_Criterion* set_seed(std::shared_ptr<std::mt19937> random_generator) override {
-        this->random_generator = random_generator;
-        return this;
-    }
 
     unsigned int get_test_index(unsigned int default_index, unsigned int iteration_index, unsigned int nb_args) override {
         if (default_index == 0) this->visited_indices.clear();
@@ -43,7 +38,6 @@ public:
     bool stop_at_first_improve() const override { return true; }
 protected:
     std::set<unsigned int> visited_indices;
-    std::shared_ptr<std::mt19937> random_generator;
 };
 class HC_First_Criterion: public HillClimber::Selection_Criterion {
 public:
@@ -77,7 +71,7 @@ std::shared_ptr<HillClimber::Selection_Criterion> HillClimber::Selection_Criteri
 }
 /* #endregion */
 
-/* #region ======================================= GreedyJumper::HillClimber ======================================= */
+/* #region ======================================= HillClimber ======================================= */
 HillClimber::HillClimber(std::shared_ptr<Selection_Criterion> criterion): LocalSearchAlgo(), criterion(criterion) {}
 LocalSearchAlgo* HillClimber::set_seed(std::shared_ptr<std::mt19937> random_generator) {
     criterion->set_seed(random_generator);

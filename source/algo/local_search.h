@@ -61,4 +61,17 @@ namespace LocalSearch {
         /// @return the number of improving neighbors of the instance
         unsigned int count_better_neighbors(std::unique_ptr<ReversibleInstance>& instance) const;
     };
+    
+    class LocalSearchAlgoComponent {
+    public:
+        LocalSearchAlgoComponent() = default;
+        LocalSearchAlgoComponent(const LocalSearchAlgoComponent&) = delete;
+        
+        /// @brief sets the random generator engine
+        /// @param random_generator the random engine to use
+        /// @return itself
+        LocalSearchAlgoComponent* set_seed(std::shared_ptr<std::mt19937> random_generator);
+    protected:
+        std::shared_ptr<std::mt19937> random_generator;
+    };
 }

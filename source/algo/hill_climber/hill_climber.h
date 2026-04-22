@@ -4,18 +4,12 @@
 namespace LocalSearch {
     class HillClimber: public LocalSearchAlgo {
     public:
-        class Selection_Criterion {
+        class Selection_Criterion: public LocalSearchAlgoComponent {
         public:
             Selection_Criterion() = default;
-            Selection_Criterion(const Selection_Criterion&) = delete;
 
             static std::shared_ptr<Selection_Criterion> from_file_data(const FileData& file_data);
             
-            /// @brief sets the random generator engine
-            /// @param random_generator the random engine to use
-            /// @return itself
-            virtual Selection_Criterion* set_seed(std::shared_ptr<std::mt19937> random_generator);
-
             /// @brief gets the variable index to test depending on the strategy
             /// @param default_index the default index
             /// @param iteration_index the iteration index in the run

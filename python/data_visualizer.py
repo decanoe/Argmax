@@ -22,7 +22,6 @@ plt.rcParams.update({
 })
 
 FULL_SCREEN: bool = False
-DATA_TYPE: ButtonCycle = None
 PLOT_TYPE: ButtonCycle = None
 N: ButtonCycle = None
 K: ButtonCycle = None
@@ -684,9 +683,6 @@ fig.subplots_adjust(left=0.1, right=0.9, bottom=0.35, top=0.95)
 lines: list = []
 annot: Annotation
 
-def plot(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
-    if (DATA_TYPE.get_value() == "NK"):
-        return NK_plot(fig, ax)
 def update(event = None):
     global lines, annot
     ax.clear()
@@ -696,7 +692,7 @@ def update(event = None):
                     arrowprops=dict(arrowstyle="->"))
     annot.set_visible(False)
     
-    lines, legends = plot(fig, ax)
+    lines, legends = NK_plot(fig, ax)
     
     if len(legends) != 0:
         leg = ax.legend(
@@ -743,32 +739,6 @@ def hover(event):
 fig.canvas.mpl_connect("motion_notify_event", hover)
 # endregion
 
-# region NK =====================================================================================
-def update_NK():
-    global N, K, I, SELECTED_ALGOS
-    N_keys = sorted(NK_file_infos.keys())
-    K_keys = sorted(NK_file_infos[N_keys[0]].keys())
-    I_keys = sorted(NK_file_infos[N_keys[0]][K_keys[0]][ALGO_KEYS[0]].keys())
-    
-    if (N == None):
-        N = ButtonCycle(fig.add_axes([0.1, 0.14, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, update)
-    else:
-        N.set_labels(["N" + str(i) for i in N_keys])
-        N.set_values(N_keys)
-    
-    if (K == None):
-        K = ButtonCycle(fig.add_axes([0.21, 0.14, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, update)
-    else:
-        K.set_labels(["K" + str(i) for i in K_keys])
-        K.set_values(K_keys)
-    
-    if (I == None):
-        I = ButtonCycle(fig.add_axes([0.32, 0.14, 0.1, 0.05]), ["I" + str(i) for i in I_keys] + ["AVG"], I_keys + ["avg"], update)
-    else:
-        I.set_labels(["I" + str(i) for i in I_keys] + ["AVG"])
-        I.set_values(I_keys + ["avg"])
-# endregion =====================================================================================
-
 # region permanent buttons ======================================================================
 def update_visibility():
     for b in [SELECTED_ALGOS, AXIS1, AXIS2, CORRELATION_PLOT]:
@@ -782,18 +752,18 @@ def update_visibility():
     REGRESSION.set_visible(PLOT_TYPE.get_value() == "correlation" and CORRELATION_PLOT.get_value() == "regression" and not(FULL_SCREEN))
     
     update()
-def update_visibility_data_type():
-    if (DATA_TYPE.get_value() == "NK"):
-        update_NK()
-    
-    for b in [K]:
-        b.set_visible(DATA_TYPE.get_value() == "NK" and not(FULL_SCREEN))
-    update_visibility()
-DATA_TYPE = ButtonCycle(fig.add_axes([0.1, 0.2, 0.3, 0.05]), ["NK", "SAT"], callback=update_visibility_data_type)
+
+N_keys = sorted(NK_file_infos.keys())
+N = ButtonCycle(fig.add_axes([0.1, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, update)
+K_keys = sorted(NK_file_infos[N_keys[0]].keys())
+K = ButtonCycle(fig.add_axes([0.21, 0.2, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, update)
+I_keys = sorted(NK_file_infos[N_keys[0]][K_keys[0]][ALGO_KEYS[0]].keys())
+I = ButtonCycle(fig.add_axes([0.32, 0.2, 0.1, 0.05]), ["I" + str(i) for i in I_keys] + ["AVG"], I_keys + ["avg"], update)
+
 PLOT_TYPE = ButtonCycle(fig.add_axes([0.6, 0.2, 0.3, 0.05]), ["anytime", "correlation"], callback=update_visibility)
 
 X_SCALE = ButtonCycle(fig.add_axes([0.6, 0.14, 0.15, 0.05]), ["log scale", "linear scale"], callback=update)
-LEGEND_POSITION = ButtonCycle(fig.add_axes([0.1, 0.08, 0.1, 0.05]), ["best", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], update)
+LEGEND_POSITION = ButtonCycle(fig.add_axes([0.1, 0.14, 0.1, 0.05]), ["best", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], update)
 
 SELECTED_ALGOS = ButtonCheck(fig.add_axes([0.6, 0.02, 0.15, 0.17]), ALGO_KEYS, update)
 
@@ -822,14 +792,14 @@ def switch_full_screen(key: str):
         fig.subplots_adjust(left=0.1, right=0.9, bottom=0.35, top=0.95)
         plt.rcParams.update({'font.size': 10})
     
-    for b in [DATA_TYPE, PLOT_TYPE, X_SCALE, LEGEND_POSITION, AXIS1, AXIS2, AXIS1_WHEN, AXIS2_WHEN, REGRESSION, SELECTED_ALGOS, N, K, I]:
+    for b in [PLOT_TYPE, X_SCALE, LEGEND_POSITION, AXIS1, AXIS2, AXIS1_WHEN, AXIS2_WHEN, REGRESSION, SELECTED_ALGOS, N, K, I]:
         b.set_visible(not(FULL_SCREEN))
-    update_visibility_data_type()
+    update_visibility()
     
 fig.canvas.mpl_connect('key_press_event', lambda evt: switch_full_screen(repr(evt.key)))
 # fig.canvas.mpl_connect('key_press_event', lambda evt: print(repr(evt.key)))
 # endregion =====================================================================================
 
-update_visibility_data_type()
+update_visibility()
 SELECTED_ALGOS.check_all([algo for algo in ALGO_KEYS if LABEL_TRANSLATIONS.get(algo, algo).startswith("GJ")], True)
 plt.show()

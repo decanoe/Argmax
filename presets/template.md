@@ -3,7 +3,7 @@
 int     N = 100
 # (optional) Nb variables linked to the first variable of every function of the NK problem
 int     K = 1
-# hill_climb / greedy_jumper / tabu_search / one_lambda_search
+# hill_climb / greedy_jumper / tabu_search / greedy_tabu_search / one_lambda_search
 str     algorithm = hill_climb
 
 # <!-- #endregion -->
@@ -38,11 +38,14 @@ str     neighborhood_scope = all
 float   max_flip_factor = .5
 
 # <!-- #endregion -->
-# <!-- #region ==================== tabu_search parameters ===================================== -->
-int     nb_iteration_max = 2048
-int     ban_list_size = 25
-# not implemented
-int     ban_list_random_added_size = 5
+# <!-- #region ==================== tabu_search & greedy_tabu_search parameters ===================================== -->
+# number of flips rememberd in the tabu list in proportion with the dimension
+float     tabu_size = .25
+# maximum number added to the base tabu_size each iteration in proportion with the dimension
+float     tabu_max_random_size_added = .05
+# for greedy_tabu_search only, the order by which to push the flips in the tabu list (clamped means we stop adding flips if we already repaced the whole list in this iteration)
+# BestToWorst / BestToWorstClamped / WorstToBest
+str     tabu_push_order = BestToWorstClamped
 
 # <!-- #endregion -->
 # <!-- #region ==================== one_lambda_search parameters =============================== -->

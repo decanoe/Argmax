@@ -38,3 +38,9 @@ void LocalSearchAlgo::output_iteration_data(unsigned int used_budget, unsigned i
 void LocalSearchAlgo::output_iteration_ends_data(unsigned int used_budget, unsigned int in_run_budget, unsigned int nb_better_neighbors, float score) const {
     if (out) { *out << used_budget << "\t" << in_run_budget << "\t" << score << "\t" << nb_better_neighbors << "\t" << 0 << "\t" << score << "\t" << nb_better_neighbors << "\n"; }
 }
+
+
+LocalSearchAlgoComponent* LocalSearchAlgoComponent::set_seed(std::shared_ptr<std::mt19937> random_generator) {
+    this->random_generator = random_generator;
+    return this;
+}

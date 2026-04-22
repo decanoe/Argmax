@@ -4,9 +4,9 @@
 namespace LocalSearch {
     class GreedyJumper: public LocalSearchAlgo {
     public:
-        typedef std::set<std::pair<unsigned int, float>, std::function<bool(std::pair<unsigned int, float> a, std::pair<unsigned int, float> b)>> TrajectorySet;
+        typedef std::set<std::pair<unsigned int, float>, std::function<bool(std::pair<unsigned int, float>, std::pair<unsigned int, float>)>> TrajectorySet;
 
-        class Selection_Criterion {
+        class Selection_Criterion: public LocalSearchAlgoComponent {
         public:
             Selection_Criterion() = default;
             Selection_Criterion(const Selection_Criterion&) = delete;
@@ -25,7 +25,7 @@ namespace LocalSearch {
             virtual bool stop_at_first_improve() const = 0;
         protected:
         };
-        class Neighborhood_Scope {
+        class Neighborhood_Scope: public LocalSearchAlgoComponent {
         public:
             Neighborhood_Scope() = default;
             Neighborhood_Scope(const Neighborhood_Scope&) = delete;
@@ -49,11 +49,13 @@ namespace LocalSearch {
         /// @param scope the scope of the variables used for agregating jumps
         GreedyJumper(std::shared_ptr<Selection_Criterion> criterion, std::shared_ptr<Neighborhood_Scope> scope);
 
+        LocalSearchAlgo* set_seed(std::shared_ptr<std::mt19937> random_generator) override;
+
         unsigned int improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget = 1024, unsigned int initial_budget = 0) const override;
     protected:
         std::shared_ptr<Selection_Criterion> criterion;
         std::shared_ptr<Neighborhood_Scope> scope;
+
+        static bool cmp(std::pair<unsigned int, float>, std::pair<unsigned int, float>);
     };
-
-
 }

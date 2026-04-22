@@ -4,6 +4,10 @@
 
 NK::NK(const std::string& path) {
     std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "\033[1;31mNo NK instance at file path \"" << path << "\"\n\033[0m";
+        exit(1);
+    }
     file >> n >> k;
 
     unsigned int index;

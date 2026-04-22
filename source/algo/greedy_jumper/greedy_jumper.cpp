@@ -1,10 +1,5 @@
 #include "greedy_jumper.h"
 
-auto cmp = [](std::pair<unsigned int, float> a, std::pair<unsigned int, float> b) {
-    if (a.second != b.second) return a.second > b.second;
-    else return a.first < b.first;
-};
-
 using namespace LocalSearch;
 
 /* #region ======================================= GreedyJumper::Selection_Criterion ======================================= */
@@ -121,6 +116,16 @@ std::shared_ptr<GreedyJumper::Neighborhood_Scope> GreedyJumper::Neighborhood_Sco
 
 /* #region ======================================= GreedyJumper ======================================= */
 GreedyJumper::GreedyJumper(std::shared_ptr<Selection_Criterion> criterion, std::shared_ptr<Neighborhood_Scope> scope): criterion(criterion), scope(scope) {}
+LocalSearchAlgo* GreedyJumper::set_seed(std::shared_ptr<std::mt19937> random_generator) {
+    criterion->set_seed(random_generator);
+    scope->set_seed(random_generator);
+    return LocalSearchAlgo::set_seed(random_generator);
+}
+
+bool GreedyJumper::cmp(std::pair<unsigned int, float> a, std::pair<unsigned int, float> b) {
+    if (a.second != b.second) return a.second > b.second;
+    else return a.first < b.first;
+};
 
 unsigned int GreedyJumper::improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget, unsigned int initial_budget) const {
     float score = instance->score();
