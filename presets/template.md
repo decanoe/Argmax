@@ -24,13 +24,13 @@ bool    override = true
 
 # <!-- #region ==================== hill_climb parameters ====================================== -->
 int     budget = 1024
-# random least best first cycle
+# random / least / best / first / cycle
 str     selection_criterion = first
 
 # <!-- #endregion -->
 # <!-- #region ==================== greedy parameters ====================================== -->
 int     budget = 1024
-# first / best / least
+# random / first / best / least
 str     selection_criterion = first
 # all / improve / half / fixed / tabu
 str     neighborhood_scope = all

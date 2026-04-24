@@ -33,6 +33,33 @@ public:
     }
 protected:
 };
+class GJ_Random_Criterion: public GJ_First_Criterion {
+public:
+    unsigned int chose_jump(const GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float& instance_score, BudgetHelper& budget) const override {
+        std::vector<unsigned int> flips = std::vector<unsigned int>();
+        for (std::pair<unsigned int, float> pair : trajectory) flips.push_back(pair.first);
+        
+
+        std::set<unsigned int> tested_jumps = std::set<unsigned int>();
+        while (tested_jumps.size() < flips.size())
+        {
+            unsigned int jump_size = RandomUtils::get_index(flips.size(), tested_jumps, *this->random_generator);
+            
+            for (unsigned int i = 0; i < jump_size; i++) instance->mutate_arg(flips[i]);
+            
+            budget++;
+            if (instance->score() > instance_score) {
+                instance_score = instance->score();
+                return jump_size;
+            }
+
+            for (unsigned int i = 0; i < jump_size; i++) instance->mutate_arg(flips[i]);
+        }
+
+        return 0;
+    }
+protected:
+};
 
 unsigned int GreedyJumper::Selection_Criterion::chose_jump(const TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float& instance_score, BudgetHelper& budget) const {
     // apply all mutations in trajectory
@@ -71,6 +98,7 @@ std::shared_ptr<GreedyJumper::Selection_Criterion> GreedyJumper::Selection_Crite
     if (string == "first") return std::make_shared<GJ_First_Criterion>();
     else if (string == "best") return std::make_shared<GJ_Best_Criterion>();
     else if (string == "least") return std::make_shared<GJ_Least_Criterion>();
+    else if (string == "random") return std::make_shared<GJ_Random_Criterion>();
     
     return std::make_shared<GJ_First_Criterion>(); // default
 }
