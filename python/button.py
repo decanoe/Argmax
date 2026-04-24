@@ -90,14 +90,14 @@ class ButtonCheck:
     axes: plt.Axes
     button: CheckButtons
     position: Bbox
-    labels: list[str]
+    values: list[str]
     
-    def __init__(self, axes: plt.Axes, labels: list[str], callback = None):
+    def __init__(self, axes: plt.Axes, labels: list[str], values: list[str] = None, callback = None):
         self.axes = axes
         self.button = CheckButtons(axes, labels)
         self.button.on_clicked(self.process)
         self.callback = callback
-        self.labels = labels
+        self.values = labels if values == None else values
         
         self.position = axes.get_position()
     
@@ -117,10 +117,14 @@ class ButtonCheck:
         else:
             self.axes.set_position([100, 100, .1, .1])
     
-    def check(self, key: str, state: bool):
-        if (key in self.labels):
-            self.button.set_active(self.labels.index(key))
-    def check_all(self, keys: list[str], state: bool):
+    def check(self, key: str, state: bool = True):
+        if (key in self.values):
+            self.button.set_active(self.values.index(key), state)
+    def check_all(self, keys: list[str], state: bool = True):
         for key in keys:
             self.check(key, state)
+    
+    def is_checked(self, key: str) -> bool:
+        if (key in self.values):
+            return self.button.get_status()[self.values.index(key)]
     

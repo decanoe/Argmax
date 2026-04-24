@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 import numpy as np
 import io
+import re
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -37,94 +38,118 @@ X_SCALE: ButtonCycle = None
 LEGEND_POSITION: ButtonCycle = None
 
 ALGO_KEYS: list[str] = []
-LABEL_TRANSLATIONS: dict[str, str] = {}
-ALGO_COLORS = {}
-ALGO_LINESTYLE = {}
 
-# region greedy_all
-LABEL_TRANSLATIONS["greedy_all_best"] = "GJ_full_best"
-LABEL_TRANSLATIONS["greedy_all_first"] = "GJ_full_first"
-LABEL_TRANSLATIONS["greedy_all_least"] = "GJ_full_least"
+def get_label_and_style(algo: str)->dict[str, str]:
+    full_algo = algo
+    def translate_amount(amount: str):
+        try:
+            v = float(amount)
+            return f"{int(v * 100)}%"
+        except ValueError:
+            print(f"can't translate amount for {amount} !")
+            exit(0)
+    reference_color = {
+        "best": "blue",
+        "first": "orange",
+        "least": "red",
+        "random": "green",
+    }
+    
+    if (algo.startswith("greedy_tabu")):
+        algo = algo.removeprefix("greedy_tabu").removeprefix("_")
+        push_translations = {
+            "BestToWorst": "BtW",
+            "BestToWorstClamped": "BtWc",
+            "WorstToBest": "WtB",
+        }
+        
+        for push, push_tr in push_translations.items():
+            if (algo.startswith(push+"_")):
+                algo = algo.removeprefix(push).removeprefix("_")
+                
+                tabu_size: str = algo.split("_")[0]
+                tabu_random: str = algo.split("_")[1].removeprefix("r")
+                return {
+                    "label": f"GJ tabu {translate_amount(tabu_size)} ~{translate_amount(tabu_random)} {push_tr}",
+                    "linestyle": (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
+                    "color": "cyan",
+                }
+        print(f"malformed algo file label : {full_algo} !")
+        exit(0)
+    
+    if (algo.startswith("tabu")):
+        algo = algo.removeprefix("tabu").removeprefix("_")
+                
+        tabu_size: str = algo.split("_")[0]
+        tabu_random: str = algo.split("_")[1].removeprefix("r")
+        return {
+            "label": f"tabu {translate_amount(tabu_size)} ~{translate_amount(tabu_random)}",
+            "linestyle": (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
+            "color": "gray",
+        }
+    
+    if (algo.startswith("greedy")):
+        algo = algo.removeprefix("greedy").removeprefix("_")
+        greedy_scope_translations = {
+            "all": "full",
+            "improve": "improve",
+            "fixed": "top",
+        }
+        greedy_criterion_translations = {
+            "best": "best",
+            "first": "maximal",
+            "least": "least",
+            "random": "first",
+        }
+        
+        for scope, scope_tr in greedy_scope_translations.items():
+            if (algo.startswith(scope)):
+                algo = algo.removeprefix(scope).removeprefix("_")
+                
+                for criterion, criterion_tr in greedy_criterion_translations.items():
+                    if (algo.startswith(criterion)):
+                        algo = algo.removeprefix(criterion).removeprefix("_")
+                        
+                        if (scope == "fixed"):
+                            return {
+                                    "label": f"GJ {scope_tr}-{translate_amount(algo)} {criterion_tr}",
+                                    "linestyle": (5, (10, 3)), # long dash with offset
+                                    "color": reference_color[criterion],
+                                }
+                        else:
+                            return {
+                                    "label": f"GJ {scope_tr} {criterion_tr}",
+                                    "linestyle": "solid" if scope == "all" else "dashdot",
+                                    "color": reference_color[criterion],
+                                }
 
-ALGO_COLORS["greedy_all_best"] = "blue"
-ALGO_COLORS["greedy_all_first"] = "green"
-ALGO_COLORS["greedy_all_least"] = "red"
-
-ALGO_LINESTYLE["greedy_all_best"] = "solid"
-ALGO_LINESTYLE["greedy_all_first"] = "solid"
-ALGO_LINESTYLE["greedy_all_least"] = "solid"
-# endregion
-
-# region greedy_improve
-LABEL_TRANSLATIONS["greedy_improve_best"] = "GJ_improve_best"
-LABEL_TRANSLATIONS["greedy_improve_first"] = "GJ_improve_first"
-LABEL_TRANSLATIONS["greedy_improve_least"] = "GJ_improve_least"
-
-ALGO_COLORS["greedy_improve_best"] = "cyan"
-ALGO_COLORS["greedy_improve_first"] = "lime"
-ALGO_COLORS["greedy_improve_least"] = "orange"
-
-ALGO_LINESTYLE["greedy_improve_best"] = "solid"
-ALGO_LINESTYLE["greedy_improve_first"] = "solid"
-ALGO_LINESTYLE["greedy_improve_least"] = "solid"
-# endregion
-
-# region hill_climb
-LABEL_TRANSLATIONS["hc_first"] = None
-LABEL_TRANSLATIONS["hc_cycle"] = None
-LABEL_TRANSLATIONS["hc_best"] = "HC_best"
-LABEL_TRANSLATIONS["hc_random"] = "HC_first"
-LABEL_TRANSLATIONS["hc_least"] = "HC_least"
-
-ALGO_COLORS["hc_best"] = ALGO_COLORS["greedy_all_best"]
-ALGO_COLORS["hc_random"] = ALGO_COLORS["greedy_all_first"]
-ALGO_COLORS["hc_least"] = ALGO_COLORS["greedy_all_least"]
-
-ALGO_LINESTYLE["hc_best"] = "dashed"
-ALGO_LINESTYLE["hc_random"] = "dashed"
-ALGO_LINESTYLE["hc_least"] = "dashed"
-# endregion
-
-# region greedy_fixed
-LABEL_TRANSLATIONS["greedy_fixed_best_.5"] = "GJ_1/2_best"
-LABEL_TRANSLATIONS["greedy_fixed_best_.25"] = "GJ_1/4_best"
-LABEL_TRANSLATIONS["greedy_fixed_best_.75"] = "GJ_3/4_best"
-
-LABEL_TRANSLATIONS["greedy_fixed_first_.5"] = "GJ_1/2_first"
-LABEL_TRANSLATIONS["greedy_fixed_first_.25"] = "GJ_1/4_first"
-LABEL_TRANSLATIONS["greedy_fixed_first_.75"] = "GJ_3/4_first"
-
-LABEL_TRANSLATIONS["greedy_fixed_least_.5"] = "GJ_1/2_least"
-LABEL_TRANSLATIONS["greedy_fixed_least_.25"] = "GJ_1/4_least"
-LABEL_TRANSLATIONS["greedy_fixed_least_.75"] = "GJ_3/4_least"
-
-
-ALGO_COLORS["greedy_fixed_best_.5"] = ALGO_COLORS["greedy_all_best"]
-ALGO_COLORS["greedy_fixed_best_.25"] = ALGO_COLORS["greedy_all_best"]
-ALGO_COLORS["greedy_fixed_best_.75"] = ALGO_COLORS["greedy_all_best"]
-
-ALGO_COLORS["greedy_fixed_first_.5"] = ALGO_COLORS["greedy_all_first"]
-ALGO_COLORS["greedy_fixed_first_.25"] = ALGO_COLORS["greedy_all_first"]
-ALGO_COLORS["greedy_fixed_first_.75"] = ALGO_COLORS["greedy_all_first"]
-
-ALGO_COLORS["greedy_fixed_least_.5"] = ALGO_COLORS["greedy_all_least"]
-ALGO_COLORS["greedy_fixed_least_.25"] = ALGO_COLORS["greedy_all_least"]
-ALGO_COLORS["greedy_fixed_least_.75"] = ALGO_COLORS["greedy_all_least"]
-
-
-ALGO_LINESTYLE["greedy_fixed_best_.5"] = "dashdot"
-ALGO_LINESTYLE["greedy_fixed_best_.25"] = "dashdot"
-ALGO_LINESTYLE["greedy_fixed_best_.75"] = "dashdot"
-
-ALGO_LINESTYLE["greedy_fixed_first_.5"] = "dashdot"
-ALGO_LINESTYLE["greedy_fixed_first_.25"] = "dashdot"
-ALGO_LINESTYLE["greedy_fixed_first_.75"] = "dashdot"
-
-ALGO_LINESTYLE["greedy_fixed_least_.5"] = "dashdot"
-ALGO_LINESTYLE["greedy_fixed_least_.25"] = "dashdot"
-ALGO_LINESTYLE["greedy_fixed_least_.75"] = "dashdot"
-# endregion
-
+        print(f"malformed algo file label : {full_algo} !")
+        exit(0)
+    
+    if (algo.startswith("hc")):
+        algo = algo.removeprefix("hc").removeprefix("_")
+        hc_criterion_translations = {
+            "best": "best",
+            "least": "least",
+            "random": "first",
+            "first": "first(index based)",
+            "cycle": "cycle",
+        }
+    
+        for criterion, criterion_tr in hc_criterion_translations.items():
+            if (algo.startswith(criterion)):
+                algo = algo.removeprefix(criterion).removeprefix("_")
+                return {
+                        "label": f"HC {criterion_tr}",
+                        "linestyle": "dashed",
+                        "color": reference_color.get(criterion, "grey"),
+                    }
+                
+        print(f"malformed algo file label : {full_algo} !")
+        exit(0)
+    
+    print(f"algo file label not recognized : {full_algo} !")
+    exit(0)
 # ===============================================================================================
 
 class NKRunInfo:
@@ -136,12 +161,21 @@ class NKRunInfo:
     algo: str
     instance: int
     
+    label: str
+    linestyle: str
+    color: str
+    
     def __init__(self, n: int, k: int, algo: str, instance: str = "avg", name: str = "avg"):
         self.name = name
         self.algo = algo
         self.N = n
         self.K = k
         self.instance = instance
+        
+        label_and_style = get_label_and_style(algo)
+        self.label = label_and_style["label"]
+        self.linestyle = label_and_style["linestyle"]
+        self.color = label_and_style["color"]
     @classmethod
     def from_file(cls, path: str):
         name = os.path.basename(path)
@@ -153,9 +187,6 @@ class NKRunInfo:
         dir = os.path.dirname(dir)
         n = int(os.path.basename(dir).removeprefix("N"))
         
-        if (LABEL_TRANSLATIONS[algo] == None):
-            return None
-        
         with open(path) as f: data = pd.read_csv(io.StringIO(f.read()), sep = "\t")
         data.fitness_before_jump /= n
         data.fitness_after_jump /= n
@@ -166,37 +197,43 @@ class NKRunInfo:
         
     def __repr__(self)-> str:
         return self.algo + f" {self.N} {self.K}"
-NK_file_infos: dict[int, dict[int, dict[str, dict[int, NKRunInfo]]]] = {}
+file_infos: dict[int, dict[int, dict[str, dict[int, NKRunInfo]]]] = {}
 
 from tqdm import tqdm
-dirs = list(os.walk(dir_path+"/data/local_search/NK"))
-for i in tqdm(range(len(dirs))):
-    for f in dirs[i][2]:
-        info: NKRunInfo = NKRunInfo.from_file(dirs[i][0] + "/" + f)
-        if (info != None):
-            NK_file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, {})[info.instance] = info
+files: list[tuple[str, str]] = []
+for d in os.walk(dir_path+"/data/local_search/NK"):
+    files += [(d[0], f) for f in d[2]]
 
-N_keys = sorted(NK_file_infos.keys())
-K_keys = sorted(NK_file_infos[N_keys[0]].keys())
-ALGO_KEYS = sorted(NK_file_infos[N_keys[0]][K_keys[0]].keys())
+for i in tqdm(range(len(files))):
+    d, f = files[i]
+    info: NKRunInfo = NKRunInfo.from_file(d + "/" + f)
+    if (info != None):
+        file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, {})[info.instance] = info
+
+N_keys = sorted(file_infos.keys())
+K_keys = sorted(file_infos[N_keys[0]].keys())
+ALGO_KEYS = sorted(file_infos[N_keys[0]][K_keys[0]].keys())
+
+def is_algo_selected(algo: str) -> bool:
+    return SELECTED_ALGOS.is_checked(algo)
 
 # for each (N, K), for each algo, 2 matrices with the first being the budget and the second being the average maximum reached
-NK_AVG_POINTS: dict[tuple[int, int], dict[str, tuple[np.ndarray[int], np.ndarray[float]]]] = {}
-def construct_NK_avg_points(n: int, k: int) -> dict[str, dict[int, int]]:
-    global NK_AVG_POINTS
-    if ((n, k) in NK_AVG_POINTS):
-        return NK_AVG_POINTS.get((n, k))
+AVG_POINTS: dict[tuple[int, int], dict[str, tuple[np.ndarray[int], np.ndarray[float]]]] = {}
+def construct_avg_points(n: int, k: int) -> dict[str, dict[int, int]]:
+    global AVG_POINTS
+    if ((n, k) in AVG_POINTS):
+        return AVG_POINTS.get((n, k))
     
     all_points_per_algo: dict[str, (np.ndarray[int], np.ndarray[float])] = {}
     for algo in ALGO_KEYS:
         budget_points: np.ndarray[int] = np.array([])
         fitness_points: np.ndarray[float] = np.array([])
         
-        for runinfo in NK_file_infos[n][k][algo].values():
+        for runinfo in file_infos[n][k][algo].values():
             budget_points = np.unique(np.concatenate((budget_points, runinfo.data.budget)))
             budget_points.sort(kind='mergesort')
         
-        for runinfo in NK_file_infos[n][k][algo].values():
+        for runinfo in file_infos[n][k][algo].values():
             temp: np.ndarray[float] = np.array([runinfo.data.budget, runinfo.data.fitness_after_jump])
             anytime_fitness: np.ndarray[float] = np.maximum.accumulate(temp, axis=1)
             
@@ -213,37 +250,46 @@ def construct_NK_avg_points(n: int, k: int) -> dict[str, dict[int, int]]:
         
         all_points_per_algo[algo] = (budget_points, fitness_points.mean(axis=0))
     
-    NK_AVG_POINTS[(n, k)] = all_points_per_algo
+    AVG_POINTS[(n, k)] = all_points_per_algo
     return all_points_per_algo
-def NK_plot_anytime_avg(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+def plot_anytime_avg(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     lines = []
     legends = []
     if (X_SCALE.get_value() == "log scale"):
         ax.set_xscale('log')
         
-    all_points_per_algo: dict[str, tuple[np.ndarray[int], np.ndarray[float]]] = construct_NK_avg_points(N.get_value(), K.get_value())
+    all_points_per_algo: dict[str, tuple[np.ndarray[int], np.ndarray[float]]] = construct_avg_points(N.get_value(), K.get_value())
 
     sorted_algos = sorted(ALGO_KEYS, key=lambda algo: all_points_per_algo[algo][1][-1], reverse=True)
     for algo in sorted_algos:
+        if not(is_algo_selected(algo)):
+            continue
+        
         x, y = all_points_per_algo[algo]
-        line, = ax.plot(x, y, label=LABEL_TRANSLATIONS[algo], color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo])
-        legends.append(LABEL_TRANSLATIONS[algo])
+        
+        some_run_info = file_infos[50][0][algo][0]
+        line, = ax.plot(x, y, label=some_run_info.label, color = some_run_info.color, linestyle = some_run_info.linestyle)
+        legends.append(some_run_info.label)
         lines.append(line)
         
     ax.set_xlabel("budget")
     ax.set_ylabel("fitness")
     ax.grid()
     return lines, legends
-def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+def plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     lines = []
     legends = []
     if (X_SCALE.get_value() == "log scale"):
         ax.set_xscale('log')
     
-    sorted_algos = sorted(ALGO_KEYS, key=lambda algo:NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()].data.fitness_after_jump.max(), reverse=True)
+    sorted_algos = sorted(ALGO_KEYS, key=lambda algo:file_infos[N.get_value()][K.get_value()][algo][I.get_value()].data.fitness_after_jump.max(), reverse=True)
     
     for algo in sorted_algos:
-        data = NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()].data
+        if not(is_algo_selected(algo)):
+            continue
+        
+        run_info = file_infos[N.get_value()][K.get_value()][algo][I.get_value()]
+        data = run_info.data
         
         all_x = []
         all_y = []
@@ -261,20 +307,20 @@ def NK_plot_anytime(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], li
             all_x.append(max_x)
             all_y.append(all_y[-1])
         
-        line, = ax.plot(all_x, all_y, label=LABEL_TRANSLATIONS[algo], color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo])
-        legends.append(LABEL_TRANSLATIONS[algo])
+        line, = ax.plot(all_x, all_y, label=run_info.label, color = run_info.color, linestyle = run_info.linestyle)
+        legends.append(run_info.label)
         lines.append(line)
         
     ax.set_xlabel("budget")
     ax.set_ylabel("fitness")
     ax.grid()
     return lines, legends
-def _NK_get_single_correlation_points(algo: str, axis1: str, axis2: str) -> tuple[np.ndarray[float], np.ndarray[float]]:
+def _get_single_correlation_points(algo: str, axis1: str, axis2: str) -> tuple[np.ndarray[float], np.ndarray[float]]:
     infos: list[NKRunInfo] = []
     if (I.get_value() == "avg"):
-        infos = NK_file_infos[N.get_value()][K.get_value()][algo].values()
+        infos = file_infos[N.get_value()][K.get_value()][algo].values()
     else:
-        infos = [NK_file_infos[N.get_value()][K.get_value()][algo][I.get_value()]]
+        infos = [file_infos[N.get_value()][K.get_value()][algo][I.get_value()]]
         
     all_x: np.ndarray[float] = np.array([])
     all_y: np.ndarray[float] = np.array([])
@@ -293,20 +339,21 @@ def _NK_get_single_correlation_points(algo: str, axis1: str, axis2: str) -> tupl
         all_y = np.concatenate((all_y, temp_y), axis=None)
     
     return all_x, all_y
-def _NK_plot_correlation_regression(fig: plt.Figure, ax: plt.Axes, axis1: str, axis2: str) -> tuple[list[plt.Line2D], list[str], float]:
+def _plot_correlation_regression(fig: plt.Figure, ax: plt.Axes, axis1: str, axis2: str) -> tuple[list[plt.Line2D], list[str], float]:
     lines = []
     legends = []
     
     max_val: float = 0
     for i in range(len(ALGO_KEYS)):
         algo = ALGO_KEYS[i]
-        if not(SELECTED_ALGOS.button.get_status()[i]):
+        if not(is_algo_selected(algo)):
             continue
         
-        all_x, all_y = _NK_get_single_correlation_points(algo, axis1, axis2)
+        all_x, all_y = _get_single_correlation_points(algo, axis1, axis2)
         max_val = max(max_val, all_x.max(), all_y.max())
         
-        p, = ax.plot(all_x, all_y, linestyle="", marker='o', color = ALGO_COLORS[algo], markersize=3, label=LABEL_TRANSLATIONS[algo], alpha = min(1, 150 / len(all_x)))
+        some_run_info = file_infos[50][0][algo][0]
+        p, = ax.plot(all_x, all_y, linestyle="", marker='o', color = some_run_info.color, markersize=3, label=some_run_info.label, alpha = min(1, 150 / len(all_x)))
         legends.append("")
         lines.append(p)
         
@@ -314,13 +361,13 @@ def _NK_plot_correlation_regression(fig: plt.Figure, ax: plt.Axes, axis1: str, a
         theta = np.polyfit(all_x, all_y, deg=REGRESSION.get_value())
         model = np.poly1d(theta)
         x = np.linspace(all_x.min(), all_x.max(), 100)
-        line, = ax.plot(x, model(x), color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo], label = LABEL_TRANSLATIONS[algo] + " regression")
-        legends.append(LABEL_TRANSLATIONS[algo] + " regression")
+        line, = ax.plot(x, model(x), color = some_run_info.color, linestyle = some_run_info.linestyle, label = some_run_info.label + " regression")
+        legends.append(some_run_info.label + " regression")
         lines.append(line)
         #endregion
     
     return lines, legends, max_val
-def _NK_plot_correlation_mean_std(fig: plt.Figure, ax: plt.Axes, axis1: str, axis2: str) -> tuple[list[plt.Line2D], list[str], float]:
+def _plot_correlation_mean_std(fig: plt.Figure, ax: plt.Axes, axis1: str, axis2: str) -> tuple[list[plt.Line2D], list[str], float]:
     lines = []
     legends = []
     
@@ -330,10 +377,10 @@ def _NK_plot_correlation_mean_std(fig: plt.Figure, ax: plt.Axes, axis1: str, axi
     max_val: float = 0
     for i in range(len(ALGO_KEYS)):
         algo = ALGO_KEYS[i]
-        if not(SELECTED_ALGOS.button.get_status()[i]):
+        if not(is_algo_selected(algo)):
             continue
         
-        all_x, all_y = _NK_get_single_correlation_points(algo, axis1, axis2)
+        all_x, all_y = _get_single_correlation_points(algo, axis1, axis2)
         max_val = max(max_val, all_x.max(), all_y.max())
         
         discrete_values: np.ndarray[float] = np.unique(all_y if axis1.startswith("fitness") else all_x)
@@ -351,20 +398,21 @@ def _NK_plot_correlation_mean_std(fig: plt.Figure, ax: plt.Axes, axis1: str, axi
                 std[i] = all_y[mask].std()
         
         line1, line2 = (None, None)
+        some_run_info = file_infos[50][0][algo][0]
         if (axis1.startswith("fitness")):
-            ax.fill_betweenx(discrete_values, mean - std, mean + std, alpha=.5, linewidth=0, color = ALGO_COLORS[algo])
-            line2, = ax.plot(mean, discrete_values, linewidth=2, color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo], label=LABEL_TRANSLATIONS[algo] + " mean")
+            ax.fill_betweenx(discrete_values, mean - std, mean + std, alpha=.5, linewidth=0, color = some_run_info.color)
+            line2, = ax.plot(mean, discrete_values, linewidth=2, color = some_run_info.color, linestyle = some_run_info.linestyle, label=some_run_info.label + " mean")
         else:
-            ax.fill_between(discrete_values, mean - std, mean + std, alpha=.5, linewidth=0, color = ALGO_COLORS[algo])
-            line2, = ax.plot(discrete_values, mean, linewidth=2, color = ALGO_COLORS[algo], linestyle = ALGO_LINESTYLE[algo], label=LABEL_TRANSLATIONS[algo] + " mean")
+            ax.fill_between(discrete_values, mean - std, mean + std, alpha=.5, linewidth=0, color = some_run_info.color)
+            line2, = ax.plot(discrete_values, mean, linewidth=2, color = some_run_info.color, linestyle = some_run_info.linestyle, label=some_run_info.label + " mean")
         
         legends.append("")
         lines.append(line1)
-        legends.append(LABEL_TRANSLATIONS[algo] + " mean")
+        legends.append(some_run_info.label + " mean")
         lines.append(line2)
     
     return lines, legends, max_val
-def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+def plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     axis1: str = AXIS1.get_value()
     if (axis1 != "size_of_the_jump"):
         axis1 += AXIS1_WHEN.get_value()
@@ -376,9 +424,9 @@ def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
     legends = []
     max_val = 1
     if (CORRELATION_PLOT.get_value() == "regression"):
-        lines, legends, max_val = _NK_plot_correlation_regression(fig, ax, axis1, axis2)
+        lines, legends, max_val = _plot_correlation_regression(fig, ax, axis1, axis2)
     else:
-        lines, legends, max_val = _NK_plot_correlation_mean_std(fig, ax, axis1, axis2)
+        lines, legends, max_val = _plot_correlation_mean_std(fig, ax, axis1, axis2)
 
     if (not(AXIS1.get_value() == "fitness") and not(AXIS2.get_value() == "fitness") and not(axis1.endswith("delta")) and not(axis2.endswith("delta"))):
         line, = ax.plot(np.linspace(0, max_val), np.linspace(0, max_val), color = "gray", linestyle = "--", label = "x = y")
@@ -388,13 +436,13 @@ def NK_plot_correlation(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D]
     ax.set_ylabel(AXIS2.get_label() + (" " + AXIS2_WHEN.get_label() if AXIS2.get_label() != "jump size" else ""))
     ax.grid()
     return lines, legends
-def NK_plot(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
+def plot(fig: plt.Figure, ax: plt.Axes) -> tuple[list[plt.Line2D], list[str]]:
     if (PLOT_TYPE.get_value() == "anytime"):
         if (I.get_value() == "avg"):
-            return NK_plot_anytime_avg(fig, ax)
+            return plot_anytime_avg(fig, ax)
         else:
-            return NK_plot_anytime(fig, ax)
-    return NK_plot_correlation(fig, ax)
+            return plot_anytime(fig, ax)
+    return plot_correlation(fig, ax)
 
 # region output_table
 def add_spaces(value: float, str_size: int):
@@ -402,13 +450,13 @@ def add_spaces(value: float, str_size: int):
 
 COUNT_PER_INSTANCE: int = 2 # nb of runs to take per instance (should not exceed the number of runs done on each instances)
 
-def NK_generate_avg_table_md():
+def generate_avg_table_md():
     CELL_SIZE = 16
     
-    avg_content: str = "| " + " | ".join([add_spaces(LABEL_TRANSLATIONS.get(algo, algo), CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
+    avg_content: str = "| " + " | ".join([add_spaces(get_label_and_style(algo)["label"], CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
     avg_content += " |\n| " + " | ".join(["-" * CELL_SIZE] * (len(ALGO_KEYS) + 1))
     
-    for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
+    for n, n_data in sorted(file_infos.items(), key=lambda p : p[0]):
         for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
             avg_content += " |\n| " + add_spaces(f"**{n}_{k}**", CELL_SIZE)
             values = []
@@ -434,7 +482,7 @@ def NK_generate_avg_table_md():
                     avg_content += " | " + add_spaces(value, CELL_SIZE)
             
     with open(dir_path + "/output/avg.txt", "w") as f: f.write(avg_content + " |")
-def NK_generate_avg_table_latex():
+def generate_avg_table_latex():
     CELL_SIZE = 7
     
     header: str = """\\begin{table}[ht]
@@ -455,7 +503,7 @@ $(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\F
     
     body: str = ""
     
-    for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
+    for n, n_data in sorted(file_infos.items(), key=lambda p : p[0]):
         for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
             body += "\\textbf{" + str(n) + ", " + str(k) + "} "
             line_values = []
@@ -486,15 +534,15 @@ $(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\F
     
     with open(dir_path + "/output/avg.tex", "w") as f: f.write(header + body + footer)
 
-def NK_generate_budget_tables_md():
+def generate_budget_tables_md():
     CELL_SIZE = 16
     
-    header: str = "| " + " | ".join([add_spaces(LABEL_TRANSLATIONS.get(algo, algo), CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
+    header: str = "| " + " | ".join([add_spaces(get_label_and_style(algo)["label"], CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
     header += " |\n| " + " | ".join(["-" * CELL_SIZE] * (len(ALGO_KEYS) + 1))
     budgets: list[int] = [100_000, 10_000, 1_000]
     best_budget_content: list[str] = [header for _ in budgets]
     
-    for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
+    for n, n_data in sorted(file_infos.items(), key=lambda p : p[0]):
         for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
             for budget_index in range(len(budgets)):
                 best_budget_content[budget_index] += " |\n| " + add_spaces(f"**{n}_{k}**", CELL_SIZE)
@@ -515,7 +563,7 @@ def NK_generate_budget_tables_md():
     
     for budget_index in range(len(budgets)):
         with open(dir_path + f"/output/best_{budgets[budget_index]//1000}_000.txt", "w") as f: f.write(best_budget_content[budget_index] + " |")
-def NK_generate_budget_tables_latex():
+def generate_budget_tables_latex():
     CELL_SIZE = 9
     
     budgets: list[int] = [1_000, 10_000, 100_000]
@@ -557,7 +605,7 @@ $(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\F
 
         body: str = ""
     
-        for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
+        for n, n_data in sorted(file_infos.items(), key=lambda p : p[0]):
             for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
                 body += "\\textbf{" + str(n) + ", " + str(k) + "} "
                 line_values = []
@@ -583,13 +631,13 @@ $(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\F
         
         with open(dir_path + f"/output/best_{budget//1000}_000.tex", "w") as f: f.write(header + body + footer)
 
-def NK_avg_budget_per_algo_md():
+def avg_budget_per_algo_md():
     CELL_SIZE = 16
     
-    avg_content: str = "| " + " | ".join([add_spaces(LABEL_TRANSLATIONS.get(algo, algo), CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
+    avg_content: str = "| " + " | ".join([add_spaces(get_label_and_style(algo)["label"], CELL_SIZE) for algo in ["instance (N_K)"] + ALGO_KEYS])
     avg_content += " |\n| " + " | ".join(["-" * CELL_SIZE] * (len(ALGO_KEYS) + 1))
     
-    for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
+    for n, n_data in sorted(file_infos.items(), key=lambda p : p[0]):
         for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
             avg_content += " |\n| " + add_spaces(f"**{n}_{k}**", CELL_SIZE)
             line_values = []
@@ -615,7 +663,7 @@ def NK_avg_budget_per_algo_md():
                     avg_content += " | " + add_spaces("%.1f"%value, CELL_SIZE)
     
     with open(dir_path + "/output/budgets.txt", "w") as f: f.write(avg_content + " |")
-def NK_avg_budget_per_algo_latex():
+def avg_budget_per_algo_latex():
     CELL_SIZE = 7
     
     header: str = """\\begin{table}[ht]
@@ -636,7 +684,7 @@ $(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\F
     
     body: str = ""
     
-    for n, n_data in sorted(NK_file_infos.items(), key=lambda p : p[0]):
+    for n, n_data in sorted(file_infos.items(), key=lambda p : p[0]):
         for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
             body += "\\textbf{" + str(n) + ", " + str(k) + "} "
             line_values = []
@@ -667,19 +715,19 @@ $(N,K)$ & \\Best & \\First & \\Least & \\Best & \\First & \\Least & \\Best & \\F
     
     with open(dir_path + "/output/budgets.tex", "w") as f: f.write(header + body + footer)
 
-# NK_avg_budget_per_algo_md()
-# NK_avg_budget_per_algo_latex()
+# avg_budget_per_algo_md()
+# avg_budget_per_algo_latex()
 
-# NK_generate_avg_table_md()
-# NK_generate_avg_table_latex()
+# generate_avg_table_md()
+# generate_avg_table_latex()
 
-# NK_generate_budget_tables_md()
-# NK_generate_budget_tables_latex()
+# generate_budget_tables_md()
+# generate_budget_tables_latex()
 # endregion
 
 # ===============================================================================================
 fig, ax = plt.subplots()
-fig.subplots_adjust(left=0.1, right=0.9, bottom=0.35, top=0.95)
+fig.subplots_adjust(left=0.045, right=0.85, bottom=0.35, top=0.95)
 lines: list = []
 annot: Annotation
 
@@ -692,7 +740,7 @@ def update(event = None):
                     arrowprops=dict(arrowstyle="->"))
     annot.set_visible(False)
     
-    lines, legends = NK_plot(fig, ax)
+    lines, legends = plot(fig, ax)
     
     if len(legends) != 0:
         leg = ax.legend(
@@ -741,7 +789,7 @@ fig.canvas.mpl_connect("motion_notify_event", hover)
 
 # region permanent buttons ======================================================================
 def update_visibility():
-    for b in [SELECTED_ALGOS, AXIS1, AXIS2, CORRELATION_PLOT]:
+    for b in [AXIS1, AXIS2, CORRELATION_PLOT]:
         b.set_visible(PLOT_TYPE.get_value() == "correlation" and not(FULL_SCREEN))
     for b in [X_SCALE]:
         b.set_visible(PLOT_TYPE.get_value() != "correlation" and not(FULL_SCREEN))
@@ -753,28 +801,31 @@ def update_visibility():
     
     update()
 
-N_keys = sorted(NK_file_infos.keys())
-N = ButtonCycle(fig.add_axes([0.1, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, update)
-K_keys = sorted(NK_file_infos[N_keys[0]].keys())
-K = ButtonCycle(fig.add_axes([0.21, 0.2, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, update)
-I_keys = sorted(NK_file_infos[N_keys[0]][K_keys[0]][ALGO_KEYS[0]].keys())
-I = ButtonCycle(fig.add_axes([0.32, 0.2, 0.1, 0.05]), ["I" + str(i) for i in I_keys] + ["AVG"], I_keys + ["avg"], update)
+def place_buttons():
+    global N, K, I, PLOT_TYPE, X_SCALE, LEGEND_POSITION, SELECTED_ALGOS, AXIS1, AXIS1_WHEN, AXIS2, AXIS2_WHEN, CORRELATION_PLOT, REGRESSION
+    
+    N_keys = sorted(file_infos.keys())
+    N = ButtonCycle(fig.add_axes([0.045, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, update)
+    K_keys = sorted(file_infos[N_keys[0]].keys())
+    K = ButtonCycle(fig.add_axes([0.155, 0.2, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, update)
+    I_keys = sorted(file_infos[N_keys[0]][K_keys[0]][ALGO_KEYS[0]].keys())
+    I = ButtonCycle(fig.add_axes([0.265, 0.2, 0.1, 0.05]), ["I" + str(i) for i in I_keys] + ["AVG"], I_keys + ["avg"], update)
 
-PLOT_TYPE = ButtonCycle(fig.add_axes([0.6, 0.2, 0.3, 0.05]), ["anytime", "correlation"], callback=update_visibility)
+    PLOT_TYPE = ButtonCycle(fig.add_axes([0.5, 0.2, 0.35, 0.05]), ["anytime", "correlation"], callback=update_visibility)
 
-X_SCALE = ButtonCycle(fig.add_axes([0.6, 0.14, 0.15, 0.05]), ["log scale", "linear scale"], callback=update)
-LEGEND_POSITION = ButtonCycle(fig.add_axes([0.1, 0.14, 0.1, 0.05]), ["best", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], update)
+    X_SCALE = ButtonCycle(fig.add_axes([0.5, 0.14, 0.15, 0.05]), ["log scale", "linear scale"], callback=update)
+    LEGEND_POSITION = ButtonCycle(fig.add_axes([0.045, 0.14, 0.1, 0.05]), ["best", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], update)
 
-SELECTED_ALGOS = ButtonCheck(fig.add_axes([0.6, 0.02, 0.15, 0.17]), ALGO_KEYS, update)
+    AXIS1 = ButtonCycle(fig.add_axes([0.66, 0.14, 0.09, 0.05]), ["jump size", "fitness", "improving neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=update_visibility)
+    AXIS2 = ButtonCycle(fig.add_axes([0.66, 0.08, 0.09, 0.05]), ["fitness", "improving neighbors", "jump size"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=update_visibility)
+    AXIS1_WHEN = ButtonCycle(fig.add_axes([0.76, 0.14, 0.09, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=update)
+    AXIS2_WHEN = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=update)
 
-AXIS1 = ButtonCycle(fig.add_axes([0.76, 0.14, 0.09, 0.05]), ["jump size", "fitness", "improving neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=update_visibility)
-AXIS2 = ButtonCycle(fig.add_axes([0.76, 0.08, 0.09, 0.05]), ["fitness", "improving neighbors", "jump size"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=update_visibility)
-AXIS1_WHEN = ButtonCycle(fig.add_axes([0.86, 0.14, 0.09, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=update)
-AXIS2_WHEN = ButtonCycle(fig.add_axes([0.86, 0.08, 0.09, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=update)
-
-CORRELATION_PLOT = ButtonCycle(fig.add_axes([0.76, 0.02, 0.09, 0.05]), ["regression", "mean+std"], callback=update_visibility)
-REGRESSION = ButtonCycle(fig.add_axes([0.86, 0.02, 0.09, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=update)
-
+    CORRELATION_PLOT = ButtonCycle(fig.add_axes([0.66, 0.02, 0.09, 0.05]), ["regression", "mean+std"], callback=update_visibility)
+    REGRESSION = ButtonCycle(fig.add_axes([0.76, 0.02, 0.09, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=update)
+    
+    SELECTED_ALGOS = ButtonCheck(fig.add_axes([0.86, 0.02, 0.13, 0.96]), [get_label_and_style(algo)["label"] for algo in ALGO_KEYS], ALGO_KEYS, callback=update)
+place_buttons()
 # endregion =====================================================================================
 
 # region full_screen ============================================================================
@@ -789,7 +840,7 @@ def switch_full_screen(key: str):
         fig.subplots_adjust(left=0.075, right=0.98, bottom=0.1, top=0.95)
         plt.rcParams.update({'font.size': 22})
     else:
-        fig.subplots_adjust(left=0.1, right=0.9, bottom=0.35, top=0.95)
+        fig.subplots_adjust(left=0.045, right=0.85, bottom=0.35, top=0.95)
         plt.rcParams.update({'font.size': 10})
     
     for b in [PLOT_TYPE, X_SCALE, LEGEND_POSITION, AXIS1, AXIS2, AXIS1_WHEN, AXIS2_WHEN, REGRESSION, SELECTED_ALGOS, N, K, I]:
@@ -801,5 +852,12 @@ fig.canvas.mpl_connect('key_press_event', lambda evt: switch_full_screen(repr(ev
 # endregion =====================================================================================
 
 update_visibility()
-SELECTED_ALGOS.check_all([algo for algo in ALGO_KEYS if LABEL_TRANSLATIONS.get(algo, algo).startswith("GJ")], True)
+
+def set_default_selected_algos():
+    for algo in ALGO_KEYS:
+        if (algo.startswith("hc_") and "cycle" not in algo and "first" not in algo):
+            SELECTED_ALGOS.check(algo)
+        elif (algo.startswith("greedy_") and "fixed" not in algo and "tabu" not in algo):
+            SELECTED_ALGOS.check(algo)
+set_default_selected_algos()
 plt.show()
