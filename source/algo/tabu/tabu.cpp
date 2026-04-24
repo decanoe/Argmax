@@ -103,7 +103,7 @@ void GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, Bu
     {
         tabu_list.randomize_size();
         // create trajectory
-        std::function<bool(unsigned int)> is_valid = [&tabu_list](unsigned int i){ return tabu_list.contains(i); };
+        std::function<bool(unsigned int)> is_valid = [&tabu_list](unsigned int i){ return !tabu_list.contains(i); };
         this->scope->create_trajectory(trajectory, instance, score, budget, is_valid);
 
         // chose jump

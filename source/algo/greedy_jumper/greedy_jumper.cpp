@@ -44,6 +44,7 @@ public:
         while (tested_jumps.size() < flips.size())
         {
             unsigned int jump_size = RandomUtils::get_index(flips.size(), tested_jumps, *this->random_generator);
+            tested_jumps.insert(jump_size);
             
             for (unsigned int i = 0; i < jump_size; i++) instance->mutate_arg(flips[i]);
             
