@@ -12,7 +12,16 @@ namespace LocalSearch {
             Selection_Criterion(const Selection_Criterion&) = delete;
 
             static std::shared_ptr<Selection_Criterion> from_file_data(const FileData& file_data);
-        
+
+            /// @brief applies the best multi jump from the trajectory depending on the criterion and returns the number of bits flipped
+            /// @param trajectory the trajectory set
+            /// @param instance the instance on which to do the jump
+            /// @param instance_score the score of the instance (will be set to the new score before returning)
+            /// @param current_budget the current budget to update
+            /// @param budget the budget to update
+            /// @return the number of bit flipped (or 0 if no jump was done)
+            virtual unsigned int chose_jump(const TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float& instance_score, BudgetHelper& budget) const;
+        protected:
             /// @brief whether the provided tested score is better than the current one (in regard to the strategy)
             /// @param tested_score the newly tested score
             /// @param init_score the score at the begining of the iteration
@@ -23,7 +32,6 @@ namespace LocalSearch {
             /// @brief whether the algorithm needs to stop at the first improving score
             /// @return true if the algorithm needs to stop at the first improving score
             virtual bool stop_at_first_improve() const = 0;
-        protected:
         };
         class Neighborhood_Scope: public LocalSearchAlgoComponent {
         public:
@@ -31,16 +39,20 @@ namespace LocalSearch {
             Neighborhood_Scope(const Neighborhood_Scope&) = delete;
 
             static std::shared_ptr<Neighborhood_Scope> from_file_data(const FileData& file_data);
-            
-            /// @brief reset the scope variables to prepare for a new run (usefull for tabu search for example)
-            virtual void reset() = 0;
 
             /// @brief fill the TrajectorySet with all valid variable flips
             /// @param trajectory the TrajectorySet to fill
             /// @param instance the instance from which to create the TrajectorySet
             /// @param score the score of the instance (to avoid unnecessary budget consumption)
-            /// @return the budget consomed by the trajectory creation
-            virtual unsigned int create_trajectory(TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score) = 0;
+            /// @param budget the budget to update
+            void create_trajectory(TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score, BudgetHelper& budget) const;
+            /// @brief fill the TrajectorySet with all valid variable flips
+            /// @param trajectory the TrajectorySet to fill
+            /// @param instance the instance from which to create the TrajectorySet
+            /// @param score the score of the instance (to avoid unnecessary budget consumption)
+            /// @param budget the budget to update
+            /// @param is_valid a function returning weather a specific bit can be added to the trajectory (used by tabu)
+            virtual void create_trajectory(TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score, BudgetHelper& budget, std::function<bool(unsigned int)> is_valid) const = 0;
         protected:
         };
 
@@ -51,7 +63,7 @@ namespace LocalSearch {
 
         LocalSearchAlgo* set_seed(std::shared_ptr<std::mt19937> random_generator) override;
 
-        unsigned int improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget = 1024, unsigned int initial_budget = 0) const override;
+        void improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const override;
     protected:
         std::shared_ptr<Selection_Criterion> criterion;
         std::shared_ptr<Neighborhood_Scope> scope;

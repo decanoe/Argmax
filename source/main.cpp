@@ -90,7 +90,8 @@ std::string execute_file(const FileData& file_data, bool debug = true) {
     std::unique_ptr<ReversibleInstance> instance = FitnessInstance([&nk](const std::vector<bool>& a) -> float { return nk->evaluate(a); }, nk->get_nb_variables()).randomize_clone(rand);
 
     // run
-    algo->improve(instance, file_data.get_int("budget"));
+    BudgetHelper budget(file_data.get_int("budget"));
+    algo->improve(instance, budget);
 
     // run results
     if (debug) {

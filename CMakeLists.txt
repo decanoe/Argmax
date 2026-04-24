@@ -19,6 +19,7 @@ add_executable(${CMAKE_PROJECT_NAME}
     source/arg_file/file_data.cpp
 
     source/utils/random_utils.cpp
+    source/utils/budget_helper.cpp
 
     source/problem/nk.cpp
 

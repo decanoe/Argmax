@@ -30,7 +30,7 @@ namespace LocalSearch { namespace Tabu
         /// @param criterion the move selection criterion
         TabuSearch(std::shared_ptr<Selection_Criterion> criterion, float tabu_size, float max_random_size_added);
 
-        unsigned int improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget = 1024, unsigned int initial_budget = 0) const override;
+        void improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const override;
     protected:
         float tabu_size;
         float tabu_max_random_size_added;
@@ -46,7 +46,7 @@ namespace LocalSearch { namespace Tabu
         /// @param scope the scope of the variables used for agregating jumps
         GreedyTabuSearch(std::shared_ptr<Selection_Criterion> criterion, std::shared_ptr<Neighborhood_Scope> scope, float tabu_size, float max_random_size_added, TabuPushOrder tabu_push_order);
         
-        unsigned int improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget = 1024, unsigned int initial_budget = 0) const override;
+        void improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const override;
     protected:
         TabuPushOrder tabu_push_order;
         float tabu_size;

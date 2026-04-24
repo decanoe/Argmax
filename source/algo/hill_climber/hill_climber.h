@@ -36,7 +36,7 @@ namespace LocalSearch {
 
         LocalSearchAlgo* set_seed(std::shared_ptr<std::mt19937> random_generator) override;
 
-        unsigned int improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget = 1024, unsigned int initial_budget = 0) const override;
+        void improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const override;
     protected:
         std::shared_ptr<Selection_Criterion> criterion;
     };

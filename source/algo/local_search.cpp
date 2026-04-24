@@ -32,11 +32,11 @@ unsigned int LocalSearchAlgo::count_better_neighbors(std::unique_ptr<ReversibleI
     return result;
 }
 
-void LocalSearchAlgo::output_iteration_data(unsigned int used_budget, unsigned int in_run_budget, unsigned int nb_better_neighbors_before_jump, unsigned int nb_better_neighbors_after_jump, float old_score, float new_score, unsigned int jump_size) const {
-    if (out) { *out << used_budget << "\t" << in_run_budget << "\t" << old_score << "\t" << nb_better_neighbors_before_jump << "\t" << jump_size << "\t" << new_score << "\t" << nb_better_neighbors_after_jump << "\n"; }
+void LocalSearchAlgo::output_iteration_data(const BudgetHelper& budget, unsigned int nb_better_neighbors_before_jump, unsigned int nb_better_neighbors_after_jump, float old_score, float new_score, unsigned int jump_size) const {
+    if (out) { *out << budget.get_current_global_budget() << "\t" << budget.get_current_in_run_budget() << "\t" << old_score << "\t" << nb_better_neighbors_before_jump << "\t" << jump_size << "\t" << new_score << "\t" << nb_better_neighbors_after_jump << "\n"; }
 }
-void LocalSearchAlgo::output_iteration_ends_data(unsigned int used_budget, unsigned int in_run_budget, unsigned int nb_better_neighbors, float score) const {
-    if (out) { *out << used_budget << "\t" << in_run_budget << "\t" << score << "\t" << nb_better_neighbors << "\t" << 0 << "\t" << score << "\t" << nb_better_neighbors << "\n"; }
+void LocalSearchAlgo::output_iteration_ends_data(const BudgetHelper& budget, unsigned int nb_better_neighbors, float score) const {
+    return this->output_iteration_data(budget, nb_better_neighbors, nb_better_neighbors, score, score, 0);
 }
 
 

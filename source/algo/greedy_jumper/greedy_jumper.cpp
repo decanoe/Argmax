@@ -34,6 +34,38 @@ public:
 protected:
 };
 
+unsigned int GreedyJumper::Selection_Criterion::chose_jump(const TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float& instance_score, BudgetHelper& budget) const {
+    // apply all mutations in trajectory
+    for (std::pair<unsigned int, float> pair : trajectory) instance->mutate_arg(pair.first);
+    
+    // compare jumps of the trajectory
+    unsigned int count = trajectory.size();
+    unsigned int best_count = 0;
+    float best_score = instance_score;
+    for (auto pair = trajectory.rbegin(); pair != trajectory.rend(); pair++) {
+        budget++;
+        if (this->do_keep(instance->score(), instance_score, best_count == 0, best_score)) {
+            best_score = instance->score();
+            best_count = count;
+            if (this->stop_at_first_improve()) break;
+        }
+        count--;
+        instance->mutate_arg(pair->first);
+    }
+
+    // apply best jump found
+    instance_score = best_score;
+    if (!this->stop_at_first_improve()) {
+        count = best_count;
+        for (std::pair<unsigned int, float> pair : trajectory) {
+            if (count == 0) break;
+            count--;
+            instance->mutate_arg(pair.first);
+        }
+    }
+
+    return best_count;
+}
 std::shared_ptr<GreedyJumper::Selection_Criterion> GreedyJumper::Selection_Criterion::from_file_data(const FileData& file_data) {
     std::string string = file_data.get_string("selection_criterion");
     if (string == "first") return std::make_shared<GJ_First_Criterion>();
@@ -43,40 +75,36 @@ std::shared_ptr<GreedyJumper::Selection_Criterion> GreedyJumper::Selection_Crite
     return std::make_shared<GJ_First_Criterion>(); // default
 }
 /* #endregion */
-/* #region ======================================= GreedyJumper::Selection_Criterion ======================================= */
+/* #region ======================================= GreedyJumper::Neighborhood_Scope ======================================= */
 class GJ_Full_Scope: public GreedyJumper::Neighborhood_Scope {
 public:
-    void reset() {}
-    unsigned int create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score) override {
+    void create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score, BudgetHelper& budget, std::function<bool(unsigned int)> is_valid) const override {
         // create trajectory
         trajectory.clear();
-        unsigned int used_budget = 0;
-        for (size_t i = 0; i < instance->nb_args(); i++)
+        for (size_t i = 0; i < instance->nb_args() && !budget.out_of_budget(); i++)
         {
+            if (!is_valid(i)) continue;
             instance->mutate_arg(i);
-            used_budget++;
+            budget++;
             trajectory.insert({i, instance->score()});
             instance->revert_last_mutation();
         }
-        return used_budget;
     }
 protected:
 };
 class GJ_Improve_Scope: public GreedyJumper::Neighborhood_Scope {
 public:
-    void reset() {}
-    unsigned int create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score) override {
+    void create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score, BudgetHelper& budget, std::function<bool(unsigned int)> is_valid) const override {
         // create trajectory
         trajectory.clear();
-        unsigned int used_budget = 0;
-        for (size_t i = 0; i < instance->nb_args(); i++)
+        for (size_t i = 0; i < instance->nb_args() && !budget.out_of_budget(); i++)
         {
+            if (!is_valid(i)) continue;
             instance->mutate_arg(i);
-            used_budget++;
+            budget++;
             if (instance->score() > score) trajectory.insert({i, instance->score()});
             instance->revert_last_mutation();
         }
-        return used_budget;
     }
 protected:
 };
@@ -84,25 +112,26 @@ class GJ_Fixed_Scope: public GreedyJumper::Neighborhood_Scope {
 public:
     GJ_Fixed_Scope(float keep_factor): keep_factor(keep_factor) {}
 
-    void reset() {}
-    unsigned int create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score) override {
+    void create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score, BudgetHelper& budget, std::function<bool(unsigned int)> is_valid) const override {
         // create trajectory
         trajectory.clear();
-        unsigned int used_budget = 0;
-        for (size_t i = 0; i < instance->nb_args(); i++)
+        for (size_t i = 0; i < instance->nb_args() && !budget.out_of_budget(); i++)
         {
+            if (!is_valid(i)) continue;
             instance->mutate_arg(i);
-            used_budget++;
+            budget++;
             trajectory.insert({i, instance->score()});
             instance->revert_last_mutation();
         }
         while (trajectory.size() > instance->nb_args() * keep_factor) trajectory.erase(std::next(trajectory.rbegin()).base());
-        return used_budget;
     }
 protected:
     float keep_factor = .5;
 };
 
+void GreedyJumper::Neighborhood_Scope::create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score, BudgetHelper& budget) const {
+    return create_trajectory(trajectory, instance, score, budget, [](unsigned int) { return true; });
+}
 std::shared_ptr<GreedyJumper::Neighborhood_Scope> GreedyJumper::Neighborhood_Scope::from_file_data(const FileData& file_data) {
     std::string string = file_data.get_string("neighborhood_scope");
     if (string == "improve") return std::make_shared<GJ_Improve_Scope>();
@@ -127,55 +156,27 @@ bool GreedyJumper::cmp(std::pair<unsigned int, float> a, std::pair<unsigned int,
     else return a.first < b.first;
 };
 
-unsigned int GreedyJumper::improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget, unsigned int initial_budget) const {
+void GreedyJumper::improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const {
     float score = instance->score();
-    unsigned int used_budget = 1 + initial_budget;
+    budget++;
     unsigned int better_neighbors = count_better_neighbors(instance);
     unsigned int better_neighbors_after = better_neighbors;
-    output_iteration_ends_data(used_budget, (used_budget  - initial_budget), better_neighbors, score);
+    output_iteration_ends_data(budget, better_neighbors, score);
 
     GreedyJumper::TrajectorySet trajectory(cmp);
-    this->scope->reset();
-    while (used_budget < budget)
+    while (!budget.out_of_budget())
     {
         // create trajectory
-        used_budget += this->scope->create_trajectory(trajectory, instance, score);
+        this->scope->create_trajectory(trajectory, instance, score, budget);
 
-        // apply all mutations in trajectory
-        for (std::pair<unsigned int, float> pair : trajectory) instance->mutate_arg(pair.first);
-
-        // compare jumps of the trajectory
-        unsigned int count = trajectory.size();
-        unsigned int iteration_best_count = 0;
-        float iteration_best_score = score;
-        for (auto pair = trajectory.rbegin(); pair != trajectory.rend(); pair++) {
-            used_budget++;
-            if (this->criterion->do_keep(instance->score(), score, iteration_best_count == 0, iteration_best_score)) {
-                iteration_best_score = instance->score();
-                iteration_best_count = count;
-                if (this->criterion->stop_at_first_improve()) break;
-            }
-            count--;
-            instance->mutate_arg(pair->first);
-        }
-
-        // apply best jump found
+        // chose jump
         float old_score = score;
-        score = iteration_best_score;
-        if (!this->criterion->stop_at_first_improve()) {
-            count = iteration_best_count;
-            for (std::pair<unsigned int, float> pair : trajectory) {
-                if (count == 0) break;
-                count--;
-                instance->mutate_arg(pair.first);
-            }
-        }
+        unsigned int jump_size = this->criterion->chose_jump(trajectory, instance, score, budget);
         
         better_neighbors_after = count_better_neighbors(instance);
-        output_iteration_data(used_budget, (used_budget  - initial_budget), better_neighbors, better_neighbors_after, old_score, score, iteration_best_count);
+        output_iteration_data(budget, better_neighbors, better_neighbors_after, old_score, score, jump_size);
         better_neighbors = better_neighbors_after;
-        if (iteration_best_count == 0) return used_budget;
+        if (jump_size == 0) break;
     }
-    return used_budget;
 }
 /* #endregion */

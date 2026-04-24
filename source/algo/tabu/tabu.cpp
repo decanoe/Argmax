@@ -30,29 +30,29 @@ size_t TabuList::max_size() const { return default_size + random_max; }
 /* #region ======================================= TabuSearch ======================================= */
 TabuSearch::TabuSearch(std::shared_ptr<Selection_Criterion> criterion, float tabu_size, float max_random_size_added): HillClimber(criterion), tabu_size(tabu_size), tabu_max_random_size_added(max_random_size_added) {}
 
-unsigned int TabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget, unsigned int initial_budget) const {
+void TabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const {
     float score = instance->score();
-    unsigned int used_budget = 1 + initial_budget;
+    budget++;
     unsigned int better_neighbors = count_better_neighbors(instance);
     unsigned int better_neighbors_after = better_neighbors;
-    output_iteration_ends_data(used_budget, (used_budget  - initial_budget), better_neighbors, score);
+    output_iteration_ends_data(budget, better_neighbors, score);
     
     TabuList tabu_list(this->tabu_size * instance->nb_args(), this->tabu_max_random_size_added * instance->nb_args(), this->random_generator);
     unsigned int iteration_count = 0;
-    while (used_budget < budget)
+    while (!budget.out_of_budget())
     {
         unsigned int iteration_best_move = -1U;
         float iteration_best_score = 0;
         tabu_list.randomize_size();
 
         // iterate through mutations
-        for (size_t i = 0; i < instance->nb_args() && used_budget < budget; i++)
+        for (size_t i = 0; i < instance->nb_args() && !budget.out_of_budget(); i++)
         {
             unsigned int index = criterion->get_test_index(i, iteration_count, instance->nb_args());
             if (tabu_list.contains(index)) continue;
 
             instance->mutate_arg(index);
-            used_budget++;
+            budget++;
             if (criterion->do_keep(instance->score(), score, iteration_best_move == -1U, iteration_best_score)) {
                 iteration_best_move = index;
                 iteration_best_score = instance->score();
@@ -68,18 +68,16 @@ unsigned int TabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, 
             float old_score = instance->score();
             instance->mutate_arg(iteration_best_move);
             better_neighbors_after = count_better_neighbors(instance);
-            output_iteration_data(used_budget, (used_budget  - initial_budget), better_neighbors, better_neighbors_after, old_score, iteration_best_score, 1);
+            output_iteration_data(budget, better_neighbors, better_neighbors_after, old_score, iteration_best_score, 1);
             better_neighbors = better_neighbors_after;
             score = iteration_best_score;
         }
         else {
-            output_iteration_ends_data(used_budget, (used_budget  - initial_budget), better_neighbors, score);
+            output_iteration_ends_data(budget, better_neighbors, score);
             break;
         }
         iteration_count++;
     }
-
-    return used_budget;
 }
 /* #endregion */
 
@@ -92,71 +90,46 @@ GreedyTabuSearch::TabuPushOrder GreedyTabuSearch::push_order_from_string(const s
     return TabuPushOrder::BestToWorstClamped;
 }
 
-unsigned int GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget, unsigned int initial_budget) const {
+void GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const {
     float score = instance->score();
-    unsigned int used_budget = 1 + initial_budget;
+    budget++;
     unsigned int better_neighbors = count_better_neighbors(instance);
     unsigned int better_neighbors_after = better_neighbors;
-    output_iteration_ends_data(used_budget, (used_budget  - initial_budget), better_neighbors, score);
+    output_iteration_ends_data(budget, better_neighbors, score);
 
     TabuList tabu_list(this->tabu_size * instance->nb_args(), this->tabu_max_random_size_added * instance->nb_args(), this->random_generator);
     GreedyJumper::TrajectorySet trajectory(cmp);
-    this->scope->reset();
-    while (used_budget < budget)
+    while (!budget.out_of_budget())
     {
         tabu_list.randomize_size();
         // create trajectory
-        // used_budget += this->scope->create_trajectory(trajectory, instance, score, [&tabu_list](unsigned int i){ return tabu_list.contains(i); });
+        std::function<bool(unsigned int)> is_valid = [&tabu_list](unsigned int i){ return tabu_list.contains(i); };
+        this->scope->create_trajectory(trajectory, instance, score, budget, is_valid);
 
-        // apply all mutations in trajectory
-        for (std::pair<unsigned int, float> pair : trajectory) instance->mutate_arg(pair.first);
-
-        // compare jumps of the trajectory
-        unsigned int count = trajectory.size();
-        unsigned int iteration_best_count = 0;
-        float iteration_best_score = score;
-        for (auto pair = trajectory.rbegin(); pair != trajectory.rend(); pair++) {
-            used_budget++;
-            if (this->criterion->do_keep(instance->score(), score, iteration_best_count == 0, iteration_best_score)) {
-                iteration_best_score = instance->score();
-                iteration_best_count = count;
-                if (this->criterion->stop_at_first_improve()) break;
-            }
-            count--;
-            instance->mutate_arg(pair->first);
-        }
-
-        // apply best jump found
+        // chose jump
         float old_score = score;
-        score = iteration_best_score;
-        if (!this->criterion->stop_at_first_improve()) {
-            count = iteration_best_count;
+        unsigned int jump_size = this->criterion->chose_jump(trajectory, instance, score, budget);
+
+        // add flipped variables to the tabu list
+        {
+            std::vector<unsigned int> flipped = std::vector<unsigned int>();
+            unsigned int count = jump_size;
+            if (tabu_push_order == TabuPushOrder::BestToWorstClamped) count = std::max(count, (unsigned int)tabu_list.max_size());
             for (std::pair<unsigned int, float> pair : trajectory) {
                 if (count == 0) break;
                 count--;
-                instance->mutate_arg(pair.first);
+                flipped.push_back(pair.first);
             }
+            if (tabu_push_order == TabuPushOrder::BestToWorst || tabu_push_order == TabuPushOrder::BestToWorstClamped)
+                for (unsigned int v : flipped) tabu_list.push(v);
+            else if (tabu_push_order == TabuPushOrder::WorstToBest)
+                for (auto v = flipped.rbegin(); v != flipped.rend(); v++) tabu_list.push(*v);
         }
-
-        // add flipped variables to the tabu list
-        std::vector<unsigned int> flipped = std::vector<unsigned int>();
-        count = iteration_best_count;
-        if (tabu_push_order == TabuPushOrder::BestToWorstClamped) count = std::max(count, (unsigned int)tabu_list.max_size());
-        for (std::pair<unsigned int, float> pair : trajectory) {
-            if (count == 0) break;
-            count--;
-            flipped.push_back(pair.first);
-        }
-        if (tabu_push_order == TabuPushOrder::BestToWorst || tabu_push_order == TabuPushOrder::BestToWorstClamped)
-            for (unsigned int v : flipped) tabu_list.push(v);
-        else if (tabu_push_order == TabuPushOrder::WorstToBest)
-            for (auto v = flipped.rbegin(); v != flipped.rend(); v++) tabu_list.push(*v);
         
         better_neighbors_after = count_better_neighbors(instance);
-        output_iteration_data(used_budget, (used_budget  - initial_budget), better_neighbors, better_neighbors_after, old_score, score, iteration_best_count);
+        output_iteration_data(budget, better_neighbors, better_neighbors_after, old_score, score, jump_size);
         better_neighbors = better_neighbors_after;
-        if (iteration_best_count == 0) return used_budget;
+        if (jump_size == 0) break;
     }
-    return used_budget;
 }
 /* #endregion */

@@ -13,21 +13,19 @@ LocalSearchAlgo* IteratedLocalSearch::set_output(std::ostream* out, bool add_hea
     return LocalSearchAlgo::set_output(out, false);
 }
 
-unsigned int IteratedLocalSearch::improve(std::unique_ptr<ReversibleInstance>& instance, unsigned int budget, unsigned int initial_budget) const {
-    unsigned int used_budget = initial_budget;
-
+void IteratedLocalSearch::improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const {
     std::mt19937 copied_random_generator = *random_generator;
 
-    while (used_budget < budget)
+    while (!budget.out_of_budget())
     {
         std::unique_ptr<ReversibleInstance> temp = instance->randomize_clone(*random_generator);
 
         algo->set_seed(std::shared_ptr<std::mt19937>(new std::mt19937(copied_random_generator)));
         copied_random_generator(); // step once to make sure the generator is different for each iterated algo call
-        used_budget = algo->improve(temp, budget, used_budget);
+
+        budget.new_run();
+        algo->improve(temp, budget);
 
         if (temp->score() > instance->score()) instance = std::move(temp);
     }
-    
-    return used_budget;
 }
