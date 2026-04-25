@@ -131,21 +131,41 @@ void create_all_NK_instances() {
     }
 }
 
-void worker_thread(std::mutex& mutex, std::condition_variable& condition, std::list<FileData*>& jobs) {
+void worker_thread(std::list<FileData*>& jobs, std::mutex& jobs_mutex, unsigned int thread_index, std::vector<std::string>& running_files, unsigned int& runned_file_count, std::mutex& running_files_mutex, std::condition_variable& condition) {
+    bool first_job = true;
     while (true)
     {
+        // gather file data
         FileData* file_data;
         {
-            std::lock_guard lock(mutex);
+            std::lock_guard lock(jobs_mutex);
             if (jobs.empty()) break;
             file_data = jobs.front();
             jobs.pop_front();
         }
         
-        execute_file(*file_data, false);
+        // shows this data as running (progress bar)
+        {
+            std::pair<std::string, std::ostringstream*> data_output_pair = get_data_output_pair(*file_data, false);
 
+            std::lock_guard lock(running_files_mutex);
+            running_files[thread_index] = (data_output_pair.first == "") ? "unlabled run" : data_output_pair.first;
+            if (!first_job) runned_file_count++;
+        }
         condition.notify_all();
+
+        // execute file
+        execute_file(*file_data, false);
+        first_job = false;
     }
+
+    // shows this threas as out of job (progress bar)
+    {
+        std::lock_guard lock(running_files_mutex);
+        running_files[thread_index] = "finished";
+        runned_file_count++;
+    }
+    condition.notify_all();
 }
 float inv_lerp(float from, float to, float value){
     return (value - from) / (to - from);
@@ -170,23 +190,26 @@ void cout_bar(float value, int char_count = 100) {
     }
     std::cout << "] (" << ((int)(value * 100)) << "%)";
 }
-void progress_bar(std::mutex& mutex, std::condition_variable& condition, std::list<FileData*>& jobs, unsigned int total_job_count) {
-    unsigned int job_count = total_job_count;
-
-    while (job_count != 0)
+void progress_bar(std::vector<std::string>& running_files, unsigned int& runned_file_count, std::mutex& running_files_mutex, std::condition_variable& condition, unsigned int total_job_count) {
+    unsigned int count = -1U;
+    unsigned int go_up_n_lines = 0;
+    while (count != total_job_count)
     {
-        std::cout << "\r\033[2K";
-        cout_bar((float)(total_job_count - job_count) / total_job_count);
-        std::cout << "\t" << (total_job_count - job_count) << " / " << total_job_count << std::flush;
+        std::unique_lock<std::mutex> lock(running_files_mutex);
+        while (count == runned_file_count) condition.wait(lock);
+        count = runned_file_count;
 
-        std::unique_lock<std::mutex> lock(mutex);
-        while (jobs.size() == job_count) condition.wait(lock);
-        job_count = jobs.size();
+        std::cout << "\033[" + std::to_string(go_up_n_lines) + "A"; // go up a specific number of lines
+        std::cout << "\r\033[2K";
+        cout_bar((float)count / total_job_count);
+        std::cout << "\t" << count << " / " << total_job_count << std::flush;
+        
+        for (unsigned int i = 0; i < running_files.size(); i++)
+            std::cout << "\n\r\033[2K\tthread " << i << ": " << running_files[i];
+        go_up_n_lines = running_files.size();
+        
         lock.unlock();
     }
-    std::cout << "\r\033[2K";
-    cout_bar(1);
-    std::cout << "\t" << total_job_count << " / " << total_job_count << " (waiting for the last job batch to end)" << std::endl;
 }
 
 int main(int argc, char *args[]) {
@@ -228,23 +251,29 @@ int main(int argc, char *args[]) {
     }
 
     if (argc > 2 && std::string(args[2]) == "-t") {
-        std::mutex mutex;
+        std::list<FileData*> jobs = std::list<FileData*>();
+        std::mutex jobs_mutex;
+
+        std::vector<std::string> running_files = std::vector<std::string>(std::thread::hardware_concurrency(), "waiting for job");
+        unsigned int total_file_count = files_data.size();
+        unsigned int runned_file_count = 0;
+        std::mutex running_files_mutex;
         std::condition_variable condition;
-        std::list<std::thread> threads;
-        std::list<FileData*> file_data_ptrs = std::list<FileData*>();
+
         for (FileData& file_data : files_data) {
             file_data.set_default_seed(seed);
-            file_data_ptrs.push_back(&file_data);
+            jobs.push_back(&file_data);
         }
         
         // launch threads
+        std::list<std::thread> threads;
         for (unsigned int i = 0; i < std::thread::hardware_concurrency(); i++)
         {
-            threads.push_back(std::thread(worker_thread, std::ref(mutex), std::ref(condition), std::ref(file_data_ptrs)));
+            threads.push_back(std::thread(worker_thread, std::ref(jobs), std::ref(jobs_mutex), i, std::ref(running_files), std::ref(runned_file_count), std::ref(running_files_mutex), std::ref(condition)));
         }
         
         // progress bar
-        threads.push_back(std::thread(progress_bar, std::ref(mutex), std::ref(condition), std::ref(file_data_ptrs), files_data.size()));
+        threads.push_back(std::thread(progress_bar, std::ref(running_files), std::ref(runned_file_count), std::ref(running_files_mutex), std::ref(condition), total_file_count));
         
         // join threads
         for (std::thread& thread : threads) thread.join();
