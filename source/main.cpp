@@ -193,6 +193,7 @@ void cout_bar(float value, int char_count = 100) {
 void progress_bar(std::vector<std::string>& running_files, unsigned int& runned_file_count, std::mutex& running_files_mutex, std::condition_variable& condition, unsigned int total_job_count) {
     unsigned int count = -1U;
     unsigned int go_up_n_lines = 0;
+    std::cout << std::endl;
     while (count != total_job_count)
     {
         std::unique_lock<std::mutex> lock(running_files_mutex);

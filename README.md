@@ -51,3 +51,4 @@ L'ensemble des résultats sont répertoriés [ici](docs/local_search_results.md)
 - ajout de graphe *fitness_delta* per *jump_size* ([ici](docs/graphs))
 - ajout de graphe *neighbor_count_delta* per *neighbor_count* ([ici](docs/graphs))
 - ajout d'un fichier avec tout les graphs ([ici](docs/graphs/all_graphs.pdf))
+- implémentation des algorithmes Tabu, GreedyTabu, GreedyFixed (Top-k) et GreedyRandom

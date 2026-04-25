@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 from matplotlib.backend_bases import MouseEvent
 from matplotlib.text import Annotation
-from button import ButtonCycle, ButtonCheck
+from button import ButtonCycle, ButtonCheck, KeyHoldEvent
 plt.rcParams.update({
     "savefig.directory": dir_path.removesuffix("python") + "docs/graphs",
     "savefig.format": "pdf",
@@ -70,7 +70,7 @@ def get_label_and_style(algo: str)->dict[str, str]:
                 tabu_size: str = algo.split("_")[0]
                 tabu_random: str = algo.split("_")[1].removeprefix("r")
                 return {
-                    "label": f"GJ tabu {translate_amount(tabu_size)} ~{translate_amount(tabu_random)} {push_tr}",
+                    "label": f"GJ tabu {push_tr} {translate_amount(tabu_size)}~{translate_amount(tabu_random)}",
                     "linestyle": (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
                     "color": "cyan",
                 }
@@ -83,7 +83,7 @@ def get_label_and_style(algo: str)->dict[str, str]:
         tabu_size: str = algo.split("_")[0]
         tabu_random: str = algo.split("_")[1].removeprefix("r")
         return {
-            "label": f"tabu {translate_amount(tabu_size)} ~{translate_amount(tabu_random)}",
+            "label": f"tabu {translate_amount(tabu_size)}~{translate_amount(tabu_random)}",
             "linestyle": (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
             "color": "gray",
         }
@@ -824,7 +824,8 @@ def place_buttons():
     CORRELATION_PLOT = ButtonCycle(fig.add_axes([0.66, 0.02, 0.09, 0.05]), ["regression", "mean+std"], callback=update_visibility)
     REGRESSION = ButtonCycle(fig.add_axes([0.76, 0.02, 0.09, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=update)
     
-    SELECTED_ALGOS = ButtonCheck(fig.add_axes([0.86, 0.02, 0.13, 0.96]), [get_label_and_style(algo)["label"] for algo in ALGO_KEYS], ALGO_KEYS, callback=update)
+    temp_keys, temp_values = list(zip(*sorted([(get_label_and_style(algo)["label"], algo) for algo in ALGO_KEYS], key=lambda t: t[0])))
+    SELECTED_ALGOS = ButtonCheck(fig.add_axes([0.86, 0.02, 0.13, 0.96]), temp_keys, temp_values, callback=update)
 place_buttons()
 # endregion =====================================================================================
 
@@ -860,4 +861,8 @@ def set_default_selected_algos():
         elif (algo.startswith("greedy_") and "fixed" not in algo and "tabu" not in algo):
             SELECTED_ALGOS.check(algo)
 set_default_selected_algos()
+
+key_held: KeyHoldEvent = KeyHoldEvent(fig)
+SELECTED_ALGOS.add_key_hold_shortcuts(key_held)
+
 plt.show()

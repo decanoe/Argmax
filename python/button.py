@@ -4,6 +4,24 @@ from matplotlib.transforms import Bbox
 from matplotlib.widgets import Button, CheckButtons
 from matplotlib.backend_bases import MouseButton
 
+class KeyHoldEvent:
+    holded_keys: list[str]
+    
+    def __init__(self, figure: plt.Figure):
+        self.holded_keys = []
+        figure.canvas.mpl_connect('key_press_event', lambda evt: self.add_key(evt.key))
+        figure.canvas.mpl_connect('key_release_event', lambda evt: self.remove_key(evt.key))
+    
+    def add_key(self, key: str):
+        if (key not in self.holded_keys):
+            self.holded_keys.append(key)
+    def remove_key(self, key: str):
+        if (key in self.holded_keys):
+            self.holded_keys.remove(key)
+    
+    def is_key_held(self, key: str) -> bool:
+        return key in self.holded_keys
+
 class ButtonProcessor:
     axes: plt.Axes
     button: Button
@@ -90,18 +108,36 @@ class ButtonCheck:
     axes: plt.Axes
     button: CheckButtons
     position: Bbox
+    labels: list[str]
     values: list[str]
+    key_hold: KeyHoldEvent
+    last_clicked_label: str
     
     def __init__(self, axes: plt.Axes, labels: list[str], values: list[str] = None, callback = None):
         self.axes = axes
         self.button = CheckButtons(axes, labels)
         self.button.on_clicked(self.process)
         self.callback = callback
+        self.key_hold = None
+        self.last_clicked_label = None
+        self.labels = labels
         self.values = labels if values == None else values
         
         self.position = axes.get_position()
     
-    def process(self, event):
+    def add_key_hold_shortcuts(self, key_hold: KeyHoldEvent):
+        self.key_hold = key_hold
+    def process(self, clicked_label):
+        if (self.key_hold != None):
+            if (clicked_label != None and self.last_clicked_label != None and self.key_hold.is_key_held("shift")):
+                index1: int = self.labels.index(self.last_clicked_label)
+                index2: int = self.labels.index(clicked_label)
+                self.button.eventson = False
+                for i in range(index1 + 1, index2, 1 if index1 < index2 else -1):
+                    self.button.set_active(i, self.button.get_status()[index2])
+                self.button.eventson = True
+        self.last_clicked_label = clicked_label
+        
         if (self.callback != None):
             self.callback()
     
@@ -127,4 +163,3 @@ class ButtonCheck:
     def is_checked(self, key: str) -> bool:
         if (key in self.values):
             return self.button.get_status()[self.values.index(key)]
-    
