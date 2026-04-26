@@ -28,6 +28,7 @@ class ButtonProcessor:
     
     def __init__(self, axes: plt.Axes, label: str, callback, parameter):
         self.axes = axes
+        self.axes._is_button = True # custom tag
         self.button = Button(axes, label)
         self.button.on_clicked(self.process)
         self.callback = callback
@@ -46,6 +47,7 @@ class ButtonToggle:
     
     def __init__(self, axes: plt.Axes, label: str, callback = None, callback_parameter = None, state: bool = False):
         self.axes = axes
+        self.axes._is_button = True # custom tag
         self.button = Button(axes, label)
         self.button.on_clicked(self.process)
         self.callback = callback
@@ -75,6 +77,7 @@ class ButtonCycle:
         self.labels = labels
         self.values = labels if values == None else values
         self.axes = axes
+        self.axes._is_button = True # custom tag
         self.button = Button(axes, labels[0])
         self.button.on_clicked(self.process)
         self.callback = callback
@@ -103,6 +106,10 @@ class ButtonCycle:
 
     def set_visible(self, state: bool):
         self.axes.set_visible(state)
+
+    def set_to(self, index: int):
+        self.index = index % len(self.labels)
+        self.button.label.set_text(self.labels[self.index])
     
 class ButtonCheck:
     axes: plt.Axes
@@ -115,6 +122,7 @@ class ButtonCheck:
     
     def __init__(self, axes: plt.Axes, labels: list[str], values: list[str] = None, callback = None):
         self.axes = axes
+        self.axes._is_button = True # custom tag
         self.button = CheckButtons(axes, labels)
         self.button.on_clicked(self.process)
         self.callback = callback

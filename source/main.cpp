@@ -32,8 +32,8 @@ std::string timestamp() {
 }
 std::string get_output_file_path(const FileData& file_data) {
     if (file_data.get_bool("debug_screen", false)) {
-        if (file_data.contains_string("label")) return std::regex_replace("./python/data/" + file_data.get_string("label"), std::regex("<timestamp>"), timestamp());
-        else                                    return "./python/data/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
+        if (file_data.contains_string("label")) return std::regex_replace("./rundata/" + file_data.get_string("label"), std::regex("<timestamp>"), timestamp());
+        else                                    return "./rundata/" + file_data.get_string("problem") + "_" + file_data.get_string("algorithm") + "_" + timestamp() + ".rundata";
     }
     return "";
 }

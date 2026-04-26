@@ -36,17 +36,13 @@ build
 .vscode
 temp.rundata
 results
-python/data/*
+rundata/*
 python/output/*
-python/__pycache__
+__pycache__
 .venv
 docs/temp.*
 
 presets/*
 !presets/template.md
-
-FA/subsets/notes.txt
-
-sat_specific/old
 
 NK/instances/*
