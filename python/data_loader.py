@@ -41,6 +41,7 @@ class NKRunInfo:
                 "BestToWorst": "BtW",
                 "BestToWorstClamped": "BtWc",
                 "WorstToBest": "WtB",
+                "Random": "Rand",
             }
             
             for push, push_tr in push_translations.items():

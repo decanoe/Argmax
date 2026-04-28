@@ -91,7 +91,7 @@ std::string execute_file(const FileData& file_data, bool debug = true) {
 
     // run
     BudgetHelper budget(file_data.get_int("budget"));
-    algo->improve(instance, budget);
+    algo->run(instance, budget);
 
     // run results
     if (debug) {

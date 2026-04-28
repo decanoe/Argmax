@@ -78,49 +78,48 @@ LocalSearchAlgo* HillClimber::set_seed(std::shared_ptr<std::mt19937> random_gene
     return LocalSearchAlgo::set_seed(random_generator);
 }
 
-void HillClimber::improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const {
-    float score = instance->score();
-    budget++;
-    unsigned int better_neighbors = count_better_neighbors(instance);
-    unsigned int better_neighbors_after = better_neighbors;
-    output_iteration_ends_data(budget, better_neighbors, score);
-    
-    unsigned int iteration_count = 0;
-    while (!budget.out_of_budget())
+float HillClimber::run(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) {
+    this->iteration_count = 0;
+    return LocalSearchAlgo::run(instance, budget);
+}
+bool HillClimber::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget) {
+    this->iteration_count++;
+    float old_score = score;
+    unsigned int old_improving_neighbor_count = improving_neighbor_count;
+
+    unsigned int iteration_best_move = -1U;
+    float iteration_best_score = 0;
+
+    // iterate through mutations
+    for (size_t i = 0; i < instance->nb_args(); i++)
     {
-        unsigned int iteration_best_move = -1U;
-        float iteration_best_score = 0;
-
-        // iterate through mutations
-        for (size_t i = 0; i < instance->nb_args() && !budget.out_of_budget(); i++)
-        {
-            unsigned int index = criterion->get_test_index(i, iteration_count, instance->nb_args());
-
-            instance->mutate_arg(index);
-            budget++;
-            if (criterion->do_keep(instance->score(), score, iteration_best_move == -1U, iteration_best_score)) {
-                iteration_best_move = index;
-                iteration_best_score = instance->score();
-                if (criterion->stop_at_first_improve()) { instance->revert_last_mutation(); break; }
-            }
-            instance->revert_last_mutation();
+        if (budget.out_of_budget()) {
+            output_iteration_ends_data(budget, improving_neighbor_count, score);
+            return false;
         }
+        unsigned int index = criterion->get_test_index(i, iteration_count, instance->nb_args());
 
-        // apply best mutation
-        if (iteration_best_move != -1U) {
-            float old_score = instance->score();
-            instance->mutate_arg(iteration_best_move);
-            better_neighbors_after = count_better_neighbors(instance);
-            output_iteration_data(budget, better_neighbors, better_neighbors_after, old_score, iteration_best_score, 1);
-            better_neighbors = better_neighbors_after;
-            score = iteration_best_score;
+        instance->mutate_arg(index);
+        budget++;
+        if (criterion->do_keep(instance->score(), score, iteration_best_move == -1U, iteration_best_score)) {
+            iteration_best_move = index;
+            iteration_best_score = instance->score();
+            if (criterion->stop_at_first_improve()) { instance->revert_last_mutation(); break; }
         }
-        else {
-            output_iteration_ends_data(budget, better_neighbors, score);
-            break;
-        }
-        iteration_count++;
+        instance->revert_last_mutation();
     }
+
+    if (iteration_best_move == -1U) {
+        output_iteration_ends_data(budget, improving_neighbor_count, score);
+        return false;
+    }
+
+    // apply best mutation
+    instance->mutate_arg(iteration_best_move);
+    improving_neighbor_count = count_better_neighbors(instance);
+    score = iteration_best_score;
+    output_iteration_data(budget, old_improving_neighbor_count, improving_neighbor_count, old_score, score, 1);
+    return true;
 }
 /* #endregion */
 

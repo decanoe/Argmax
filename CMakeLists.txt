@@ -11,10 +11,11 @@ add_executable(${CMAKE_PROJECT_NAME}
     source/algo/argmax.cpp
     source/algo/local_search.cpp
     source/algo/local_search_factory.cpp
-    source/algo/iterated_local_search/iterated_local_search.cpp
     source/algo/hill_climber/hill_climber.cpp
     source/algo/greedy_jumper/greedy_jumper.cpp
-    source/algo/tabu/tabu.cpp
+    source/algo/iterated_local_search/iterated_local_search.cpp
+    source/algo/non_iterated_local_search/non_iterated_local_search.cpp
+    source/algo/non_iterated_local_search/tabu/tabu.cpp
     
     source/arg_file/file_data.cpp
 

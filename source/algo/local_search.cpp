@@ -39,6 +39,16 @@ void LocalSearchAlgo::output_iteration_ends_data(const BudgetHelper& budget, uns
     return this->output_iteration_data(budget, nb_better_neighbors, nb_better_neighbors, score, score, 0);
 }
 
+float LocalSearchAlgo::run(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) {
+    float score = instance->score();
+    budget++;
+    unsigned int better_neighbors = count_better_neighbors(instance);
+    output_iteration_ends_data(budget, better_neighbors, score);
+
+    while (!budget.out_of_budget() && this->improve(instance, score, better_neighbors, budget));
+
+    return score;
+}
 
 LocalSearchAlgoComponent* LocalSearchAlgoComponent::set_seed(std::shared_ptr<std::mt19937> random_generator) {
     this->random_generator = random_generator;

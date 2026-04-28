@@ -31,7 +31,8 @@ namespace LocalSearch {
         /// @brief runs the local search algo on a specific instance with a given budget
         /// @param instance the instance to improve
         /// @param budget to update
-        virtual void improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const = 0;
+        /// @return the score of the resulting instance
+        virtual float run(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget);
     protected:
         std::shared_ptr<std::mt19937> random_generator;
         // the output stream
@@ -57,6 +58,15 @@ namespace LocalSearch {
         /// @param instance the instance we want the number of improving neighbors of
         /// @return the number of improving neighbors of the instance
         unsigned int count_better_neighbors(std::unique_ptr<ReversibleInstance>& instance) const;
+
+        /// @brief runs a step of the local search algo on a specific instance with a given budget (adds a line to the output file after doing (or not doing) the jump)
+        /// @param instance the instance to improve
+        /// @param score the score of the instance (must be kept updated) to avoid unnecessary budget consumption
+        /// @param improving_neighbor_count the number of improving neighbors of the instance (must be kept updated) to avoid unnecessary computation
+        /// @param iteration_count the iteration index (used by HC_cycle)
+        /// @param budget to update
+        /// @return whether the improvement resulted in a jump
+        virtual bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget) = 0;
     };
     
     class LocalSearchAlgoComponent {

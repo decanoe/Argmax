@@ -63,11 +63,11 @@ namespace LocalSearch {
 
         LocalSearchAlgo* set_seed(std::shared_ptr<std::mt19937> random_generator) override;
 
-        void improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const override;
+        static bool cmp(std::pair<unsigned int, float>, std::pair<unsigned int, float>);
     protected:
         std::shared_ptr<Selection_Criterion> criterion;
         std::shared_ptr<Neighborhood_Scope> scope;
-
-        static bool cmp(std::pair<unsigned int, float>, std::pair<unsigned int, float>);
+        
+        bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget) override;
     };
 }

@@ -43,6 +43,8 @@ float   max_flip_factor = .5
 float     tabu_size = .25
 # maximum number added to the base tabu_size each iteration in proportion with the dimension
 float     tabu_max_random_size_added = .05
+# is aspiration enabled
+bool     enable_aspiration = false
 # for greedy_tabu_search only, the order by which to push the flips in the tabu list (clamped means we stop adding flips if we already repaced the whole list in this iteration)
 # BestToWorst / BestToWorstClamped / WorstToBest
 str     tabu_push_order = BestToWorstClamped

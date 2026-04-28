@@ -185,27 +185,19 @@ bool GreedyJumper::cmp(std::pair<unsigned int, float> a, std::pair<unsigned int,
     else return a.first < b.first;
 };
 
-void GreedyJumper::improve(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) const {
-    float score = instance->score();
-    budget++;
-    unsigned int better_neighbors = count_better_neighbors(instance);
-    unsigned int better_neighbors_after = better_neighbors;
-    output_iteration_ends_data(budget, better_neighbors, score);
+bool GreedyJumper::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget) {
+    float old_score = score;
+    unsigned int old_improving_neighbor_count = improving_neighbor_count;
 
+    // create trajectory
     GreedyJumper::TrajectorySet trajectory(cmp);
-    while (!budget.out_of_budget())
-    {
-        // create trajectory
-        this->scope->create_trajectory(trajectory, instance, score, budget);
+    this->scope->create_trajectory(trajectory, instance, score, budget);
 
-        // chose jump
-        float old_score = score;
-        unsigned int jump_size = this->criterion->chose_jump(trajectory, instance, score, budget);
-        
-        better_neighbors_after = count_better_neighbors(instance);
-        output_iteration_data(budget, better_neighbors, better_neighbors_after, old_score, score, jump_size);
-        better_neighbors = better_neighbors_after;
-        if (jump_size == 0) break;
-    }
+    // chose jump
+    unsigned int jump_size = this->criterion->chose_jump(trajectory, instance, score, budget);
+    
+    improving_neighbor_count = count_better_neighbors(instance);
+    output_iteration_data(budget, old_improving_neighbor_count, improving_neighbor_count, old_score, score, jump_size);
+    return jump_size != 0;
 }
 /* #endregion */

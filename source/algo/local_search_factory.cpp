@@ -4,7 +4,7 @@
 
 #include "hill_climber/hill_climber.h"
 #include "greedy_jumper/greedy_jumper.h"
-#include "tabu/tabu.h"
+#include "non_iterated_local_search/tabu/tabu.h"
 
 std::shared_ptr<LocalSearch::LocalSearchAlgo> LocalSearch::_create_local_search_algo_no_iter(const FileData& file_data) {
     if (file_data.get_string("algorithm") == "hill_climb") {
@@ -20,18 +20,17 @@ std::shared_ptr<LocalSearch::LocalSearchAlgo> LocalSearch::_create_local_search_
     }
     if (file_data.get_string("algorithm") == "tabu_search") {
         return std::make_shared<Tabu::TabuSearch>(
-            Tabu::TabuSearch::Selection_Criterion::from_file_data(file_data),
             file_data.get_float("tabu_size"),
-            file_data.get_float("tabu_max_random_size_added")
+            file_data.get_float("tabu_max_random_size_added"),
+            file_data.get_bool("enable_aspiration")
         );
     }
     if (file_data.get_string("algorithm") == "greedy_tabu_search") {
         return std::make_shared<Tabu::GreedyTabuSearch>(
-            Tabu::GreedyTabuSearch::Selection_Criterion::from_file_data(file_data),
-            Tabu::GreedyTabuSearch::Neighborhood_Scope::from_file_data(file_data),
             file_data.get_float("tabu_size"),
             file_data.get_float("tabu_max_random_size_added"),
-            Tabu::GreedyTabuSearch::push_order_from_string(file_data.get_string("tabu_push_order"))
+            Tabu::GreedyTabuSearch::push_order_from_string(file_data.get_string("tabu_push_order")),
+            file_data.get_bool("enable_aspiration")
         );
     }
 
