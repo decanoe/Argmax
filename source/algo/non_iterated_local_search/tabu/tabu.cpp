@@ -1,8 +1,6 @@
 #include "tabu.h"
-#include "../../greedy_jumper/greedy_jumper.h"
-#include <queue>
 
-using namespace LocalSearch::Tabu;
+using namespace LocalSearch;
 
 /* #region ======================================= TabuList ======================================= */
 TabuList::TabuList(size_t size): default_size(size), current_size(size), random_max(0), tabu_queue(), random_generator(nullptr) { }
@@ -54,15 +52,7 @@ bool TabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, float& s
         instance->mutate_arg(i);
         budget++;
         if (iteration_best_move == -1U || instance->score() > iteration_best_score) {
-            if (this->aspiration && instance->score() > aspiration_score) {
-                tabu_list.push(i);
-                score = instance->score();
-                improving_neighbor_count = count_better_neighbors(instance);
-                output_iteration_data(budget, old_improving_neighbor_count, improving_neighbor_count, old_score, score, 1);
-                return true;
-            }
-
-            if (!this->tabu_list.contains(i)) {
+            if (!this->tabu_list.contains(i) || (this->aspiration && instance->score() > aspiration_score)) {
                 iteration_best_move = i;
                 iteration_best_score = instance->score();
             }
@@ -129,7 +119,7 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
     tabu_list.randomize_size();
     // create trajectory
     GreedyJumper::TrajectorySet trajectory(GreedyJumper::cmp);
-    for (size_t i = 0; i < instance->nb_args() && !budget.out_of_budget(); i++)
+    for (size_t i = 0; i < instance->nb_args(); i++)
     {
         if (!this->aspiration && this->tabu_list.contains(i)) continue;
         if (budget.out_of_budget()) {
@@ -139,15 +129,18 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
 
         instance->mutate_arg(i);
         budget++;
-        if (this->aspiration && instance->score() > aspiration_score) {
-            tabu_list.push(i);
-            score = instance->score();
-            improving_neighbor_count = count_better_neighbors(instance);
-            output_iteration_data(budget, old_improving_neighbor_count, improving_neighbor_count, old_score, score, 1);
-            return true;
-        }
         if (!this->tabu_list.contains(i)) trajectory.insert({i, instance->score()});
+        // add to the trajectory if aspiration will force it to be chosed
+        else if (this->aspiration && instance->score() > aspiration_score) trajectory.insert({i, instance->score()});
         instance->revert_last_mutation();
+    }
+    // chose aspiration if it occured
+    if (this->aspiration && trajectory.begin()->second > aspiration_score) {
+        tabu_list.push(trajectory.begin()->first);
+        score = instance->score();
+        improving_neighbor_count = count_better_neighbors(instance);
+        output_iteration_data(budget, old_improving_neighbor_count, improving_neighbor_count, old_score, score, 1);
+        return true;
     }
 
     // apply all mutations in trajectory
@@ -167,14 +160,6 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
         if (best_count == -1U || instance->score() > best_score) {
             best_score = instance->score();
             best_count = count;
-
-            if (this->aspiration && instance->score() > aspiration_score) {
-                tabu_push(trajectory, best_count);
-                score = instance->score();
-                improving_neighbor_count = count_better_neighbors(instance);
-                output_iteration_data(budget, old_improving_neighbor_count, improving_neighbor_count, old_score, score, best_count);
-                return true;
-            }
         }
         count--;
         instance->mutate_arg(pair->first);

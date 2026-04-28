@@ -3,7 +3,7 @@
 int     N = 100
 # (optional) Nb variables linked to the first variable of every function of the NK problem
 int     K = 1
-# hill_climb / greedy_jumper / tabu_search / greedy_tabu_search / one_lambda_search
+# hill_climb / greedy_jumper / tabu_search / greedy_tabu_search / one_lambda_search / greedy_one_lambda_search
 str     algorithm = hill_climb
 
 # <!-- #endregion -->
@@ -51,7 +51,7 @@ str     tabu_push_order = BestToWorstClamped
 
 # <!-- #endregion -->
 # <!-- #region ==================== one_lambda_search parameters =============================== -->
-int     nb_mutation_to_test = 16
-int     nb_iteration_max = 512
+# number of flips to consider in proportion to the dimension
+float     lambda = .25
 
 # <!-- #endregion -->

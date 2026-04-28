@@ -16,6 +16,7 @@ add_executable(${CMAKE_PROJECT_NAME}
     source/algo/iterated_local_search/iterated_local_search.cpp
     source/algo/non_iterated_local_search/non_iterated_local_search.cpp
     source/algo/non_iterated_local_search/tabu/tabu.cpp
+    source/algo/non_iterated_local_search/one_lambda/one_lambda.cpp
     
     source/arg_file/file_data.cpp
 

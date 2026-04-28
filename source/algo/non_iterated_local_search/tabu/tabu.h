@@ -3,7 +3,7 @@
 #include "../../greedy_jumper/greedy_jumper.h"
 #include <deque>
 
-namespace LocalSearch { namespace Tabu
+namespace LocalSearch
 {
     class TabuList {
     public:
@@ -54,4 +54,4 @@ namespace LocalSearch { namespace Tabu
         void tabu_push(const GreedyJumper::TrajectorySet& trajectory, unsigned int jump_size);
         bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, float aspiration_score) override;
     };
-}}
+}
