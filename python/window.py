@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from button import ButtonCycle, ButtonCheck, KeyHoldEvent
+from button import ButtonCycle, KeyHoldEvent, ButtonCheck
 from data_loader import DataLoader
 
 from plots.plot_axis import PlotAxis
@@ -15,7 +15,8 @@ class Window:
     N: ButtonCycle = None
     K: ButtonCycle = None
     I: ButtonCycle = None
-    SELECTED_ALGOS: ButtonCheck = None
+    SELECTED_ALGOS_GJ: ButtonCheck = None
+    SELECTED_ALGOS_HC: ButtonCheck = None
     AXIS1: ButtonCycle = None
     AXIS2: ButtonCycle = None
     AXIS1_WHEN: ButtonCycle = None
@@ -40,7 +41,8 @@ class Window:
         
         self.place_buttons()
         self.set_default_selected_algos()
-        self.SELECTED_ALGOS.add_key_hold_shortcuts(self.key_held)
+        self.SELECTED_ALGOS_HC.add_key_hold_shortcuts(self.key_held)
+        self.SELECTED_ALGOS_GJ.add_key_hold_shortcuts(self.key_held)
         
         self.update()
         plt.show()
@@ -57,27 +59,31 @@ class Window:
         self.K.set_to(-1)
         self.I.set_to(-1)
 
-        self.PLOT_TYPE = ButtonCycle(self.figure.add_axes([0.5, 0.2, 0.35, 0.05]), ["anytime", "correlation"], callback=self.update)
-
-        self.X_SCALE = ButtonCycle(self.figure.add_axes([0.5, 0.14, 0.15, 0.05]), ["log scale", "linear scale"], callback=self.soft_update)
         self.LEGEND_POSITION = ButtonCycle(self.figure.add_axes([0.045, 0.14, 0.1, 0.05]), ["best", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], self.soft_update)
 
-        self.AXIS1 = ButtonCycle(self.figure.add_axes([0.66, 0.14, 0.09, 0.05]), ["jump size", "fitness", "improving neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=self.update)
-        self.AXIS2 = ButtonCycle(self.figure.add_axes([0.66, 0.08, 0.09, 0.05]), ["fitness", "improving neighbors", "jump size"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=self.update)
-        self.AXIS1_WHEN = ButtonCycle(self.figure.add_axes([0.76, 0.14, 0.09, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=self.update)
-        self.AXIS2_WHEN = ButtonCycle(self.figure.add_axes([0.76, 0.08, 0.09, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=self.update)
+        self.PLOT_TYPE = ButtonCycle(self.figure.add_axes([0.4, 0.2, 0.32, 0.05]), ["anytime", "correlation"], callback=self.update)
+        self.X_SCALE = ButtonCycle(self.figure.add_axes([0.4, 0.14, 0.1, 0.05]), ["log scale", "linear scale"], callback=self.soft_update)
 
-        self.CORRELATION_PLOT = ButtonCycle(self.figure.add_axes([0.66, 0.02, 0.09, 0.05]), ["mean+std", "regression"], callback=self.update)
-        self.REGRESSION = ButtonCycle(self.figure.add_axes([0.76, 0.02, 0.09, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=self.update)
+        self.AXIS1 = ButtonCycle(self.figure.add_axes([0.51, 0.14, 0.1, 0.05]), ["jump size", "fitness", "improving neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=self.update)
+        self.AXIS2 = ButtonCycle(self.figure.add_axes([0.51, 0.08, 0.1, 0.05]), ["fitness", "improving neighbors", "jump size"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=self.update)
+        self.AXIS1_WHEN = ButtonCycle(self.figure.add_axes([0.62, 0.14, 0.1, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=self.update)
+        self.AXIS2_WHEN = ButtonCycle(self.figure.add_axes([0.62, 0.08, 0.1, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=self.update)
+
+        self.CORRELATION_PLOT = ButtonCycle(self.figure.add_axes([0.51, 0.02, 0.1, 0.05]), ["mean+std", "regression"], callback=self.update)
+        self.REGRESSION = ButtonCycle(self.figure.add_axes([0.62, 0.02, 0.1, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=self.update)
         
-        temp_keys, temp_values = list(zip(*sorted([(self.data_loader.get_reference_file(algo).label, algo) for algo in self.data_loader.Algo_keys], key=lambda t: t[0])))
-        self.SELECTED_ALGOS = ButtonCheck(self.figure.add_axes([0.86, 0.02, 0.13, 0.96]), temp_keys, temp_values, callback=self.update)
+        sorted_algos = sorted([(self.data_loader.get_reference_file(algo).label, algo) for algo in self.data_loader.Algo_keys], key=lambda t: t[0])
+        temp_keys, temp_values = list(zip(*[algo for algo in sorted_algos if algo[0].startswith("GJ")]))
+        self.SELECTED_ALGOS_GJ = ButtonCheck(self.figure.add_axes([0.73, 0.02, 0.12, 0.96]), temp_keys, temp_values, callback=self.update)
+        
+        temp_keys, temp_values = list(zip(*[algo for algo in sorted_algos if not(algo[0].startswith("GJ"))]))
+        self.SELECTED_ALGOS_HC = ButtonCheck(self.figure.add_axes([0.88, 0.02, 0.12, 0.96]), temp_keys, temp_values, callback=self.update)
     def set_default_selected_algos(self):
         for algo in self.data_loader.Algo_keys:
             if (algo.startswith("hc_") and "cycle" not in algo and "first" not in algo):
-                self.SELECTED_ALGOS.check(algo)
-            elif (algo.startswith("greedy_") and "fixed" not in algo and "tabu" not in algo):
-                self.SELECTED_ALGOS.check(algo)
+                self.SELECTED_ALGOS_HC.check(algo)
+            elif (algo.startswith("greedy_") and "fixed" not in algo and "tabu" not in algo and "lambda" not in algo):
+                self.SELECTED_ALGOS_GJ.check(algo)
 
     def clear_plot_axes(self):
         # Remove only axes that are NOT buttons
@@ -119,13 +125,13 @@ class Window:
         
         self.REGRESSION.set_visible(self.PLOT_TYPE.get_value() == "correlation" and self.CORRELATION_PLOT.get_value() == "regression" and not(self.is_full_screen()))
         
-        for b in [self.PLOT_TYPE, self.LEGEND_POSITION, self.SELECTED_ALGOS, self.N, self.K, self.I]:
+        for b in [self.PLOT_TYPE, self.LEGEND_POSITION, self.SELECTED_ALGOS_GJ, self.SELECTED_ALGOS_HC, self.N, self.K, self.I]:
             b.set_visible(not(self.is_full_screen()))
             self.set_font_size(22)
         if self.is_full_screen():
             self.figure.subplots_adjust(left=0.075, right=0.98, bottom=0.1, top=0.95)
         else:
-            self.figure.subplots_adjust(left=0.045, right=0.85, bottom=0.35, top=0.95)
+            self.figure.subplots_adjust(left=0.045, right=0.72, bottom=0.35, top=0.95)
             self.set_font_size(10)
     
     def on_key_press(self, key: str):
@@ -145,7 +151,7 @@ class Window:
     def get_i(self) -> str:
         return self.I.get_value()
     def is_algo_selected(self, algo: str) -> bool:
-        return self.SELECTED_ALGOS.is_checked(algo)
+        return self.SELECTED_ALGOS_GJ.is_checked(algo) or self.SELECTED_ALGOS_HC.is_checked(algo)
     def get_axis1(self) -> str:
         axis1: str = self.AXIS1.get_value()
         if (axis1 != "size_of_the_jump"):

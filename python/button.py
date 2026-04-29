@@ -1,8 +1,9 @@
-import os
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Bbox
 from matplotlib.widgets import Button, CheckButtons
 from matplotlib.backend_bases import MouseButton
+
+def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
 class KeyHoldEvent:
     holded_keys: list[str]
@@ -141,7 +142,9 @@ class ButtonCheck:
                 index1: int = self.labels.index(self.last_clicked_label)
                 index2: int = self.labels.index(clicked_label)
                 self.button.eventson = False
-                for i in range(index1 + 1, index2, 1 if index1 < index2 else -1):
+                for i in range(min(index1, index2), max(index1, index2) + 1):
+                    if (i < 0 or i >= len(self.button.get_status())):
+                        continue
                     self.button.set_active(i, self.button.get_status()[index2])
                 self.button.eventson = True
         self.last_clicked_label = clicked_label
@@ -171,3 +174,4 @@ class ButtonCheck:
     def is_checked(self, key: str) -> bool:
         if (key in self.values):
             return self.button.get_status()[self.values.index(key)]
+        return False

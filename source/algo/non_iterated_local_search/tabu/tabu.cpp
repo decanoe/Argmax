@@ -115,6 +115,7 @@ void GreedyTabuSearch::tabu_push(const GreedyJumper::TrajectorySet& trajectory, 
 bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, float aspiration_score) {
     unsigned int old_improving_neighbor_count = improving_neighbor_count;
     float old_score = score;
+    unsigned int aspiration_flip = -1U;
 
     tabu_list.randomize_size();
     // create trajectory
@@ -129,19 +130,12 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
 
         instance->mutate_arg(i);
         budget++;
+        if (this->aspiration && instance->score() > aspiration_score) {
+            aspiration_flip = i;
+            aspiration_score = instance->score();
+        }
         if (!this->tabu_list.contains(i)) trajectory.insert({i, instance->score()});
-        // add to the trajectory if aspiration will force it to be chosed
-        else if (this->aspiration && instance->score() > aspiration_score) trajectory.insert({i, instance->score()});
         instance->revert_last_mutation();
-    }
-    // chose aspiration if it occured
-    if (this->aspiration && trajectory.begin()->second > aspiration_score) {
-        instance->mutate_arg(trajectory.begin()->first);
-        tabu_list.push(trajectory.begin()->first);
-        score = trajectory.begin()->second;
-        improving_neighbor_count = count_better_neighbors(instance);
-        output_iteration_data(budget, old_improving_neighbor_count, improving_neighbor_count, old_score, score, 1);
-        return true;
     }
 
     // apply all mutations in trajectory
@@ -165,9 +159,18 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
         count--;
         instance->mutate_arg(pair->first);
     }
-    if (best_count == -1U) {
+    if (best_count == -1U && aspiration_flip == -1U) {
         output_iteration_ends_data(budget, improving_neighbor_count, score);
         return best_count != 0;
+    }
+    // chose aspiration if it occured
+    if (this->aspiration && aspiration_flip != -1U && aspiration_score > best_score) {
+        instance->mutate_arg(aspiration_flip);
+        tabu_list.push(aspiration_flip);
+        score = aspiration_score;
+        improving_neighbor_count = count_better_neighbors(instance);
+        output_iteration_data(budget, old_improving_neighbor_count, improving_neighbor_count, old_score, score, 1);
+        return true;
     }
 
     // apply best jump found

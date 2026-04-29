@@ -1,25 +1,23 @@
-\begin{table}[h]
+\begin{table}[ht]
 \caption{Best fitness achieved under a limited budget of 1,000 evaluations. Underlined values indicate the best performance for each instance.}
-\label{tab:budget1k}
+\label{tab:tab:budget1k}
 \centering
 \setlength{\tabcolsep}{4pt} % Ajustement de l'espacement des colonnes
 \begin{scriptsize}
-\begin{tabular}{l | c c c | c c c | c c c}
+\begin{tabular}{l | c c c c c c c c c c c}\hline
+$(N,K)$                     & HC best                     & HC first                    & HC least                    & GJ full best                & GJ full first               & GJ full least               & GJ full maximal             & GJ improve best             & GJ improve first            & GJ improve least            & GJ improve maximal         \\
 \hline
-Instances & \multicolumn{3}{c|}{\Full} & \multicolumn{3}{c|}{\Improve} & \multicolumn{3}{c}{\HC} \\
-$(N,K)$ & \Best & \First & \Least & \Best & \First & \Least & \Best & \First & \Least \\
+\textbf{50, 0}              & 0.6474                      & \underline{0.6573}          & 0.5881                      & \underline{0.6573}          & \underline{0.6573}          & 0.5565                      & 0.6000                      & \underline{0.6573}          & 0.6571                      & 0.6296                      & \underline{0.6573}         \\
+\textbf{50, 1}              & 0.6801                      & 0.6906                      & 0.5583                      & 0.6915                      & 0.6933                      & 0.5700                      & 0.5997                      & \underline{0.6942}          & 0.6907                      & 0.6593                      & 0.6921                     \\
+\textbf{50, 2}              & 0.7036                      & 0.7231                      & 0.5625                      & 0.7253                      & 0.7295                      & 0.5725                      & 0.6290                      & \underline{0.7296}          & 0.7175                      & 0.6919                      & 0.7286                     \\
+\textbf{50, 4}              & 0.7130                      & 0.7297                      & 0.5155                      & 0.7193                      & 0.7292                      & 0.5330                      & 0.6465                      & 0.7305                      & 0.7279                      & 0.6799                      & \underline{0.7327}         \\
+\textbf{50, 8}              & 0.7041                      & \underline{0.7471}          & 0.5153                      & 0.7088                      & 0.7255                      & 0.5238                      & 0.6767                      & 0.7180                      & 0.7172                      & 0.6300                      & 0.7147                     \\
 \hline
-\textbf{50, 0} & \underline{0.6573} & 0.5979    & 0.5508    & \underline{0.6573} & \underline{0.6573} & 0.6146    & 0.6407    & \underline{0.6573} & 0.5620     \\
-\textbf{50, 1} & 0.6929    & 0.6046    & 0.5710    & \underline{0.6943} & 0.6915    & 0.6626    & 0.6794    & 0.6901    & 0.5649     \\
-\textbf{50, 2} & 0.7211    & 0.6532    & 0.5939    & 0.7210    & \underline{0.7261} & 0.7088    & 0.7183    & 0.7220    & 0.5804     \\
-\textbf{50, 4} & 0.7300    & 0.6389    & 0.5524    & 0.7328    & \underline{0.7381} & 0.7067    & 0.7170    & 0.7327    & 0.5241     \\
-\textbf{50, 8} & 0.7194    & 0.6506    & 0.5270    & 0.7177    & 0.7153    & 0.6406    & 0.7021    & \underline{0.7298} & 0.5204     \\
-\hline
-\textbf{100, 0} & \underline{0.6643} & 0.5448    & 0.5137    & \underline{0.6643} & \underline{0.6643} & 0.5400    & 0.5589    & \underline{0.6643} & 0.4961     \\
-\textbf{100, 1} & 0.6865    & 0.5282    & 0.5130    & \underline{0.6881} & 0.6638    & 0.5713    & 0.5886    & 0.6845    & 0.5026     \\
-\textbf{100, 2} & 0.7208    & 0.5434    & 0.5243    & \underline{0.7277} & 0.6914    & 0.5849    & 0.6092    & 0.7169    & 0.5050     \\
-\textbf{100, 4} & 0.7031    & 0.5657    & 0.5178    & \underline{0.7258} & 0.6458    & 0.5971    & 0.6312    & 0.7248    & 0.5085     \\
-\textbf{100, 8} & 0.6846    & 0.5586    & 0.5089    & 0.7018    & 0.5941    & 0.5363    & 0.6516    & \underline{0.7083} & 0.5012     \\
+\textbf{100, 0}             & 0.5591                      & \underline{0.6643}          & 0.4965                      & \underline{0.6643}          & \underline{0.6643}          & 0.5114                      & 0.5369                      & \underline{0.6643}          & 0.6642                      & 0.5409                      & \underline{0.6643}         \\
+\textbf{100, 1}             & 0.5901                      & 0.6845                      & 0.5067                      & 0.6830                      & 0.6855                      & 0.5223                      & 0.5375                      & \underline{0.6862}          & 0.6831                      & 0.5715                      & 0.6675                     \\
+\textbf{100, 2}             & 0.6126                      & 0.7229                      & 0.5108                      & 0.7145                      & \underline{0.7242}          & 0.5277                      & 0.5585                      & 0.7227                      & 0.7191                      & 0.5893                      & 0.6634                     \\
+\textbf{100, 4}             & 0.6209                      & \underline{0.7312}          & 0.4976                      & 0.7018                      & 0.7231                      & 0.5026                      & 0.5435                      & 0.7172                      & 0.7299                      & 0.5790                      & 0.6249                     \\
+\textbf{100, 8}             & 0.6586                      & \underline{0.7087}          & 0.5019                      & 0.6878                      & 0.6912                      & 0.5059                      & 0.5596                      & 0.7085                      & 0.7033                      & 0.5315                      & 0.5919                     \\
 \hline
 \end{tabular}
 \end{scriptsize}

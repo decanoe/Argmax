@@ -50,12 +50,13 @@ bool OneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instance, flo
 }
 /* #endregion */
 
-/* #region ======================================= GreedyTabuSearch ======================================= */
+/* #region ======================================= GreedyOneLambdaSearch ======================================= */
 GreedyOneLambdaSearch::GreedyOneLambdaSearch(float lambda, bool enable_aspiration): OneLambdaSearch(lambda, enable_aspiration) {}
 
 bool GreedyOneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, float aspiration_score) {
     unsigned int old_improving_neighbor_count = improving_neighbor_count;
     float old_score = score;
+    unsigned int aspiration_flip = -1U;
 
     // create trajectory
     GreedyJumper::TrajectorySet trajectory(GreedyJumper::cmp);
@@ -71,17 +72,12 @@ bool GreedyOneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instanc
 
         instance->mutate_arg(index);
         budget++;
+        if (this->aspiration && instance->score() > aspiration_score) {
+            aspiration_flip = index;
+            aspiration_score = instance->score();
+        }
         if (i < instance->nb_args() * lambda) trajectory.insert({index, instance->score()});
-        // add to the trajectory if aspiration will force it to be chosed
-        else if (this->aspiration && instance->score() > aspiration_score) trajectory.insert({i, instance->score()});
         instance->revert_last_mutation();
-    }
-    // chose aspiration if it occured
-    if (this->aspiration && trajectory.begin()->second > aspiration_score) {
-        score = instance->score();
-        improving_neighbor_count = count_better_neighbors(instance);
-        output_iteration_data(budget, old_improving_neighbor_count, improving_neighbor_count, old_score, score, 1);
-        return true;
     }
 
     // apply all mutations in trajectory
@@ -105,9 +101,17 @@ bool GreedyOneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instanc
         count--;
         instance->mutate_arg(pair->first);
     }
-    if (best_count == -1U) {
+    if (best_count == -1U && aspiration_flip == -1U) {
         output_iteration_ends_data(budget, improving_neighbor_count, score);
         return best_count != 0;
+    }
+    // chose aspiration if it occured
+    if (this->aspiration && aspiration_flip != -1U && aspiration_score > best_score) {
+        instance->mutate_arg(aspiration_flip);
+        score = aspiration_score;
+        improving_neighbor_count = count_better_neighbors(instance);
+        output_iteration_data(budget, old_improving_neighbor_count, improving_neighbor_count, old_score, score, 1);
+        return true;
     }
 
     // apply best jump found

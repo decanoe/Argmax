@@ -37,6 +37,12 @@ class NKRunInfo:
         
         if (algo.startswith("greedy_tabu")):
             algo = algo.removeprefix("greedy_tabu").removeprefix("_")
+            
+            aspiration: str = ""
+            if (algo.startswith("aspiration")):
+                algo = algo.removeprefix("aspiration").removeprefix("_")
+                aspiration = " aspiration"
+            
             push_translations = {
                 "BestToWorst": "BtW",
                 "BestToWorstClamped": "BtWc",
@@ -51,20 +57,53 @@ class NKRunInfo:
                     tabu_size: str = algo.split("_")[0]
                     tabu_random: str = algo.split("_")[1].removeprefix("r")
                     return {
-                        "label": f"GJ tabu {push_tr} {cls.translate_amount(tabu_size)}~{cls.translate_amount(tabu_random)}",
+                        "label": f"GJ tabu{aspiration} {push_tr} {cls.translate_amount(tabu_size)}~{cls.translate_amount(tabu_random)}",
                         "linestyle": (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
                         "color": "cyan",
                     }
             print(f"malformed algo file label : {full_algo} !")
             exit(0)
         
+        if (algo.startswith("greedy_lambda")):
+            algo = algo.removeprefix("greedy_lambda").removeprefix("_")
+            
+            aspiration: str = ""
+            if (algo.startswith("aspiration")):
+                algo = algo.removeprefix("aspiration").removeprefix("_")
+                aspiration = " aspiration"
+            
+            return {
+                "label": f"GJ lambda{aspiration} {cls.translate_amount(algo)}",
+                "linestyle": (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
+                "color": "yellow",
+            }
+        
         if (algo.startswith("tabu")):
             algo = algo.removeprefix("tabu").removeprefix("_")
+            
+            aspiration: str = ""
+            if (algo.startswith("aspiration")):
+                algo = algo.removeprefix("aspiration").removeprefix("_")
+                aspiration = " aspiration"
                     
             tabu_size: str = algo.split("_")[0]
             tabu_random: str = algo.split("_")[1].removeprefix("r")
             return {
-                "label": f"tabu {cls.translate_amount(tabu_size)}~{cls.translate_amount(tabu_random)}",
+                "label": f"tabu{aspiration} {cls.translate_amount(tabu_size)}~{cls.translate_amount(tabu_random)}",
+                "linestyle": (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
+                "color": "gray",
+            }
+        
+        if (algo.startswith("lambda")):
+            algo = algo.removeprefix("lambda").removeprefix("_")
+            
+            aspiration: str = ""
+            if (algo.startswith("aspiration")):
+                algo = algo.removeprefix("aspiration").removeprefix("_")
+                aspiration = " aspiration"
+            
+            return {
+                "label": f"lambda{aspiration} {cls.translate_amount(algo)}",
                 "linestyle": (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
                 "color": "gray",
             }
