@@ -136,8 +136,9 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
     }
     // chose aspiration if it occured
     if (this->aspiration && trajectory.begin()->second > aspiration_score) {
+        instance->mutate_arg(trajectory.begin()->first);
         tabu_list.push(trajectory.begin()->first);
-        score = instance->score();
+        score = trajectory.begin()->second;
         improving_neighbor_count = count_better_neighbors(instance);
         output_iteration_data(budget, old_improving_neighbor_count, improving_neighbor_count, old_score, score, 1);
         return true;
