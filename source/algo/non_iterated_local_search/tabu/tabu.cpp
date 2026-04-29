@@ -88,7 +88,7 @@ GreedyTabuSearch::TabuPushOrder GreedyTabuSearch::push_order_from_string(const s
 void GreedyTabuSearch::tabu_push(const GreedyJumper::TrajectorySet& trajectory, unsigned int jump_size) {
     std::vector<unsigned int> flipped = std::vector<unsigned int>();
     unsigned int count = jump_size;
-    if (tabu_push_order == TabuPushOrder::BestToWorstClamped) count = std::max(count, (unsigned int)tabu_list.max_size());
+    if (tabu_push_order == TabuPushOrder::BestToWorstClamped) count = std::min(count, (unsigned int)tabu_list.max_size());
     for (std::pair<unsigned int, float> pair : trajectory) {
         if (count == 0) break;
         count--;
