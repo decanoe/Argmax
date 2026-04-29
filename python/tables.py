@@ -61,7 +61,7 @@ class Table:
 """
         tex_headers += "\\begin{tabular}{l | " + " ".join("c" * len(self.headers)) + "}"
         tex_headers += "\\hline\n"
-        tex_headers += " & ".join([add_spaces(h, cell_size) for h in ["$(N,K)$"] + self.headers]) + "\\\\\n"
+        tex_headers += " & ".join([add_spaces(h.replace("%", "\\%"), cell_size) for h in ["$(N,K)$"] + self.headers]) + "\\\\\n"
         
         tex_footer: str = """\\end{tabular}
 \\end{scriptsize}
@@ -429,18 +429,18 @@ class AvgBudgetTable(Table):
 
 def generate_all_tables(data_loader: DataLoader, output_path: str):
     hc_selector = lambda algo: algo.startswith("hc_") and "cycle" not in algo and "first" not in algo
-    gj_selector = lambda algo: algo.startswith("greedy_") and "fixed" not in algo and "tabu" not in algo and "lambda" not in algo
+    gj_selector = lambda algo: algo.startswith("greedy_") and ("fixed" not in algo or ".5" in algo) and "tabu" not in algo and "lambda" not in algo
     
     hc_algos: list[tuple[str, str]] = sorted([(data_loader.get_reference_file(algo).label, algo) for algo in data_loader.Algo_keys if hc_selector(algo)], key=lambda t: t[0])
     gj_algos: list[tuple[str, str]] = sorted([(data_loader.get_reference_file(algo).label, algo) for algo in data_loader.Algo_keys if gj_selector(algo)], key=lambda t: t[0])
     algo_list: list[str] = hc_algos + gj_algos
     
     table = AvgScoreTable(data_loader, algo_list)
-    table.save_md(output_path + "/avg.txt")
+    table.save_md(output_path + "/avg.md")
     table.save_tex(output_path + "/avg.tex", "Mean fitness score per execution. Results are averaged over " + str(COUNT_PER_INSTANCE * 10) + " instances per $(N,K)$ pair. The best results for each instance are underlined.", "mean_scores")
     
     table = AvgBudgetTable(data_loader, algo_list)
-    table.save_md(output_path + "/budgets.txt")
+    table.save_md(output_path + "/budgets.md")
     table.save_tex(output_path + "/budgets.tex", "Mean evaluation budget per single trajectory. Data averaged over " + str(COUNT_PER_INSTANCE * 10) + " independent runs per $(N,K)$ pair across 10 problem instances.", "mean_budget")
     
     budgets = [1_000, 10_000, 100_000]
@@ -452,5 +452,5 @@ def generate_all_tables(data_loader: DataLoader, output_path: str):
     budgets_label = ["tab:budget1k", "tab:budget10k", "tab:budget100k"]
     for i in range(len(budgets)):
         table = MaxScoreTable(data_loader, algo_list, budgets[i])
-        table.save_md(output_path + f"/best_{budgets[i]//1000}_000.txt")
+        table.save_md(output_path + f"/best_{budgets[i]//1000}_000.md")
         table.save_tex(output_path + f"/best_{budgets[i]//1000}_000.tex", budgets_text[i], budgets_label[i])
