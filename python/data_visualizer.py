@@ -15,8 +15,8 @@ plt.rcParams.update({
 
 data_loader: DataLoader = DataLoader(dir_path+"/../rundata", small_load=False)
 
-generate_all_tables(data_loader, dir_path + "/output")
-exit(0)
+# generate_all_tables(data_loader, dir_path + "/output")
+# exit(0)
 
 fig, _ = plt.subplots()
 Window(data_loader, fig)
