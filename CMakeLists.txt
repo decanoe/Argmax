@@ -27,6 +27,7 @@ add_executable(${CMAKE_PROJECT_NAME}
 
     source/problem/nk.cpp
     source/problem/qubo.cpp
+    source/problem/sat.cpp
     source/problem/problem_factory.cpp
 
     source/instance/reversible_instance.cpp
