@@ -2,6 +2,8 @@
 #include <fstream>
 #include <string>
 
+using namespace Problem;
+
 NK::NK(const std::string& path) {
     std::ifstream file(path);
     if (!file.is_open()) {

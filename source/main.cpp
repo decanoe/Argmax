@@ -2,6 +2,7 @@
 
 #include "arg_file/run_parameters.h"
 #include "arg_file/job_queue.h"
+#include "problem/nk.h"
 
 void path_message() {
     std::cerr << "\033[1;31mIf you want to run an algorithm you need to put a path to a file with all the informations\n\033[0m";
@@ -18,7 +19,7 @@ void create_all_NK_instances() {
     for (unsigned int K : { 0, 1, 2, 4, 8 })
     for (unsigned int I = 0; I < 10; I++)
     {
-        NK nk(N, K, rand);
+        Problem::NK nk(N, K, rand);
         nk.save_to_file("./NK/instances/" + std::to_string(N) + "_" + std::to_string(K) + "_" + std::to_string(I) + ".nk");
     }
 }
@@ -39,7 +40,7 @@ int main(int argc, char *args[]) {
         
         std::random_device rd;
         std::mt19937 rand(rd());
-        NK nk(atoi(args[2]), atoi(args[3]), rand);
+        Problem::NK nk(atoi(args[2]), atoi(args[3]), rand);
         nk.save_to_file(args[4]);
         return 0;
     }

@@ -51,6 +51,7 @@ RunParameters::RunParameters(const std::string& path): Parameters(path), instanc
             std::istringstream stream(line);
             stream >> keyword;
 
+            if (is_opening_label(keyword)) print_error(line, l_count, "Can't open the label " + keyword + " because another label <" + label + "> is open and has not been closed !");
             if (!is_closing_label(keyword)) {
                 labeled_section += line + "\n";
                 continue;

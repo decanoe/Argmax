@@ -68,11 +68,11 @@ void JobQueue::progress_bar_thread(unsigned int total_job_count) {
     {
         std::unique_lock<std::mutex> lock(running_files_mutex);
         while (count == runned_file_count) condition.wait(lock);
-        count = runned_file_count;
+        count = std::min(runned_file_count, total_job_count);
 
         std::cout << "\033[" + std::to_string(go_up_n_lines) + "A"; // go up a specific number of lines
         std::cout << "\r\033[2K";
-        cout_bar((float)count / total_job_count);
+        cout_bar(total_job_count == 0 ? 1 : (float)count / total_job_count);
         std::cout << "\t" << count << " / " << total_job_count << std::flush;
         
         for (unsigned int i = 0; i < running_files.size(); i++)
@@ -87,7 +87,8 @@ JobQueue::JobQueue(RunParameters& run_parameters): jobs() {
     for (unsigned int algo = 0; algo < run_parameters.get_algos().size(); algo++)
     for (unsigned int instance = 0; instance < run_parameters.get_instances().size(); instance++)
     {
-        this->jobs.push_back(Job(&run_parameters, algo, instance));
+        Job job = Job(&run_parameters, algo, instance);
+        if (job.get_output_pair(false).second != nullptr) this->jobs.push_back(job);
     }
 }
 

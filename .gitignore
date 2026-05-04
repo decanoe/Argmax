@@ -45,4 +45,4 @@ docs/temp.*
 presets/*
 !presets/template.md
 
-NK/instances/*
+instances/*

@@ -1,0 +1,19 @@
+#include "problem_factory.h"
+#include "nk.h"
+
+std::shared_ptr<Problem::Problem> Problem::create_problem(const Parameters& parameters, unsigned int seed, bool debug) {
+    if (parameters.get_string("problem") == "NK") {
+        if (parameters.contains_string("instance_path")) {
+            if (debug) std::cout << "reading file..." << std::endl;
+            return std::make_shared<NK>(parameters.get_string("instance_path"));
+        }
+        else {
+            if (debug) std::cout << "creating problem..." << std::endl;
+            std::mt19937 rand(seed);
+            return std::make_shared<NK>(parameters.get_int("N"), parameters.get_int("K"), rand);
+        }
+    }
+    
+    std::cerr << "\033[1;31mThe field <problem> of the preset file doesn't correspond to any implemented algorithm.\n\033[0m";
+    exit(1);
+}

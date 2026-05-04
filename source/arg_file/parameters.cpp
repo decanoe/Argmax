@@ -24,44 +24,26 @@ void Parameters::parse(std::istream& content, unsigned int offset_in_file) {
         std::string type;
         std::string key;
         std::string equal_sign;
-        if (!(stream >> type >> key >> equal_sign)) {
-            std::cerr << "\033[1;31mERROR: line " << l_count << " of content " << path << " contains an error of type or key\033[0m\n";
-            exit(1);
-        }
-        if (equal_sign != "=") {
-            std::cerr << "\033[1;31mERROR: expected \033[0m\033[31m=\033[1m, got \033[0m\033[31m" << equal_sign << "\033[1m.\nLine " << l_count << " of content " << path << "\033[0m\n";
-            exit(1);
-        }
+        if (!(stream >> type >> key >> equal_sign)) print_error(line, l_count, "Error of type or key !");
+        if (equal_sign != "=") print_error(line, l_count, "Expected \033[0m\033[31m=\033[1m, got \033[0m\033[31m" + equal_sign + "\033[1m.");
 
         if (type == "int" || type == "float") {
             float value;
             if (stream >> value) float_vars[key] = value;
-            else {
-                std::cerr << "\033[1;31mERROR: " << type << " parameter " << key << " has no value.\nLine " << l_count << " of content " << path << "\033[0m\n";
-                exit(1);
-            }
+            else print_error(line, l_count, type + " parameter " + key + " has no value.");
         }
         else if (type == "bool") {
             std::string value;
             if (stream >> value) {
                 if (value == "false" || value == "true") float_vars[key] = (value == "false" ? false : true);
-                else {
-                    std::cerr << "\033[1;31mERROR: bool parameter " << key << " should be \033[0m\033[31mtrue\033[1m of \033[0m\033[31mfalse\033[1m, got \033[0m\033[31m" << value << "\033[1m instead.\nLine " << l_count << " of content " << path << "\033[0m\n";
-                    exit(1);
-                }
+                else print_error(line, l_count, "bool parameter " + key + " should be \033[0m\033[31mtrue\033[1m of \033[0m\033[31mfalse\033[1m, got \033[0m\033[31m" + value + "\033[1m instead.");
             }
-            else {
-                std::cerr << "\033[1;31mERROR: bool parameter " << key << " has no value.\nLine " << l_count << " of content " << path << "\033[0m\n";
-                exit(1);
-            }
+            else print_error(line, l_count, "bool parameter " + key + " has no value.");
         }
         else if (type == "str") {
             std::string value;
             if (stream >> value) str_vars[key] = value;
-            else {
-                std::cerr << "\033[1;31mERROR: string parameter " << key << " has no value.\nLine " << l_count << " of content " << path << "\033[0m\n";
-                exit(1);
-            }
+            else print_error(line, l_count, "string parameter " + key + " has no value");
         }
     }
 }
