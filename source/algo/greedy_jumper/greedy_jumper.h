@@ -11,7 +11,7 @@ namespace LocalSearch {
             Selection_Criterion() = default;
             Selection_Criterion(const Selection_Criterion&) = delete;
 
-            static std::shared_ptr<Selection_Criterion> from_file_data(const FileData& file_data);
+            static std::shared_ptr<Selection_Criterion> from_file_data(const Parameters& parameters);
 
             /// @brief applies the best multi jump from the trajectory depending on the criterion and returns the number of bits flipped
             /// @param trajectory the trajectory set
@@ -38,7 +38,7 @@ namespace LocalSearch {
             Neighborhood_Scope() = default;
             Neighborhood_Scope(const Neighborhood_Scope&) = delete;
 
-            static std::shared_ptr<Neighborhood_Scope> from_file_data(const FileData& file_data);
+            static std::shared_ptr<Neighborhood_Scope> from_file_data(const Parameters& parameters);
 
             /// @brief fill the TrajectorySet with all valid variable flips
             /// @param trajectory the TrajectorySet to fill

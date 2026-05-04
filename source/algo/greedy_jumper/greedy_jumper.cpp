@@ -94,8 +94,8 @@ unsigned int GreedyJumper::Selection_Criterion::chose_jump(const TrajectorySet& 
 
     return best_count;
 }
-std::shared_ptr<GreedyJumper::Selection_Criterion> GreedyJumper::Selection_Criterion::from_file_data(const FileData& file_data) {
-    std::string string = file_data.get_string("selection_criterion");
+std::shared_ptr<GreedyJumper::Selection_Criterion> GreedyJumper::Selection_Criterion::from_file_data(const Parameters& parameters) {
+    std::string string = parameters.get_string("selection_criterion");
     if (string == "first") return std::make_shared<GJ_First_Criterion>();
     else if (string == "best") return std::make_shared<GJ_Best_Criterion>();
     else if (string == "least") return std::make_shared<GJ_Least_Criterion>();
@@ -180,12 +180,12 @@ protected:
 void GreedyJumper::Neighborhood_Scope::create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score, BudgetHelper& budget) const {
     return create_trajectory(trajectory, instance, score, budget, [](unsigned int) { return true; });
 }
-std::shared_ptr<GreedyJumper::Neighborhood_Scope> GreedyJumper::Neighborhood_Scope::from_file_data(const FileData& file_data) {
-    std::string string = file_data.get_string("neighborhood_scope");
+std::shared_ptr<GreedyJumper::Neighborhood_Scope> GreedyJumper::Neighborhood_Scope::from_file_data(const Parameters& parameters) {
+    std::string string = parameters.get_string("neighborhood_scope");
     if (string == "improve") return std::make_shared<GJ_Improve_Scope>();
     else if (string == "all") return std::make_shared<GJ_Full_Scope>();
     else if (string == "half") return std::make_shared<GJ_Fixed_Scope>(.5);
-    else if (string == "fixed") return std::make_shared<GJ_Fixed_Scope>(file_data.get_float("max_flip_factor"));
+    else if (string == "fixed") return std::make_shared<GJ_Fixed_Scope>(parameters.get_float("max_flip_factor"));
     else if (string == "adaptative") return std::make_shared<GJ_Adaptative_Scope>();
     
     return std::make_shared<GJ_Full_Scope>(); // default

@@ -8,7 +8,7 @@ namespace LocalSearch {
         public:
             Selection_Criterion() = default;
 
-            static std::shared_ptr<Selection_Criterion> from_file_data(const FileData& file_data);
+            static std::shared_ptr<Selection_Criterion> from_file_data(const Parameters& parameters);
             
             /// @brief gets the variable index to test depending on the strategy
             /// @param default_index the default index

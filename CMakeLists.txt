@@ -8,7 +8,6 @@ add_compile_options(-Wall -Werror)
 add_executable(${CMAKE_PROJECT_NAME}
     source/main.cpp
 
-    source/algo/argmax.cpp
     source/algo/local_search.cpp
     source/algo/local_search_factory.cpp
     source/algo/hill_climber/hill_climber.cpp
@@ -18,7 +17,10 @@ add_executable(${CMAKE_PROJECT_NAME}
     source/algo/non_iterated_local_search/tabu/tabu.cpp
     source/algo/non_iterated_local_search/one_lambda/one_lambda.cpp
     
-    source/arg_file/file_data.cpp
+    source/arg_file/job.cpp
+    source/arg_file/job_queue.cpp
+    source/arg_file/parameters.cpp
+    source/arg_file/run_parameters.cpp
 
     source/utils/random_utils.cpp
     source/utils/budget_helper.cpp
