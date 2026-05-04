@@ -157,6 +157,25 @@ public:
 protected:
     float keep_factor = .5;
 };
+class GJ_Adaptative_Scope: public GreedyJumper::Neighborhood_Scope {
+public:
+    void create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score, BudgetHelper& budget, std::function<bool(unsigned int)> is_valid) const override {
+        // create trajectory
+        trajectory.clear();
+        unsigned int nb_better_neighbors;
+        for (size_t i = 0; i < instance->nb_args() && !budget.out_of_budget(); i++)
+        {
+            if (!is_valid(i)) continue;
+            instance->mutate_arg(i);
+            budget++;
+            trajectory.insert({i, instance->score()});
+            if (instance->score() > score) nb_better_neighbors++;
+            instance->revert_last_mutation();
+        }
+        while (trajectory.size() > std::max(nb_better_neighbors * 2, 5U)) trajectory.erase(std::next(trajectory.rbegin()).base());
+    }
+protected:
+};
 
 void GreedyJumper::Neighborhood_Scope::create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score, BudgetHelper& budget) const {
     return create_trajectory(trajectory, instance, score, budget, [](unsigned int) { return true; });
@@ -167,6 +186,7 @@ std::shared_ptr<GreedyJumper::Neighborhood_Scope> GreedyJumper::Neighborhood_Sco
     else if (string == "all") return std::make_shared<GJ_Full_Scope>();
     else if (string == "half") return std::make_shared<GJ_Fixed_Scope>(.5);
     else if (string == "fixed") return std::make_shared<GJ_Fixed_Scope>(file_data.get_float("max_flip_factor"));
+    else if (string == "adaptative") return std::make_shared<GJ_Adaptative_Scope>();
     
     return std::make_shared<GJ_Full_Scope>(); // default
 }

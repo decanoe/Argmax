@@ -32,7 +32,7 @@ str     selection_criterion = first
 int     budget = 1024
 # random / first / best / least
 str     selection_criterion = first
-# all / improve / half / fixed / tabu
+# all / improve / half / fixed / adaptative
 str     neighborhood_scope = all
 # maximum number of flips to consider in case of fixed neighborhood_scope relative to the number of bits (default .5 is the same as half)
 float   max_flip_factor = .5
