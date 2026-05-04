@@ -26,6 +26,7 @@ add_executable(${CMAKE_PROJECT_NAME}
     source/utils/budget_helper.cpp
 
     source/problem/nk.cpp
+    source/problem/qubo.cpp
     source/problem/problem_factory.cpp
 
     source/instance/reversible_instance.cpp

@@ -1,5 +1,6 @@
 #include "problem_factory.h"
 #include "nk.h"
+#include "qubo.h"
 
 std::shared_ptr<Problem::Problem> Problem::create_problem(const Parameters& parameters, unsigned int seed, bool debug) {
     if (parameters.get_string("problem") == "NK") {
@@ -11,6 +12,18 @@ std::shared_ptr<Problem::Problem> Problem::create_problem(const Parameters& para
             if (debug) std::cout << "creating problem..." << std::endl;
             std::mt19937 rand(seed);
             return std::make_shared<NK>(parameters.get_int("N"), parameters.get_int("K"), rand);
+        }
+    }
+
+    if (parameters.get_string("problem") == "Qubo") {
+        if (parameters.contains_string("instance_path")) {
+            if (debug) std::cout << "reading file..." << std::endl;
+            return std::make_shared<Qubo>(parameters.get_string("instance_path"));
+        }
+        else {
+            if (debug) std::cout << "creating problem..." << std::endl;
+            std::mt19937 rand(seed);
+            return std::make_shared<Qubo>(parameters.get_int("N"), rand);
         }
     }
     
