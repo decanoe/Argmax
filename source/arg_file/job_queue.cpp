@@ -88,7 +88,8 @@ JobQueue::JobQueue(RunParameters& run_parameters): jobs() {
     for (unsigned int instance = 0; instance < run_parameters.get_instances().size(); instance++)
     {
         Job job = Job(&run_parameters, algo, instance);
-        if (job.get_output_pair(false).second != nullptr) this->jobs.push_back(job);
+        auto output_pair = job.get_output_pair(false);
+        if (output_pair.first == "" || output_pair.second != nullptr) this->jobs.push_back(job);
     }
 }
 

@@ -4,6 +4,17 @@
 
 using namespace Problem;
 
+Sat::Clause::Clause(int a, int b, int c):
+    var_index_a(std::abs(a) - 1),
+    var_index_b(std::abs(b) - 1),
+    var_index_c(std::abs(c) - 1),
+    state_a(a > 0),
+    state_b(b > 0),
+    state_c(c > 0) {}
+bool Sat::Clause::evaluate(const std::vector<bool>& assignation) const {
+    return assignation[var_index_a] == state_a && assignation[var_index_b] == state_b && assignation[var_index_c] == state_c;
+}
+
 Sat::Sat(const std::string& path) {
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -24,39 +35,21 @@ Sat::Sat(const std::string& path) {
     unsigned int nb_lines;
     file >> n >> nb_lines;
     
-    clause_var_a.reserve(nb_lines);
-    clause_var_b.reserve(nb_lines);
-    clause_var_c.reserve(nb_lines);
+    clauses.reserve(nb_lines);
 
     int a, b, c, zero;
     for (size_t index = 0; index < nb_lines; index++)
     {
         file >> a >> b >> c >> zero;
-        clause_var_a.push_back(a);
-        clause_var_b.push_back(b);
-        clause_var_c.push_back(c);
+        clauses.push_back(Clause(a, b, c));
     }
 }
 
 float Sat::evaluate(const std::vector<bool>& assignation) const {
     float score = 0;
 
-    for (unsigned int i = 0; i < clause_var_a.size(); i++)
-    {
-        unsigned int a_index = std::abs(clause_var_a[i]) - 1;
-        unsigned int b_index = std::abs(clause_var_b[i]) - 1;
-        unsigned int c_index = std::abs(clause_var_c[i]) - 1;
-
-        bool a_state = clause_var_a[i] > 0;
-        bool b_state = clause_var_b[i] > 0;
-        bool c_state = clause_var_c[i] > 0;
-
-        if (assignation[a_index] != a_state) continue;
-        if (assignation[b_index] != b_state) continue;
-        if (assignation[c_index] != c_state) continue;
-
-        score += 1;
-    }
+    for (const Clause& clause : clauses)
+        if (clause.evaluate(assignation)) score++;
 
     return score;
 }
