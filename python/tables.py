@@ -100,10 +100,7 @@ class AvgScoreTable(Table):
         
         for n, n_data in sorted(data_loader.file_infos.items(), key=lambda p : p[0]):
             for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
-                for algo_header, algo in algo_list:
-                    print(algo, ":", round(k_data[algo].get_avg_run_score(), 4))
-                exit(0)
-                self.add_line(f"{n}_{k}", [k_data[algo].get_avg_run_score() for algo_header, algo in algo_list])
+                self.add_line(f"{n}_{k}", [round(k_data[algo].get_avg_run_score(), 4) for algo_header, algo in algo_list])
     
     def get_md_title(self):
         return "Mean fitness score per execution. Results are averaged over " + str(COUNT_PER_INSTANCE * 10) + " instances per (N,K) pair. The best results for each instance are underlined."
