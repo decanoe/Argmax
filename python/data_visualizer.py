@@ -1,6 +1,6 @@
 import os
 from tables import generate_all_tables
-from data_loader import DataLoader
+from data_loader import NKDataLoader
 import matplotlib.pyplot as plt
 from window import Window
 
@@ -13,10 +13,10 @@ plt.rcParams.update({
     "savefig.format": "pdf",
 })
 
-data_loader: DataLoader = DataLoader(dir_path+"/../rundata", small_load=False)
+data_loader: NKDataLoader = NKDataLoader(dir_path+"/../rundata", small_load=False)
 
-# generate_all_tables(data_loader, dir_path + "/output")
-# exit(0)
+generate_all_tables(data_loader, dir_path + "/output")
+exit(0)
 
 fig, _ = plt.subplots()
 Window(data_loader, fig)

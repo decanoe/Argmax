@@ -8,7 +8,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.backend_bases import Event
 
-from data_loader import DataLoader, NKRunInfo
+from data_loader import NKDataLoader, NKRunFile
 from plots.plot_annoted_axis import PlotAnnotedAxis
 
 class PlotCorrelation(PlotAnnotedAxis):
@@ -25,13 +25,8 @@ class PlotCorrelation(PlotAnnotedAxis):
         self.axis.set_ylabel(self.window.get_axis2_label())
         self.axis.grid()
     def plot(self):
-        data_loader: DataLoader = self.window.get_data_loader()
-        
         max_xy: float = 0
-        for i in range(len(data_loader.Algo_keys)):
-            algo = data_loader.Algo_keys[i]
-            if not(self.window.is_algo_selected(algo)):
-                continue
+        for algo in self.window.get_selected_algos():
             if algo.startswith("hc_"):
                 continue
             
@@ -46,29 +41,16 @@ class PlotCorrelation(PlotAnnotedAxis):
     def get_single_correlation_points(self, algo: str) -> tuple[np.ndarray[float], np.ndarray[float]]:
         axis1: str = self.window.get_axis1()
         axis2: str = self.window.get_axis2()
-        data_loader: DataLoader = self.window.get_data_loader()
-        infos: list[NKRunInfo] = []
-        if (self.window.get_i() == "avg"):
-            infos = data_loader.get_files(self.window.get_n(), self.window.get_k(), algo)
-        else:
-            infos = [data_loader.get_file(self.window.get_n(), self.window.get_k(), algo, self.window.get_i())]
-            
-        all_x: np.ndarray[float] = np.array([])
-        all_y: np.ndarray[float] = np.array([])
-        for info in infos:
-            data: pd.DataFrame = info.get_data()
-            data = data[data.size_of_the_jump != 0]
-
-            temp_x: np.ndarray[float] = data[axis1.replace("_delta", "_after_jump")].to_numpy(copy=True)
-            if (axis1.endswith("_delta")):
-                temp_x -= data[axis1.replace("_delta", "_before_jump")].to_numpy()
-            
-            temp_y: np.ndarray[float] = data[axis2.replace("_delta", "_after_jump")].to_numpy(copy=True)
-            if (axis2.endswith("_delta")):
-                temp_y -= data[axis2.replace("_delta", "_before_jump")].to_numpy()
-            
-            all_x = np.concatenate((all_x, temp_x), axis=None)
-            all_y = np.concatenate((all_y, temp_y), axis=None)
+        data_loader: NKDataLoader = self.window.get_data_loader()
+        infos: NKRunFile = data_loader.get_file(self.window.get_n(), self.window.get_k(), algo)
+        
+        all_x: np.ndarray[float] = infos.get_jumps(axis1.replace("_delta", "_after_jump"))
+        if (axis1.endswith("_delta")):
+            all_x -= infos.get_jumps(axis1.replace("_delta", "_before_jump"))
+        
+        all_y: np.ndarray[float] = infos.get_jumps(axis2.replace("_delta", "_after_jump"))
+        if (axis2.endswith("_delta")):
+            all_y -= infos.get_jumps(axis2.replace("_delta", "_before_jump"))
         
         return all_x, all_y
     
