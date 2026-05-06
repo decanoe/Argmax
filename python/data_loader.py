@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import re
 import pandas as pd
@@ -576,34 +577,155 @@ class NKRunFile(RunFile):
     
     def __repr__(self)-> str:
         return self.algo + f" {self.N} {self.K}"
+class QuboRunFile(RunFile):
+    N: int
+    
+    def __init__(self, n: int, algo: str, path: str):
+        super().__init__(algo, path)
+        self.N = n
+        
+    @classmethod
+    def from_file(cls, path: str):
+        name = os.path.basename(path)
+        
+        temp = name.removesuffix(".rundata").split("_")
+        algo, instance = "_".join(temp[:-1]), int(temp[-1])
+        dir: str = os.path.dirname(path)
+        n = int(os.path.basename(dir).removeprefix("N"))
+        
+        return cls(n, algo, path)
 
-class NKDataLoader:
-    file_infos: dict[int, dict[int, dict[str, NKRunFile]]]
-    N_keys: list[str]
-    K_keys: list[str]
+    def normalize(self, data: pd.DataFrame):
+        pass
+    
+    def __repr__(self)-> str:
+        return self.algo + f" Qubo {self.N}"
+class SatRunFile(RunFile):
+    N: int
+    type_name: str
+    
+    def __init__(self, n: int, type_name: str, algo: str, path: str):
+        super().__init__(algo, path)
+        self.N = n
+        self.type_name = type_name
+        
+    @classmethod
+    def from_file(cls, path: str):
+        name = os.path.basename(path)
+        
+        temp = name.removesuffix(".rundata").split("_")
+        algo, instance = "_".join(temp[:-1]), int(temp[-1])
+        dir: str = os.path.dirname(path)
+        type_name = os.path.basename(dir)
+        dir = os.path.dirname(dir)
+        n = int(os.path.basename(dir).removeprefix("N"))
+        
+        return cls(n, type_name, algo, path)
+
+    def normalize(self, data: pd.DataFrame):
+        pass
+    
+    def __repr__(self)-> str:
+        return self.algo + f" Sat {self.type_name} {self.N}"
+
+class DataLoader:
     Algo_keys: list[str]
     
-    def __init__(self, rundata_path: str, small_load: bool = False):
-        self.file_infos = {}
+    def load_file(self, file: str, dir: str):
+        pass
+    def __init__(self, dir_path: str):
         from tqdm import tqdm
         files: list[tuple[str, str]] = []
-        for d in os.walk(rundata_path+"/local_search/NK"):
-            if (small_load):
-                files += [(d[0], f) for f in d[2] if f.endswith("_1.rundata") and "N50/K0" in d[0]]
-            else:
-                files += [(d[0], f) for f in d[2] if f.endswith("_1.rundata")]
+        for d in os.walk(dir_path):
+            files += [(d[0], f) for f in d[2] if f.endswith("_1.rundata")]
 
         for i in tqdm(range(len(files))):
             d, f = files[i]
-            info: NKRunFile = NKRunFile.from_file(d + "/" + f)
-            if (info != None):
-                self.file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, info)
+            self.load_file(f, d)
+    
+    def get_file(self, algo: str) -> RunFile:
+        pass
+    def set_parameters(self, **kwargs) -> DataLoader:
+        return self
+class NKDataLoader(DataLoader):
+    file_infos: dict[int, dict[int, dict[str, NKRunFile]]]
+    N_keys: list[str]
+    K_keys: list[str]
+    n: int
+    k: int
+    
+    def load_file(self, file: str, dir: str):
+        info: NKRunFile = NKRunFile.from_file(dir + "/" + file)
+        if ("hc" not in info.algo and ("random" in info.algo or "Random" in info.algo)): return
+        if (info != None):
+            self.file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, info)
+    def __init__(self, rundata_path: str):
+        self.file_infos = {}
+        super().__init__(rundata_path+"/local_search/NK")
 
         self.N_keys = sorted(self.file_infos.keys())
         self.K_keys = sorted(self.file_infos[self.N_keys[0]].keys())
         self.Algo_keys = sorted(self.file_infos[self.N_keys[0]][self.K_keys[0]].keys())
+        
+        self.n = self.N_keys[0]
+        self.k = self.K_keys[0]
     
-    def get_file(self, n: int, k: int, algo: str) -> RunFile:
-        return self.file_infos[n][k][algo]
-    def get_reference_file(self, algo: str) -> RunFile:
-        return self.get_file(self.N_keys[0], self.K_keys[0], algo)
+    def set_parameters(self, **kwargs):
+        if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
+        if (kwargs.get("k", self.k) in self.K_keys): self.k = kwargs.get("k")
+        return super().set_parameters(**kwargs)
+    def get_file(self, algo: str) -> RunFile:
+        return self.file_infos[self.n][self.k][algo]
+class QuboDataLoader(DataLoader):
+    file_infos: dict[int, dict[str, NKRunFile]]
+    N_keys: list[str]
+    n: int
+    
+    def load_file(self, file: str, dir: str):
+        info: QuboRunFile = QuboRunFile.from_file(dir + "/" + file)
+        if ("hc" not in info.algo and ("random" in info.algo or "Random" in info.algo)): return
+        if (info != None):
+            self.file_infos.setdefault(info.N, {}).setdefault(info.algo, info)
+    def __init__(self, rundata_path: str):
+        self.file_infos = {}
+        super().__init__(rundata_path+"/local_search/Qubo")
+
+        self.N_keys = sorted(self.file_infos.keys())
+        self.Algo_keys = sorted(self.file_infos[self.N_keys[0]].keys())
+        
+        self.n = self.N_keys[0]
+    
+    def set_parameters(self, **kwargs):
+        if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
+        return super().set_parameters(**kwargs)
+    def get_file(self, algo: str) -> RunFile:
+        return self.file_infos[self.n][algo]
+class SatDataLoader(DataLoader):
+    file_infos: dict[int, dict[str, dict[str, NKRunFile]]]
+    N_keys: list[str]
+    type_keys: list[str]
+    n: int
+    type_name: str
+    
+    def load_file(self, file: str, dir: str):
+        info: SatRunFile = SatRunFile.from_file(dir + "/" + file)
+        if ("hc" not in info.algo and ("random" in info.algo or "Random" in info.algo)): return
+        if (info != None):
+            self.file_infos.setdefault(info.N, {}).setdefault(info.type_name, {}).setdefault(info.algo, info)
+    def __init__(self, rundata_path: str):
+        self.file_infos = {}
+        super().__init__(rundata_path+"/local_search/Sat")
+
+        self.N_keys = sorted(self.file_infos.keys())
+        self.type_keys = sorted(self.file_infos[self.N_keys[0]].keys())
+        self.Algo_keys = sorted(self.file_infos[self.N_keys[0]][self.type_keys[0]].keys())
+        
+        self.n = self.N_keys[0]
+        self.type_name = self.type_keys[0]
+    
+    def set_parameters(self, **kwargs):
+        if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
+        if (kwargs.get("type_name", self.type_name) in self.type_keys): self.type_name = kwargs.get("type_name")
+        return super().set_parameters(**kwargs)
+    def get_file(self, algo: str) -> RunFile:
+        return self.file_infos[self.n][self.type_name][algo]

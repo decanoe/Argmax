@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backend_bases import Event
 
 from plots.plot_annoted_axis import PlotAnnotedAxis
-from data_loader import NKDataLoader
+from data_loader import DataLoader
 
 class PlotAnytime(PlotAnnotedAxis):
     def __init__(self, window: Window, axis: plt.Axes = None):
@@ -32,12 +32,12 @@ class PlotAnytime(PlotAnnotedAxis):
         self.axis.set_ylabel("fitness")
         self.axis.grid()
     def plot(self):
-        data_loader: NKDataLoader = self.window.get_data_loader()
+        data_loader: DataLoader = self.window.get_data_loader()
         
-        sorted_algos = sorted(self.window.get_selected_algos(), key=lambda algo:data_loader.get_file(self.window.get_n(), self.window.get_k(), algo).get_anytime_scores().fitness.max(), reverse=True)
+        sorted_algos = sorted(self.window.get_selected_algos(), key=lambda algo:data_loader.get_file(algo).get_anytime_scores().fitness.max(), reverse=True)
         
         for algo in sorted_algos:
-            run_info = data_loader.get_file(self.window.get_n(), self.window.get_k(), algo)
+            run_info = data_loader.get_file(algo)
             data = run_info.get_anytime_scores()
             
             line, = self.axis.plot(data.budget, data.fitness, label=run_info.label, color = run_info.color, linestyle = run_info.linestyle)

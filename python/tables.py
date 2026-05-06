@@ -1,8 +1,6 @@
 from typing import Literal
 
-from pandas import DataFrame
-
-from data_loader import NKDataLoader
+from data_loader import DataLoader, NKDataLoader
 
 def add_spaces(value: float, str_size: int):
     return str(value) + " " * (str_size - len(str(value)))
@@ -95,10 +93,10 @@ class Table:
         with open(path, 'w') as f: f.write(self.to_tex())
 
 class AvgScoreTable(Table):
-    def __init__(self, data_loader: NKDataLoader, algo_list: list[tuple[str, str]]):
+    def __init__(self, data_loaders: dict[str, DataLoader], algo_list: list[tuple[str, str]]):
         super().__init__("instance (N_K)", [algo[0] for algo in algo_list], 'max')
         
-        for n, n_data in sorted(data_loader.file_infos.items(), key=lambda p : p[0]):
+        for n, n_data in sorted(data_loaders["NK"].file_infos.items(), key=lambda p : p[0]):
             for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
                 self.add_line(f"{n}_{k}", [round(k_data[algo].get_avg_run_score(), 4) for algo_header, algo in algo_list])
     
@@ -112,11 +110,11 @@ class AvgScoreTable(Table):
 class MaxScoreTable(Table):
     budget: int
     
-    def __init__(self, data_loader: NKDataLoader, algo_list: list[tuple[str, str]], budget: int):
+    def __init__(self, data_loaders: dict[str, DataLoader], algo_list: list[tuple[str, str]], budget: int):
         super().__init__("instance (N_K)", [algo[0] for algo in algo_list], 'max')
         self.budget = budget
         
-        for n, n_data in sorted(data_loader.file_infos.items(), key=lambda p : p[0]):
+        for n, n_data in sorted(data_loaders["NK"].file_infos.items(), key=lambda p : p[0]):
             for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
                 self.add_line(f"{n}_{k}", [k_data[algo].get_anytime_scores().fitness.max() for algo_header, algo in algo_list])
                 
@@ -130,10 +128,10 @@ class MaxScoreTable(Table):
     def get_tex_label(self):
         return f"tab:budget{self.budget//1000}k"
 class AvgBudgetTable(Table):
-    def __init__(self, data_loader: NKDataLoader, algo_list: list[tuple[str, str]]):
+    def __init__(self, data_loaders: dict[str, DataLoader], algo_list: list[tuple[str, str]]):
         super().__init__("instance (N_K)", [algo[0] for algo in algo_list], 'min')
         
-        for n, n_data in sorted(data_loader.file_infos.items(), key=lambda p : p[0]):
+        for n, n_data in sorted(data_loaders["NK"].file_infos.items(), key=lambda p : p[0]):
             for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
                 self.add_line(f"{n}_{k}", [k_data[algo].get_avg_run_budget() for algo_header, algo in algo_list])
     
@@ -148,25 +146,25 @@ class AvgBudgetTable(Table):
     def get_tex_label(self):
         return "tab:mean_budget"
 
-def generate_all_tables(data_loader: NKDataLoader, output_path: str):
+def generate_all_tables(data_loaders: dict[str, DataLoader], output_path: str):
     hc_selector = lambda algo: algo.startswith("hc_") and "cycle" not in algo and "first" not in algo
     gj_selector = lambda algo: algo.startswith("greedy_") and ("fixed" not in algo or ".5" in algo) and "tabu" not in algo and "lambda" not in algo
     
-    hc_algos: list[tuple[str, str]] = sorted([(data_loader.get_reference_file(algo).label, algo) for algo in data_loader.Algo_keys if hc_selector(algo)], key=lambda t: t[0])
-    gj_algos: list[tuple[str, str]] = sorted([(data_loader.get_reference_file(algo).label, algo) for algo in data_loader.Algo_keys if gj_selector(algo)], key=lambda t: t[0])
+    hc_algos: list[tuple[str, str]] = sorted([(data_loaders["NK"].get_file(algo).label, algo) for algo in data_loaders["NK"].Algo_keys if hc_selector(algo)], key=lambda t: t[0])
+    gj_algos: list[tuple[str, str]] = sorted([(data_loaders["NK"].get_file(algo).label, algo) for algo in data_loaders["NK"].Algo_keys if gj_selector(algo)], key=lambda t: t[0])
     algo_list: list[str] = hc_algos + gj_algos
     
-    table = AvgScoreTable(data_loader, algo_list)
+    table = AvgScoreTable(data_loaders, algo_list)
     table.save_md(output_path + "/avg.md")
     table.save_tex(output_path + "/avg.tex")
     
-    table = AvgBudgetTable(data_loader, algo_list)
+    table = AvgBudgetTable(data_loaders, algo_list)
     table.save_md(output_path + "/budgets.md")
     table.save_tex(output_path + "/budgets.tex")
     
     budgets = [1_000, 10_000, 100_000]
     
     for i in range(len(budgets)):
-        table = MaxScoreTable(data_loader, algo_list, budgets[i])
+        table = MaxScoreTable(data_loaders, algo_list, budgets[i])
         table.save_md(output_path + f"/best_{budgets[i]//1000}_000.md")
         table.save_tex(output_path + f"/best_{budgets[i]//1000}_000.tex")

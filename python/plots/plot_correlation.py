@@ -8,7 +8,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.backend_bases import Event
 
-from data_loader import NKDataLoader, NKRunFile
+from data_loader import DataLoader, NKRunFile
 from plots.plot_annoted_axis import PlotAnnotedAxis
 
 class PlotCorrelation(PlotAnnotedAxis):
@@ -41,8 +41,8 @@ class PlotCorrelation(PlotAnnotedAxis):
     def get_single_correlation_points(self, algo: str) -> tuple[np.ndarray[float], np.ndarray[float]]:
         axis1: str = self.window.get_axis1()
         axis2: str = self.window.get_axis2()
-        data_loader: NKDataLoader = self.window.get_data_loader()
-        infos: NKRunFile = data_loader.get_file(self.window.get_n(), self.window.get_k(), algo)
+        data_loader: DataLoader = self.window.get_data_loader()
+        infos: NKRunFile = data_loader.get_file(algo)
         
         all_x: np.ndarray[float] = infos.get_jumps(axis1.replace("_delta", "_after_jump"))
         if (axis1.endswith("_delta")):

@@ -1,6 +1,6 @@
 import os
 from tables import generate_all_tables
-from data_loader import NKDataLoader
+from data_loader import NKDataLoader, SatDataLoader, QuboDataLoader
 import matplotlib.pyplot as plt
 from window import Window
 
@@ -13,10 +13,14 @@ plt.rcParams.update({
     "savefig.format": "pdf",
 })
 
-data_loader: NKDataLoader = NKDataLoader(dir_path+"/../rundata", small_load=False)
+data_loaders = {
+    "NK": NKDataLoader(dir_path+"/../rundata"),
+    "Sat": SatDataLoader(dir_path+"/../rundata"),
+    "Qubo": QuboDataLoader(dir_path+"/../rundata"),
+}
 
-generate_all_tables(data_loader, dir_path + "/output")
-exit(0)
+# generate_all_tables(data_loaders, dir_path + "/output")
+# exit(0)
 
 fig, _ = plt.subplots()
-Window(data_loader, fig)
+Window(data_loaders, fig)

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 from button import ButtonCycle, KeyHoldEvent, ButtonCheck
-from data_loader import NKDataLoader
+from data_loader import DataLoader
 
 from plots.plot_axis import PlotAxis
 from plots.plot_anytime import PlotAnytime
@@ -14,6 +14,8 @@ class Window:
     PLOT_TYPE: ButtonCycle = None
     N: ButtonCycle = None
     K: ButtonCycle = None
+    SAT_TYPE: ButtonCycle = None
+    PROBLEM: ButtonCycle = None
     SELECTED_ALGOS_GJ: ButtonCheck = None
     SELECTED_ALGOS_HC: ButtonCheck = None
     AXIS1: ButtonCycle = None
@@ -26,14 +28,14 @@ class Window:
     LEGEND_POSITION: ButtonCycle = None
     # ==================================
     
-    data_loader: NKDataLoader
+    data_loaders: dict[str, DataLoader]
     figure: plt.Figure
     plot_axis: PlotAxis
     key_held: KeyHoldEvent
     
-    def __init__(self, data_loader: NKDataLoader, figure: plt.Figure):
+    def __init__(self, data_loaders: dict[str, DataLoader], figure: plt.Figure):
         self.figure = figure
-        self.data_loader = data_loader
+        self.data_loaders = data_loaders
         
         self.figure.canvas.mpl_connect('key_press_event', lambda evt: self.on_key_press(repr(evt.key)))
         self.key_held: KeyHoldEvent = KeyHoldEvent(self.figure)
@@ -47,15 +49,18 @@ class Window:
         plt.show()
 
     def place_buttons(self):
-        N_keys = sorted(self.data_loader.N_keys)
+        N_keys = sorted(self.data_loaders["NK"].N_keys)
         self.N = ButtonCycle(self.figure.add_axes([0.045, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
-        K_keys = sorted(self.data_loader.K_keys)
+        K_keys = sorted(self.data_loaders["NK"].K_keys)
         self.K = ButtonCycle(self.figure.add_axes([0.155, 0.2, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, self.update)
+        Sat_keys = sorted(self.data_loaders["Sat"].type_keys)
+        self.SAT_TYPE = ButtonCycle(self.figure.add_axes([0.265, 0.2, 0.1, 0.05]), Sat_keys, callback=self.update)
         
         self.N.set_to(-1)
         self.K.set_to(-1)
 
-        self.LEGEND_POSITION = ButtonCycle(self.figure.add_axes([0.045, 0.14, 0.1, 0.05]), ["best", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], self.soft_update)
+        self.PROBLEM = ButtonCycle(self.figure.add_axes([0.045, 0.14, 0.1, 0.05]), list(self.data_loaders.keys()), callback=self.update)
+        self.LEGEND_POSITION = ButtonCycle(self.figure.add_axes([0.155, 0.14, 0.1, 0.05]), ["best", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], self.soft_update)
 
         self.PLOT_TYPE = ButtonCycle(self.figure.add_axes([0.4, 0.2, 0.32, 0.05]), ["anytime", "correlation", "one run"], callback=self.update)
         self.X_SCALE = ButtonCycle(self.figure.add_axes([0.4, 0.14, 0.1, 0.05]), ["log scale", "linear scale"], callback=self.soft_update)
@@ -68,14 +73,14 @@ class Window:
         self.CORRELATION_PLOT = ButtonCycle(self.figure.add_axes([0.51, 0.02, 0.1, 0.05]), ["mean+std", "regression"], callback=self.update)
         self.REGRESSION = ButtonCycle(self.figure.add_axes([0.62, 0.02, 0.1, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=self.update)
         
-        sorted_algos = sorted([(self.data_loader.get_reference_file(algo).label, algo) for algo in self.data_loader.Algo_keys], key=lambda t: t[0])
+        sorted_algos = sorted([(self.data_loaders["NK"].get_file(algo).label, algo) for algo in self.data_loaders["NK"].Algo_keys], key=lambda t: t[0])
         temp_keys, temp_values = list(zip(*[algo for algo in sorted_algos if algo[0].startswith("GJ")]))
         self.SELECTED_ALGOS_GJ = ButtonCheck(self.figure.add_axes([0.73, 0.02, 0.12, 0.96]), temp_keys, temp_values, callback=self.update)
         
         temp_keys, temp_values = list(zip(*[algo for algo in sorted_algos if not(algo[0].startswith("GJ"))]))
         self.SELECTED_ALGOS_HC = ButtonCheck(self.figure.add_axes([0.88, 0.02, 0.12, 0.96]), temp_keys, temp_values, callback=self.update)
     def set_default_selected_algos(self):
-        for algo in self.data_loader.Algo_keys:
+        for algo in self.data_loaders["NK"].Algo_keys:
             if (algo.startswith("hc_") and "cycle" not in algo and "first" not in algo):
                 self.SELECTED_ALGOS_HC.check(algo)
             elif (algo.startswith("greedy_") and "fixed" not in algo and "tabu" not in algo and "lambda" not in algo):
@@ -115,16 +120,19 @@ class Window:
         for b in [self.X_SCALE]:
             b.set_visible(self.PLOT_TYPE.get_value() != "correlation" and not(self.is_full_screen()))
         
+        self.K.set_visible(self.get_problem() == "NK" and not(self.is_full_screen()))
+        self.SAT_TYPE.set_visible(self.get_problem() == "Sat" and not(self.is_full_screen()))
+        
         self.AXIS1_WHEN.set_visible(self.PLOT_TYPE.get_value() == "correlation" and self.AXIS1.get_value() != "size_of_the_jump" and not(self.is_full_screen()))
         self.AXIS2_WHEN.set_visible(self.PLOT_TYPE.get_value() == "correlation" and self.AXIS2.get_value() != "size_of_the_jump" and not(self.is_full_screen()))
         
         self.REGRESSION.set_visible(self.PLOT_TYPE.get_value() == "correlation" and self.CORRELATION_PLOT.get_value() == "regression" and not(self.is_full_screen()))
         
-        for b in [self.PLOT_TYPE, self.LEGEND_POSITION, self.SELECTED_ALGOS_GJ, self.SELECTED_ALGOS_HC, self.N, self.K]:
+        for b in [self.PLOT_TYPE, self.PROBLEM, self.LEGEND_POSITION, self.SELECTED_ALGOS_GJ, self.SELECTED_ALGOS_HC, self.N]:
             b.set_visible(not(self.is_full_screen()))
-            self.set_font_size(22)
         if self.is_full_screen():
             self.figure.subplots_adjust(left=0.075, right=0.98, bottom=0.1, top=0.95)
+            self.set_font_size(22)
         else:
             self.figure.subplots_adjust(left=0.045, right=0.72, bottom=0.35, top=0.95)
             self.set_font_size(10)
@@ -143,10 +151,14 @@ class Window:
         return self.N.get_value()
     def get_k(self) -> str:
         return self.K.get_value()
+    def get_sat_type(self) -> str:
+        return self.SAT_TYPE.get_value()
+    def get_problem(self) -> str:
+        return self.PROBLEM.get_value()
     def is_algo_selected(self, algo: str) -> bool:
         return self.SELECTED_ALGOS_GJ.is_checked(algo) or self.SELECTED_ALGOS_HC.is_checked(algo)
     def get_selected_algos(self) -> list[str]:
-        return [algo for algo in self.data_loader.Algo_keys if self.is_algo_selected(algo)]
+        return [algo for algo in self.data_loaders["NK"].Algo_keys if self.is_algo_selected(algo)]
     def get_axis1(self) -> str:
         axis1: str = self.AXIS1.get_value()
         if (axis1 != "size_of_the_jump"):
@@ -176,5 +188,9 @@ class Window:
     def get_legend_position(self) -> str:
         return self.LEGEND_POSITION.get_value()
     
-    def get_data_loader(self) -> NKDataLoader:
-        return self.data_loader
+    def get_data_loader(self) -> DataLoader:
+        return self.data_loaders[self.get_problem()].set_parameters(
+            n = self.get_n(),
+            k = self.get_k(),
+            type_name = self.get_sat_type(),
+        )
