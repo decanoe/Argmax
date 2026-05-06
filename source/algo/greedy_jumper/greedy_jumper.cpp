@@ -40,21 +40,21 @@ public:
         for (std::pair<unsigned int, float> pair : trajectory) flips.push_back(pair.first);
         
 
-        std::set<unsigned int> tested_jumps = std::set<unsigned int>();
-        while (tested_jumps.size() < flips.size())
+        std::set<unsigned int> tested_last_flip_index = std::set<unsigned int>();
+        while (tested_last_flip_index.size() < flips.size())
         {
-            unsigned int jump_size = RandomUtils::get_index(flips.size(), tested_jumps, *this->random_generator);
-            tested_jumps.insert(jump_size);
+            unsigned int last_flip_index = RandomUtils::get_index(flips.size(), tested_last_flip_index, *this->random_generator);
+            tested_last_flip_index.insert(last_flip_index);
             
-            for (unsigned int i = 0; i < jump_size; i++) instance->mutate_arg(flips[i]);
+            for (unsigned int i = 0; i <= last_flip_index; i++) instance->mutate_arg(flips[i]);
             
             budget++;
             if (instance->score() > instance_score) {
                 instance_score = instance->score();
-                return jump_size;
+                return last_flip_index + 1;
             }
 
-            for (unsigned int i = 0; i < jump_size; i++) instance->mutate_arg(flips[i]);
+            for (unsigned int i = 0; i <= last_flip_index; i++) instance->mutate_arg(flips[i]);
         }
 
         return 0;
@@ -162,7 +162,7 @@ public:
     void create_trajectory(GreedyJumper::TrajectorySet& trajectory, std::unique_ptr<ReversibleInstance>& instance, float score, BudgetHelper& budget, std::function<bool(unsigned int)> is_valid) const override {
         // create trajectory
         trajectory.clear();
-        unsigned int nb_better_neighbors;
+        unsigned int nb_better_neighbors = 0;
         for (size_t i = 0; i < instance->nb_args() && !budget.out_of_budget(); i++)
         {
             if (!is_valid(i)) continue;
