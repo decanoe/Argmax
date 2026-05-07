@@ -98,7 +98,14 @@ class AvgScoreTable(Table):
         
         for n, n_data in sorted(data_loaders["NK"].file_infos.items(), key=lambda p : p[0]):
             for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
-                self.add_line(f"{n}_{k}", [round(k_data[algo].get_avg_run_score(), 4) for algo_header, algo in algo_list])
+                self.add_line(f"N{n}_K{k}", [round(k_data[algo].get_avg_run_score(), 4) for algo_header, algo in algo_list])
+        
+        for n, n_data in sorted(data_loaders["Qubo"].file_infos.items(), key=lambda p : p[0]):
+            self.add_line(f"Qubo N{n}", [round(n_data[algo].get_avg_run_score(), 4) for algo_header, algo in algo_list])
+        
+        for n, n_data in sorted(data_loaders["Sat"].file_infos.items(), key=lambda p : p[0]):
+            for t, t_data in sorted(n_data.items(), key=lambda p : p[0]):
+                self.add_line(f"Sat N{n} {t}", [round(t_data[algo].get_avg_run_score(), 4) for algo_header, algo in algo_list])
     
     def get_md_title(self):
         return "Mean fitness score per execution. Results are averaged over " + str(COUNT_PER_INSTANCE * 10) + " instances per (N,K) pair. The best results for each instance are underlined."
@@ -116,11 +123,18 @@ class MaxScoreTable(Table):
         
         for n, n_data in sorted(data_loaders["NK"].file_infos.items(), key=lambda p : p[0]):
             for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
-                self.add_line(f"{n}_{k}", [k_data[algo].get_anytime_scores().fitness.max() for algo_header, algo in algo_list])
+                self.add_line(f"N{n}_K{k}", [round(k_data[algo].get_anytime_scores(budget).fitness.max(), 4) for algo_header, algo in algo_list])
+        
+        for n, n_data in sorted(data_loaders["Qubo"].file_infos.items(), key=lambda p : p[0]):
+            self.add_line(f"Qubo N{n}", [round(n_data[algo].get_anytime_scores(budget).fitness.max(), 4) for algo_header, algo in algo_list])
+        
+        for n, n_data in sorted(data_loaders["Sat"].file_infos.items(), key=lambda p : p[0]):
+            for t, t_data in sorted(n_data.items(), key=lambda p : p[0]):
+                self.add_line(f"Sat N{n} {t}", [round(t_data[algo].get_anytime_scores(budget).fitness.max(), 4) for algo_header, algo in algo_list])
                 
     def get_md_title(self):
         if (self.budget == 1_000): return "Best fitness achieved under a limited budget of 1,000 evaluations. Underlined values indicate the best performance for each instance."
-        if (self.budget == 100_000): return "Best fitness achieved under a large budget of 100,000 evaluations. Underlined values indicate the best performance for each instance."
+        if (self.budget == 1_000_000): return "Best fitness achieved under a large budget of 1,000,000 evaluations. Underlined values indicate the best performance for each instance."
         return f"Best fitness obtained for a budget of {self.budget//1000},000 evaluations."
     
     def get_tex_title(self):
@@ -133,7 +147,14 @@ class AvgBudgetTable(Table):
         
         for n, n_data in sorted(data_loaders["NK"].file_infos.items(), key=lambda p : p[0]):
             for k, k_data in sorted(n_data.items(), key=lambda p : p[0]):
-                self.add_line(f"{n}_{k}", [k_data[algo].get_avg_run_budget() for algo_header, algo in algo_list])
+                self.add_line(f"N{n}_K{k}", [k_data[algo].get_avg_run_budget() for algo_header, algo in algo_list])
+        
+        for n, n_data in sorted(data_loaders["Qubo"].file_infos.items(), key=lambda p : p[0]):
+            self.add_line(f"Qubo N{n}", [n_data[algo].get_avg_run_budget() for algo_header, algo in algo_list])
+        
+        for n, n_data in sorted(data_loaders["Sat"].file_infos.items(), key=lambda p : p[0]):
+            for t, t_data in sorted(n_data.items(), key=lambda p : p[0]):
+                self.add_line(f"Sat N{n} {t}", [t_data[algo].get_avg_run_budget() for algo_header, algo in algo_list])
     
     def format_value(self, value: float) -> str:
         return "%.1f"%value
@@ -148,7 +169,7 @@ class AvgBudgetTable(Table):
 
 def generate_all_tables(data_loaders: dict[str, DataLoader], output_path: str):
     hc_selector = lambda algo: algo.startswith("hc_") and "cycle" not in algo and "first" not in algo
-    gj_selector = lambda algo: algo.startswith("greedy_") and ("fixed" not in algo or ".5" in algo) and "tabu" not in algo and "lambda" not in algo
+    gj_selector = lambda algo: algo.startswith("greedy_") and ("fixed" not in algo or ("first" in algo)) and "tabu" not in algo and "lambda" not in algo
     
     hc_algos: list[tuple[str, str]] = sorted([(data_loaders["NK"].get_file(algo).label, algo) for algo in data_loaders["NK"].Algo_keys if hc_selector(algo)], key=lambda t: t[0])
     gj_algos: list[tuple[str, str]] = sorted([(data_loaders["NK"].get_file(algo).label, algo) for algo in data_loaders["NK"].Algo_keys if gj_selector(algo)], key=lambda t: t[0])
@@ -162,7 +183,7 @@ def generate_all_tables(data_loaders: dict[str, DataLoader], output_path: str):
     table.save_md(output_path + "/budgets.md")
     table.save_tex(output_path + "/budgets.tex")
     
-    budgets = [1_000, 10_000, 100_000]
+    budgets = [1_000, 10_000, 100_000, 1_000_000]
     
     for i in range(len(budgets)):
         table = MaxScoreTable(data_loaders, algo_list, budgets[i])

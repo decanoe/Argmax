@@ -460,10 +460,10 @@ class RunFile:
         self._avg_run_budget /= len(avg_scores) * avg_max_run_count
         self._avg_run_score /= len(avg_scores) * avg_max_run_count
         self._anytime_scores = pd.DataFrame({"budget": budget_points, "fitness": fitness_points.mean(axis=0)})
-    def get_anytime_scores(self) -> pd.DataFrame:
+    def get_anytime_scores(self, budget: int = 1_000_000) -> pd.DataFrame:
         if (self._anytime_scores is None):
             self.load_anytime_scores()
-        return self._anytime_scores
+        return self._anytime_scores[self._anytime_scores.budget <= budget]
 
     def split_runs(self, df: pd.DataFrame) -> list[pd.DataFrame]:
         """
@@ -656,7 +656,6 @@ class NKDataLoader(DataLoader):
     
     def load_file(self, file: str, dir: str):
         info: NKRunFile = NKRunFile.from_file(dir + "/" + file)
-        if ("hc" not in info.algo and ("random" in info.algo or "Random" in info.algo)): return
         if (info != None):
             self.file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, info)
     def __init__(self, rundata_path: str):
@@ -683,7 +682,6 @@ class QuboDataLoader(DataLoader):
     
     def load_file(self, file: str, dir: str):
         info: QuboRunFile = QuboRunFile.from_file(dir + "/" + file)
-        if ("hc" not in info.algo and ("random" in info.algo or "Random" in info.algo)): return
         if (info != None):
             self.file_infos.setdefault(info.N, {}).setdefault(info.algo, info)
     def __init__(self, rundata_path: str):
@@ -709,7 +707,6 @@ class SatDataLoader(DataLoader):
     
     def load_file(self, file: str, dir: str):
         info: SatRunFile = SatRunFile.from_file(dir + "/" + file)
-        if ("hc" not in info.algo and ("random" in info.algo or "Random" in info.algo)): return
         if (info != None):
             self.file_infos.setdefault(info.N, {}).setdefault(info.type_name, {}).setdefault(info.algo, info)
     def __init__(self, rundata_path: str):
