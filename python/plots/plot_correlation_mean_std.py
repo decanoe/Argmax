@@ -18,7 +18,7 @@ class PlotCorrelationMeanStd(PlotCorrelation):
             return # can't plot with non discrete values for the x axis
         super().plot()
     def plot_single(self, algo: str, all_x: np.ndarray[float], all_y: np.ndarray[float]):
-        some_run_info = self.window.get_data_loader().get_reference_file(algo)
+        some_run_info = self.window.get_data_loader().get_file(algo)
         
         discrete_values: np.ndarray[float] = np.unique(all_x)
         mean: np.ndarray[float] = np.zeros(discrete_values.size)
