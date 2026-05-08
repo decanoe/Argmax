@@ -12,7 +12,7 @@ Sat::Clause::Clause(int a, int b, int c):
     state_b(b > 0),
     state_c(c > 0) {}
 bool Sat::Clause::evaluate(const std::vector<bool>& assignation) const {
-    return assignation[var_index_a] == state_a && assignation[var_index_b] == state_b && assignation[var_index_c] == state_c;
+    return assignation[var_index_a] == state_a || assignation[var_index_b] == state_b || assignation[var_index_c] == state_c;
 }
 
 Sat::Sat(const std::string& path) {
