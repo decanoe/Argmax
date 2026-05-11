@@ -76,7 +76,7 @@ bool TabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, float& s
 /* #endregion */
 
 /* #region ======================================= GreedyTabuSearch ======================================= */
-GreedyTabuSearch::GreedyTabuSearch(float tabu_size, float max_random_size_added, TabuPushOrder tabu_push_order, bool enable_aspiration): TabuSearch(tabu_size, max_random_size_added, enable_aspiration), tabu_push_order(tabu_push_order) {}
+GreedyTabuSearch::GreedyTabuSearch(float tabu_size, float max_random_size_added, TabuPushOrder tabu_push_order, bool enable_aspiration, GreedyTrajectory::NeighborhoodOrdering positive_ordering, GreedyTrajectory::NeighborhoodOrdering negative_ordering): TabuSearch(tabu_size, max_random_size_added, enable_aspiration), tabu_push_order(tabu_push_order), trajectory(positive_ordering, negative_ordering) {}
 GreedyTabuSearch::TabuPushOrder GreedyTabuSearch::push_order_from_string(const std::string& string) {
     if (string == "BestToWorst") return TabuPushOrder::BestToWorst;
     if (string == "BestToWorstClamped") return TabuPushOrder::BestToWorstClamped;
@@ -85,14 +85,14 @@ GreedyTabuSearch::TabuPushOrder GreedyTabuSearch::push_order_from_string(const s
     return TabuPushOrder::BestToWorstClamped;
 }
 
-void GreedyTabuSearch::tabu_push(const GreedyJumper::TrajectorySet& trajectory, unsigned int jump_size) {
+void GreedyTabuSearch::tabu_push(const GreedyTrajectory& trajectory, unsigned int jump_size) {
     std::vector<unsigned int> flipped = std::vector<unsigned int>();
     unsigned int count = jump_size;
     if (tabu_push_order == TabuPushOrder::BestToWorstClamped) count = std::min(count, (unsigned int)tabu_list.max_size());
-    for (std::pair<unsigned int, float> pair : trajectory) {
+    for (const BitFlip& bitflip : trajectory) {
         if (count == 0) break;
         count--;
-        flipped.push_back(pair.first);
+        flipped.push_back(bitflip.index);
     }
 
 
@@ -119,7 +119,7 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
 
     tabu_list.randomize_size();
     // create trajectory
-    GreedyJumper::TrajectorySet trajectory(GreedyJumper::cmp);
+    trajectory.clear();
     for (size_t i = 0; i < instance->nb_args(); i++)
     {
         if (!this->aspiration && this->tabu_list.contains(i)) continue;
@@ -134,18 +134,23 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
             aspiration_flip = i;
             aspiration_score = instance->score();
         }
-        if (!this->tabu_list.contains(i)) trajectory.insert({i, instance->score()});
+        if (!this->tabu_list.contains(i)) {
+            if (instance->score() > score)
+                trajectory.insert_positive_flip(BitFlip(i, instance->score()));
+            else
+                trajectory.insert_negative_flip(BitFlip(i, instance->score()));
+        }
         instance->revert_last_mutation();
     }
 
     // apply all mutations in trajectory
-    for (std::pair<unsigned int, float> pair : trajectory) instance->mutate_arg(pair.first);
+    for (const BitFlip& bitflip : trajectory) instance->mutate_arg(bitflip.index);
     
     // compare jumps of the trajectory
     unsigned int count = trajectory.size();
     unsigned int best_count = -1U;
     float best_score = 0;
-    for (auto pair = trajectory.rbegin(); pair != trajectory.rend(); pair++) {
+    for (auto bitflip = trajectory.rbegin(); bitflip != trajectory.rend(); ++bitflip) {
         if (budget.out_of_budget()) {
             output_iteration_ends_data(budget, improving_neighbor_count, score);
             return false;
@@ -157,7 +162,7 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
             best_count = count;
         }
         count--;
-        instance->mutate_arg(pair->first);
+        instance->mutate_arg((*bitflip).index);
     }
     if (best_count == -1U && aspiration_flip == -1U) {
         output_iteration_ends_data(budget, improving_neighbor_count, score);
@@ -176,10 +181,10 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
     // apply best jump found
     score = best_score;
     count = best_count;
-    for (std::pair<unsigned int, float> pair : trajectory) {
+    for (const BitFlip& bitflip : trajectory) {
         if (count == 0) break;
         count--;
-        instance->mutate_arg(pair.first);
+        instance->mutate_arg(bitflip.index);
     }
     tabu_push(trajectory, best_count);
     

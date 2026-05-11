@@ -16,7 +16,9 @@ std::shared_ptr<LocalSearch::LocalSearchAlgo> LocalSearch::_create_local_search_
     if (parameters.get_string("algorithm") == "greedy_jumper") {
         return std::make_shared<GreedyJumper>(
             GreedyJumper::Selection_Criterion::from_file_data(parameters),
-            GreedyJumper::Neighborhood_Scope::from_file_data(parameters)
+            GreedyJumper::Neighborhood_Scope::from_file_data(parameters),
+            GreedyTrajectory::ordering_from_string(parameters.get_string("positive_ordering", "Desc")),
+            GreedyTrajectory::ordering_from_string(parameters.get_string("negative_ordering", "Desc"))
         );
     }
     if (parameters.get_string("algorithm") == "tabu_search") {
@@ -31,7 +33,9 @@ std::shared_ptr<LocalSearch::LocalSearchAlgo> LocalSearch::_create_local_search_
             parameters.get_float("tabu_size"),
             parameters.get_float("tabu_max_random_size_added"),
             GreedyTabuSearch::push_order_from_string(parameters.get_string("tabu_push_order")),
-            parameters.get_bool("enable_aspiration")
+            parameters.get_bool("enable_aspiration"),
+            GreedyTrajectory::ordering_from_string(parameters.get_string("positive_ordering", "Desc")),
+            GreedyTrajectory::ordering_from_string(parameters.get_string("negative_ordering", "Desc"))
         );
     }
     if (parameters.get_string("algorithm") == "one_lambda_search") {
@@ -43,7 +47,9 @@ std::shared_ptr<LocalSearch::LocalSearchAlgo> LocalSearch::_create_local_search_
     if (parameters.get_string("algorithm") == "greedy_one_lambda_search") {
         return std::make_shared<GreedyOneLambdaSearch>(
             parameters.get_float("lambda"),
-            parameters.get_bool("enable_aspiration")
+            parameters.get_bool("enable_aspiration"),
+            GreedyTrajectory::ordering_from_string(parameters.get_string("positive_ordering", "Desc")),
+            GreedyTrajectory::ordering_from_string(parameters.get_string("negative_ordering", "Desc"))
         );
     }
 

@@ -47,11 +47,14 @@ namespace LocalSearch
         /// @brief creates a GreedyTabuSearch algo structure
         /// @param tabu_size number of flips rememberd in the tabu list in proportion with the dimension
         /// @param max_random_size_added maximum number added to the base tabu_size each iteration in proportion with the dimension
-        GreedyTabuSearch(float tabu_size, float max_random_size_added, TabuPushOrder tabu_push_order, bool enable_aspiration);
+        /// @param positive_ordering the ordering of improving bits in the trajectory
+        /// @param negative_ordering the ordering of degrading bits in the trajectory
+        GreedyTabuSearch(float tabu_size, float max_random_size_added, TabuPushOrder tabu_push_order, bool enable_aspiration, GreedyTrajectory::NeighborhoodOrdering positive_ordering, GreedyTrajectory::NeighborhoodOrdering negative_ordering);
     protected:
         TabuPushOrder tabu_push_order;
+        GreedyTrajectory trajectory;
 
-        void tabu_push(const GreedyJumper::TrajectorySet& trajectory, unsigned int jump_size);
+        void tabu_push(const GreedyTrajectory& trajectory, unsigned int jump_size);
         bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, float aspiration_score) override;
     };
 }

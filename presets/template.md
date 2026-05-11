@@ -13,6 +13,9 @@ bool    save_run = true
 # whether to override any runs already saved or not
 bool    override = false
 
+# the directory in which to save rundata
+str     save_dir = local_search/b1_000_000
+
 </infos>
 
 
@@ -63,6 +66,9 @@ str     selection_criterion = first
 str     neighborhood_scope = all
 # maximum number of flips to consider in case of fixed neighborhood_scope relative to the number of bits (default .5 is the same as half)
 float   max_flip_factor = .5
+# Desc / Asc / Rand
+str     positive_ordering = Desc
+str     negative_ordering = Desc
 # <!-- #endregion -->
 
 # <!-- #region ==================== tabu_search & greedy_tabu_search parameters ===================================== -->
@@ -75,11 +81,17 @@ bool     enable_aspiration = false
 # for greedy_tabu_search only, the order by which to push the flips in the tabu list (clamped means we stop adding flips if we already repaced the whole list in this iteration)
 # BestToWorst / BestToWorstClamped / WorstToBest
 str     tabu_push_order = BestToWorstClamped
+# Desc / Asc / Rand
+str     positive_ordering = Desc
+str     negative_ordering = Desc
 # <!-- #endregion -->
 
 # <!-- #region ==================== one_lambda_search parameters =============================== -->
 # number of flips to consider in proportion to the dimension
 float     lambda = .25
+# Desc / Asc / Rand
+str     positive_ordering = Desc
+str     negative_ordering = Desc
 # <!-- #endregion -->
 
 </algo>

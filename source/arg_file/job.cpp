@@ -27,8 +27,8 @@ std::string Job::get_output_file_path() const {
     const Parameters& instance = get_instance_parameters();
 
     if (parameters->get_bool("save_run", false)) {
-        if (instance.contains_string("save_path") && algo.contains_string("label"))
-            return replace(replace("./rundata/" + instance.get_string("save_path"), "<label>", algo.get_string("label")), "<timestamp>", timestamp());
+        if (parameters->contains_string("save_dir") && instance.contains_string("save_path") && algo.contains_string("label"))
+            return replace(replace("./rundata/" + parameters->get_string("save_dir") + "/" + instance.get_string("save_path"), "<label>", algo.get_string("label")), "<timestamp>", timestamp());
     }
     return "";
 }
@@ -54,7 +54,8 @@ std::pair<std::string, std::ostringstream*> Job::get_output_pair(bool debug) con
     return {output_file_path, new std::ostringstream()};
 }
 
-std::string Job::execute_job(bool debug) const {
+std::string Job::execute_job(bool debug) {
+    t_start = std::chrono::high_resolution_clock::now();
     std::pair<std::string, std::ostringstream*> output_pair = get_output_pair(debug);
     if (output_pair.first != "" && output_pair.second == nullptr) return output_pair.first; // execution data already saved
 
@@ -96,7 +97,11 @@ std::string Job::execute_job(bool debug) const {
         delete output_pair.second;
 
         if (debug) std::cout << "execution data saved in " << output_pair.first << std::endl;
-        return output_pair.first;
     }
-    return "";
+    t_end = std::chrono::high_resolution_clock::now();
+    return output_pair.first;
+}
+
+double Job::get_execution_duration() const {
+    return std::chrono::duration<double>(t_end - t_start).count();
 }

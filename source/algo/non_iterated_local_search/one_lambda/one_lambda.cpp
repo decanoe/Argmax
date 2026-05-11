@@ -1,5 +1,4 @@
 #include "one_lambda.h"
-#include "../../greedy_jumper/greedy_jumper.h"
 
 using namespace LocalSearch;
 
@@ -51,7 +50,7 @@ bool OneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instance, flo
 /* #endregion */
 
 /* #region ======================================= GreedyOneLambdaSearch ======================================= */
-GreedyOneLambdaSearch::GreedyOneLambdaSearch(float lambda, bool enable_aspiration): OneLambdaSearch(lambda, enable_aspiration) {}
+GreedyOneLambdaSearch::GreedyOneLambdaSearch(float lambda, bool enable_aspiration, GreedyTrajectory::NeighborhoodOrdering positive_ordering, GreedyTrajectory::NeighborhoodOrdering negative_ordering): OneLambdaSearch(lambda, enable_aspiration), trajectory(positive_ordering, negative_ordering) {}
 
 bool GreedyOneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, float aspiration_score) {
     unsigned int old_improving_neighbor_count = improving_neighbor_count;
@@ -59,7 +58,7 @@ bool GreedyOneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instanc
     unsigned int aspiration_flip = -1U;
 
     // create trajectory
-    GreedyJumper::TrajectorySet trajectory(GreedyJumper::cmp);
+    trajectory.clear();
     std::set<unsigned int> visited_indices = std::set<unsigned int>();
     for (size_t i = 0; i < instance->nb_args() * lambda || (this->aspiration && i < instance->nb_args()); i++)
     {
@@ -76,18 +75,23 @@ bool GreedyOneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instanc
             aspiration_flip = index;
             aspiration_score = instance->score();
         }
-        if (i < instance->nb_args() * lambda) trajectory.insert({index, instance->score()});
+        if (i < instance->nb_args() * lambda) {
+            if (instance->score() > score)
+                trajectory.insert_positive_flip(BitFlip(i, instance->score()));
+            else
+                trajectory.insert_negative_flip(BitFlip(i, instance->score()));
+        }
         instance->revert_last_mutation();
     }
 
     // apply all mutations in trajectory
-    for (std::pair<unsigned int, float> pair : trajectory) instance->mutate_arg(pair.first);
+    for (const BitFlip& bitflip : trajectory) instance->mutate_arg(bitflip.index);
     
     // compare jumps of the trajectory
     unsigned int count = trajectory.size();
     unsigned int best_count = -1U;
     float best_score = 0;
-    for (auto pair = trajectory.rbegin(); pair != trajectory.rend(); pair++) {
+    for (auto bitflip = trajectory.rbegin(); bitflip != trajectory.rend(); ++bitflip) {
         if (budget.out_of_budget()) {
             output_iteration_ends_data(budget, improving_neighbor_count, score);
             return false;
@@ -99,7 +103,7 @@ bool GreedyOneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instanc
             best_count = count;
         }
         count--;
-        instance->mutate_arg(pair->first);
+        instance->mutate_arg((*bitflip).index);
     }
     if (best_count == -1U && aspiration_flip == -1U) {
         output_iteration_ends_data(budget, improving_neighbor_count, score);
@@ -117,10 +121,10 @@ bool GreedyOneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instanc
     // apply best jump found
     score = best_score;
     count = best_count;
-    for (std::pair<unsigned int, float> pair : trajectory) {
+    for (const BitFlip& bitflip : trajectory) {
         if (count == 0) break;
         count--;
-        instance->mutate_arg(pair.first);
+        instance->mutate_arg(bitflip.index);
     }
     
     improving_neighbor_count = count_better_neighbors(instance);

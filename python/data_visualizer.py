@@ -14,9 +14,9 @@ plt.rcParams.update({
 })
 
 data_loaders = {
-    "NK": NKDataLoader(dir_path+"/../rundata"),
-    "Sat": SatDataLoader(dir_path+"/../rundata"),
-    "Qubo": QuboDataLoader(dir_path+"/../rundata"),
+    "NK": NKDataLoader(dir_path+"/../rundata/local_search/b100_000"),
+    # "Sat": SatDataLoader(dir_path+"/../rundata/local_search"),
+    # "Qubo": QuboDataLoader(dir_path+"/../rundata/local_search"),
 }
 
 # generate_all_tables(data_loaders, dir_path + "/output")

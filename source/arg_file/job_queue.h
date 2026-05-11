@@ -11,6 +11,7 @@ private:
     std::mutex jobs_mutex;
     
     std::vector<std::string> running_files;
+    double runned_durations_sum;
     unsigned int runned_file_count;
     std::mutex running_files_mutex;
     std::condition_variable condition;

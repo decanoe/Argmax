@@ -2,12 +2,14 @@
 #include <memory>
 #include "run_parameters.h"
 #include "../problem/nk.h"
+#include <chrono>
 
 class Job
 {
 protected:
     RunParameters* parameters;
     unsigned int algo_index, instance_index;
+    std::chrono::_V2::system_clock::time_point t_start, t_end;
 public:
     Job(RunParameters* parameters, unsigned int algo_index, unsigned int instance_index);
     Job() = default;
@@ -26,5 +28,7 @@ public:
     /// @brief executs the job
     /// @param debug whether the algo should debug informations on the cout stream
     /// @return the path to the saved data (or "" if no data was saved)
-    std::string execute_job(bool debug = true) const;
+    std::string execute_job(bool debug = true);
+
+    double get_execution_duration() const;
 };

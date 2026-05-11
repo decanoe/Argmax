@@ -660,7 +660,7 @@ class NKDataLoader(DataLoader):
             self.file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo, info)
     def __init__(self, rundata_path: str):
         self.file_infos = {}
-        super().__init__(rundata_path+"/local_search/NK")
+        super().__init__(rundata_path+"/NK")
 
         self.N_keys = sorted(self.file_infos.keys())
         self.K_keys = sorted(self.file_infos[self.N_keys[0]].keys())
@@ -686,7 +686,7 @@ class QuboDataLoader(DataLoader):
             self.file_infos.setdefault(info.N, {}).setdefault(info.algo, info)
     def __init__(self, rundata_path: str):
         self.file_infos = {}
-        super().__init__(rundata_path+"/local_search/Qubo")
+        super().__init__(rundata_path+"/Qubo")
 
         self.N_keys = sorted(self.file_infos.keys())
         self.Algo_keys = sorted(self.file_infos[self.N_keys[0]].keys())
@@ -711,7 +711,7 @@ class SatDataLoader(DataLoader):
             self.file_infos.setdefault(info.N, {}).setdefault(info.type_name, {}).setdefault(info.algo, info)
     def __init__(self, rundata_path: str):
         self.file_infos = {}
-        super().__init__(rundata_path+"/local_search/Sat")
+        super().__init__(rundata_path+"/Sat")
 
         self.N_keys = sorted(self.file_infos.keys())
         self.type_keys = sorted(self.file_infos[self.N_keys[0]].keys())
