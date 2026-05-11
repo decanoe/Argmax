@@ -718,7 +718,7 @@ class SatDataLoader(DataLoader):
         self.Algo_keys = sorted(self.file_infos[self.N_keys[0]][self.type_keys[0]].keys())
         
         self.n = self.N_keys[0]
-        self.type_name = self.type_keys[0]
+        self.type_name = self.type_keys[1]
     
     def set_parameters(self, **kwargs):
         if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
