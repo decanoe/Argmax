@@ -3,6 +3,7 @@
 #include "arg_file/run_parameters.h"
 #include "arg_file/job_queue.h"
 #include "problem/nk.h"
+#include "algo/greedy_jumper/greedy_trajectory.h"
 
 void path_message() {
     std::cerr << "\033[1;31mIf you want to run an algorithm you need to put a path to a file with all the informations\n\033[0m";

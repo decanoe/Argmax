@@ -6,6 +6,10 @@ using namespace LocalSearch;
 
 BitFlip::BitFlip(unsigned int index, float score): index(index), score(score) {}
 BitFlip::BitFlip(): BitFlip(0, 0) {}
+std::ostream& BitFlip::cout(std::ostream& c) const {
+    return c << "(" << index << ", " << score << ")";
+}
+std::ostream& LocalSearch::operator<<(std::ostream& c, const BitFlip& b) { return b.cout(c); }
 
 class AscendantHalfTrajectory: public GreedyHalfTrajectory
 {
@@ -37,7 +41,20 @@ public:
         this->bit_flips_set.clear();
         GreedyHalfTrajectory::clear();
     }
-    unsigned int size() const override { return bit_flips_set.size(); }
+    unsigned int size() const override {
+        if (finalized) return GreedyHalfTrajectory::size();
+        return bit_flips_set.size();
+    }
+
+    std::ostream& cout(std::ostream& c) const override {
+        if (finalized) return GreedyHalfTrajectory::cout(c);
+
+        if (bit_flips_set.size() != 0) {
+            for (const BitFlip& bitflip : bit_flips_set) c << bitflip << ", ";
+            return c << "\b\b";
+        }
+        return c;
+    }
 };
 class DescendantHalfTrajectory: public GreedyHalfTrajectory
 {
@@ -69,7 +86,20 @@ public:
         this->bit_flips_set.clear();
         GreedyHalfTrajectory::clear();
     }
-    unsigned int size() const override { return bit_flips_set.size(); }
+    unsigned int size() const override {
+        if (finalized) return GreedyHalfTrajectory::size();
+        return bit_flips_set.size();
+    }
+
+    std::ostream& cout(std::ostream& c) const override {
+        if (finalized) return GreedyHalfTrajectory::cout(c);
+
+        if (bit_flips_set.size() != 0) {
+            for (const BitFlip& bitflip : bit_flips_set) c << bitflip << ", ";
+            return c << "\b\b";
+        }
+        return c;
+    }
 };
 class RandomHalfTrajectory: public GreedyHalfTrajectory
 {
@@ -127,6 +157,14 @@ void GreedyHalfTrajectory::clear() {
 }
 unsigned int GreedyHalfTrajectory::size() const { return bit_flips.size(); }
 GreedyHalfTrajectory::GreedyHalfTrajectory(): bit_flips(), finalized(false) {}
+std::ostream& GreedyHalfTrajectory::cout(std::ostream& c) const {
+    if (bit_flips.size() != 0) {
+        for (const BitFlip& bitflip : bit_flips) c << bitflip << ", ";
+        return c << "\b\b";
+    }
+    return c;
+}
+std::ostream& LocalSearch::operator<<(std::ostream& c, const GreedyHalfTrajectory& t) { return t.cout(c); }
 
 
 GreedyTrajectory::GreedyTrajectory(NeighborhoodOrdering positive_ordering, NeighborhoodOrdering negative_ordering) {
@@ -195,14 +233,19 @@ ConcatIterator<GreedyHalfTrajectory::Iterator> GreedyTrajectory::end() const {
 }
 ConcatIterator<GreedyHalfTrajectory::ReverseIterator> GreedyTrajectory::rbegin() const {
     return ConcatIterator<GreedyHalfTrajectory::ReverseIterator>(
-        positive_bits->rbegin(), positive_bits->rend(),
-        negative_bits->rbegin()
+        negative_bits->rbegin(), negative_bits->rend(),
+        positive_bits->rbegin()
     );
 }
 ConcatIterator<GreedyHalfTrajectory::ReverseIterator> GreedyTrajectory::rend() const {
     return ConcatIterator<GreedyHalfTrajectory::ReverseIterator>(
-        positive_bits->rend(), positive_bits->rend(),
-        negative_bits->rend(),
+        negative_bits->rend(), negative_bits->rend(),
+        positive_bits->rend(),
         true
     );
 }
+
+std::ostream& GreedyTrajectory::cout(std::ostream& c) const {
+    return c << "{\033[32m" << *positive_bits <<  "\033[0m|\033[31m" << *negative_bits << "\033[0m}";
+}
+std::ostream& LocalSearch::operator<<(std::ostream& c, const GreedyTrajectory& t) { return t.cout(c); }

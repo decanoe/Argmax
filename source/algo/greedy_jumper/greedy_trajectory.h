@@ -16,7 +16,10 @@ namespace LocalSearch {
 
         BitFlip(unsigned int index, float score);
         BitFlip();
+
+        std::ostream& cout(std::ostream&) const;
     };
+    std::ostream& operator<<(std::ostream&, const BitFlip&);
     
     class GreedyHalfTrajectory {
     protected:
@@ -40,7 +43,11 @@ namespace LocalSearch {
         Iterator end() const;
         ReverseIterator rbegin() const;
         ReverseIterator rend() const;
+
+        virtual std::ostream& cout(std::ostream&) const;
     };
+    std::ostream& operator<<(std::ostream&, const GreedyHalfTrajectory&);
+
     class GreedyTrajectory {
     public:
         enum class NeighborhoodOrdering { Desc, Asc, Rand };
@@ -62,9 +69,12 @@ namespace LocalSearch {
         ConcatIterator<GreedyHalfTrajectory::Iterator> end() const;
         ConcatIterator<GreedyHalfTrajectory::ReverseIterator> rbegin() const;
         ConcatIterator<GreedyHalfTrajectory::ReverseIterator> rend() const;
+
+        std::ostream& cout(std::ostream&) const;
     protected:
         std::shared_ptr<GreedyHalfTrajectory> positive_bits, negative_bits;
 
         static std::shared_ptr<GreedyHalfTrajectory> constructGreedyHalfTrajectory(NeighborhoodOrdering ordering);
     };
+    std::ostream& operator<<(std::ostream&, const GreedyTrajectory&);
 }
