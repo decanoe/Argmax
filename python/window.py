@@ -16,8 +16,8 @@ class Window:
     K: ButtonCycle = None
     SAT_TYPE: ButtonCycle = None
     PROBLEM: ButtonCycle = None
-    SELECTED_ALGOS_GJ: ButtonCheck = None
-    SELECTED_ALGOS_HC: ButtonCheck = None
+    SELECTED_ALGOS_1: ButtonCheck = None
+    SELECTED_ALGOS_2: ButtonCheck = None
     AXIS1: ButtonCycle = None
     AXIS2: ButtonCycle = None
     AXIS1_WHEN: ButtonCycle = None
@@ -42,8 +42,8 @@ class Window:
         
         self.place_buttons()
         self.set_default_selected_algos()
-        self.SELECTED_ALGOS_HC.add_key_hold_shortcuts(self.key_held)
-        self.SELECTED_ALGOS_GJ.add_key_hold_shortcuts(self.key_held)
+        self.SELECTED_ALGOS_1.add_key_hold_shortcuts(self.key_held)
+        self.SELECTED_ALGOS_2.add_key_hold_shortcuts(self.key_held)
         
         self.update()
         plt.show()
@@ -53,7 +53,7 @@ class Window:
         self.N = ButtonCycle(self.figure.add_axes([0.045, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
         K_keys = sorted(self.data_loaders["NK"].K_keys)
         self.K = ButtonCycle(self.figure.add_axes([0.155, 0.2, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, self.update)
-        Sat_keys = sorted(self.data_loaders["Sat"].type_keys)
+        Sat_keys = sorted(self.data_loaders["Sat"].type_keys) if "Sat" in self.data_loaders else ["no sat"]
         self.SAT_TYPE = ButtonCycle(self.figure.add_axes([0.265, 0.2, 0.1, 0.05]), Sat_keys, callback=self.update)
         
         self.N.set_to(-1)
@@ -73,18 +73,19 @@ class Window:
         self.CORRELATION_PLOT = ButtonCycle(self.figure.add_axes([0.51, 0.02, 0.1, 0.05]), ["mean+std", "regression"], callback=self.update)
         self.REGRESSION = ButtonCycle(self.figure.add_axes([0.62, 0.02, 0.1, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=self.update)
         
-        sorted_algos = sorted([(self.data_loaders["NK"].get_file(algo).label, algo) for algo in self.data_loaders["NK"].Algo_keys], key=lambda t: t[0])
-        temp_keys, temp_values = list(zip(*[algo for algo in sorted_algos if algo[0].startswith("GJ")]))
-        self.SELECTED_ALGOS_GJ = ButtonCheck(self.figure.add_axes([0.73, 0.02, 0.12, 0.96]), temp_keys, temp_values, callback=self.update)
-        
-        temp_keys, temp_values = list(zip(*[algo for algo in sorted_algos if not(algo[0].startswith("GJ"))]))
-        self.SELECTED_ALGOS_HC = ButtonCheck(self.figure.add_axes([0.88, 0.02, 0.12, 0.96]), temp_keys, temp_values, callback=self.update)
+        sorted_algos = sorted([(self.data_loaders["NK"].get_file(algo).algo_infos.get_plot_label(), algo) for algo in self.data_loaders["NK"].Algo_keys], key=lambda t: t[0])
+        temp_keys, temp_values = list(zip(*sorted_algos))
+        half_point = len(sorted_algos) // 2
+        self.SELECTED_ALGOS_1 = ButtonCheck(self.figure.add_axes([0.73, 0.02, 0.12, 0.96]), temp_keys[:half_point], temp_values[:half_point], callback=self.update)
+        self.SELECTED_ALGOS_2 = ButtonCheck(self.figure.add_axes([0.88, 0.02, 0.12, 0.96]), temp_keys[half_point:], temp_values[half_point:], callback=self.update)
     def set_default_selected_algos(self):
-        for algo in self.data_loaders["NK"].Algo_keys:
-            if (algo.startswith("hc_") and "cycle" not in algo and "first" not in algo):
-                self.SELECTED_ALGOS_HC.check(algo)
-            elif (algo.startswith("greedy_") and "fixed" not in algo and "tabu" not in algo and "lambda" not in algo):
-                self.SELECTED_ALGOS_GJ.check(algo)
+        for button in [self.SELECTED_ALGOS_1, self.SELECTED_ALGOS_2]:
+            for i in range(len(button.values)):
+                algo = button.values[i]
+                if (algo.startswith("hc_") and "cycle" not in algo and "first" not in algo):
+                    button.check_index(i)
+                elif (algo.startswith("greedy_") and "fixed" not in algo and "tabu" not in algo and "lambda" not in algo and '_Asc' not in algo and '_Rand' not in algo):
+                    button.check_index(i)
 
     def clear_plot_axes(self):
         # Remove only axes that are NOT buttons
@@ -128,7 +129,7 @@ class Window:
         
         self.REGRESSION.set_visible(self.PLOT_TYPE.get_value() == "correlation" and self.CORRELATION_PLOT.get_value() == "regression" and not(self.is_full_screen()))
         
-        for b in [self.PLOT_TYPE, self.PROBLEM, self.LEGEND_POSITION, self.SELECTED_ALGOS_GJ, self.SELECTED_ALGOS_HC, self.N]:
+        for b in [self.PLOT_TYPE, self.PROBLEM, self.LEGEND_POSITION, self.SELECTED_ALGOS_1, self.SELECTED_ALGOS_2, self.N]:
             b.set_visible(not(self.is_full_screen()))
         if self.is_full_screen():
             self.figure.subplots_adjust(left=0.075, right=0.98, bottom=0.1, top=0.95)
@@ -156,7 +157,7 @@ class Window:
     def get_problem(self) -> str:
         return self.PROBLEM.get_value()
     def is_algo_selected(self, algo: str) -> bool:
-        return self.SELECTED_ALGOS_GJ.is_checked(algo) or self.SELECTED_ALGOS_HC.is_checked(algo)
+        return self.SELECTED_ALGOS_1.is_checked(algo) or self.SELECTED_ALGOS_2.is_checked(algo)
     def get_selected_algos(self) -> list[str]:
         return [algo for algo in self.data_loaders["NK"].Algo_keys if self.is_algo_selected(algo)]
     def get_axis1(self) -> str:

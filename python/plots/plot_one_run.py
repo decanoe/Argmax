@@ -40,5 +40,5 @@ class PlotOneRun(PlotAnnotedAxis):
             run_info = data_loader.get_file(algo)
             data = run_info.get_one_run_scores()
             
-            line, = self.axis.plot(data.budget, data.fitness, label=run_info.label, color = run_info.color, linestyle = run_info.linestyle)
-            self.add_line(line, run_info.label)
+            line, = self.axis.plot(data.budget, data.fitness, label=run_info.algo_infos.get_plot_label(), color = run_info.algo_infos.get_plot_color(), linestyle = run_info.algo_infos.get_plot_style())
+            self.add_line(line, run_info.algo_infos.get_plot_label())

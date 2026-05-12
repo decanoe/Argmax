@@ -33,7 +33,7 @@ class PlotCorrelationHistogram(PlotCorrelation):
     def do_plot_x_equal_y_reference(self):
         return False
     def plot_single(self, algo: str, all_x: np.ndarray[float], all_y: np.ndarray[float]):
-        some_run_info = self.window.get_data_loader().get_reference_file(algo)
+        run_info = self.window.get_data_loader().get_file(algo)
         
         discrete_values: np.ndarray[float] = np.unique(all_x)
         counts: np.ndarray[float] = np.zeros(discrete_values.size)
@@ -44,5 +44,5 @@ class PlotCorrelationHistogram(PlotCorrelation):
         
         counts /= counts.sum()
         
-        line, = self.axis.plot(discrete_values, counts, color = some_run_info.color, linestyle = some_run_info.linestyle, label=some_run_info.label + " frequency")
-        self.add_line(line, some_run_info.label + " frequency")
+        line, = self.axis.plot(discrete_values, counts, label=run_info.algo_infos.get_plot_label() + " frequency", color = run_info.algo_infos.get_plot_color(), linestyle = run_info.algo_infos.get_plot_style())
+        self.add_line(line, run_info.algo_infos.get_plot_label() + " frequency")

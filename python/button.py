@@ -164,6 +164,8 @@ class ButtonCheck:
         else:
             self.axes.set_position([100, 100, .1, .1])
     
+    def check_index(self, index: int, state: bool = True):
+        self.button.set_active(index, state)
     def check(self, key: str, state: bool = True):
         if (key in self.values):
             self.button.set_active(self.values.index(key), state)

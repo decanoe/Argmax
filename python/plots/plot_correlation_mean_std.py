@@ -18,7 +18,7 @@ class PlotCorrelationMeanStd(PlotCorrelation):
             return # can't plot with non discrete values for the x axis
         super().plot()
     def plot_single(self, algo: str, all_x: np.ndarray[float], all_y: np.ndarray[float]):
-        some_run_info = self.window.get_data_loader().get_file(algo)
+        run_info = self.window.get_data_loader().get_file(algo)
         
         discrete_values: np.ndarray[float] = np.unique(all_x)
         mean: np.ndarray[float] = np.zeros(discrete_values.size)
@@ -30,5 +30,5 @@ class PlotCorrelationMeanStd(PlotCorrelation):
             std[i] = all_y[mask].std()
         
         self.axis.fill_between(discrete_values, mean - std, mean + std, alpha=.25, linewidth=0, color = some_run_info.color)
-        line, = self.axis.plot(discrete_values, mean, color = some_run_info.color, linestyle = some_run_info.linestyle, label=some_run_info.label + " mean")
-        self.add_line(line, some_run_info.label + " mean")
+        line, = self.axis.plot(discrete_values, mean, label=run_info.algo_infos.get_plot_label() + " mean", color = run_info.algo_infos.get_plot_color(), linestyle = run_info.algo_infos.get_plot_style())
+        self.add_line(line, run_info.algo_infos.get_plot_label() + " mean")
