@@ -60,11 +60,10 @@ class RunFile:
         print("Normalize not implemented")
         exit(1)
     
-    def load_anytime_scores(self):
-        datas: list[pd.DataFrame] = self.get_similar_data()
-        
-        avg_scores: list[list[float]] = []
-        avg_budgets: list[list[float]] = []
+    def load_anytime_scores(self, datas: list[pd.DataFrame] = None):
+        if (self._anytime_scores is not None): return
+        if (datas is None): datas = self.get_similar_data()
+        self.load_avg_values(datas)
         
         budget_points: np.ndarray[int] = np.array([])
         fitness_points: np.ndarray[float] = np.array([])
@@ -87,20 +86,15 @@ class RunFile:
                 fitness_points = values
             else:
                 fitness_points = np.vstack((fitness_points, values))
-            
-            ends = data[(data.size_of_the_jump == 0) * (data.in_run_budget != 1) * (data.budget != data.budget.max())]
-            avg_budgets.append([b for b in ends.in_run_budget])
-            avg_scores.append([f for f in ends.fitness_after_jump])
         
-        avg_max_run_count = max(min([len(l) for l in avg_budgets]), 1)
-        self._avg_run_budget = 0
-        self._avg_run_score = 0
-        for i in range(len(avg_scores)):
-            self._avg_run_budget += sum(avg_budgets[i][:avg_max_run_count])
-            self._avg_run_score += sum(avg_scores[i][:avg_max_run_count])
-        self._avg_run_budget /= len(avg_scores) * avg_max_run_count
-        self._avg_run_score /= len(avg_scores) * avg_max_run_count
-        self._anytime_scores = pd.DataFrame({"budget": budget_points, "fitness": fitness_points.mean(axis=0)})
+        fitness_points = fitness_points.mean(axis = 0)
+        mask = np.ones(len(fitness_points), dtype=bool)
+        mask[1:-1] = ~(
+            (fitness_points[1:-1] == fitness_points[:-2]) &
+            (fitness_points[1:-1] == fitness_points[2:])
+        )
+        
+        self._anytime_scores = pd.DataFrame({"budget": budget_points[mask], "fitness": fitness_points[mask]})
     def get_anytime_scores(self, budget: int = 1_000_000) -> pd.DataFrame:
         if (self._anytime_scores is None):
             self.load_anytime_scores()
@@ -133,8 +127,9 @@ class RunFile:
         ]
 
         return runs
-    def load_one_run_scores(self):
-        datas: list[pd.DataFrame] = self.get_similar_data()
+    def load_one_run_scores(self, datas: list[pd.DataFrame] = None):
+        if (self._one_run_scores is not None): return
+        if (datas is None): datas = self.get_similar_data()
         
         budget_points: np.ndarray[int] = np.array([])
         fitness_points: np.ndarray[float] = np.array([])
@@ -179,13 +174,33 @@ class RunFile:
             self.load_jumps(key)
         return self._jumps[key]
 
+    def load_avg_values(self, datas: list[pd.DataFrame] = None):
+        if (self._avg_run_score is not None and self._avg_run_budget is not None): return
+        if (datas is None): datas = self.get_similar_data()
+        
+        avg_scores: list[list[float]] = []
+        avg_budgets: list[list[float]] = []
+        
+        for data in datas:
+            ends = data[(data.size_of_the_jump == 0) * (data.in_run_budget != 1) * (data.budget != data.budget.max())]
+            avg_budgets.append([b for b in ends.in_run_budget])
+            avg_scores.append([f for f in ends.fitness_after_jump])
+        
+        avg_max_run_count = max(min([len(l) for l in avg_budgets]), 1)
+        self._avg_run_budget = 0
+        self._avg_run_score = 0
+        for i in range(len(avg_scores)):
+            self._avg_run_budget += sum(avg_budgets[i][:avg_max_run_count])
+            self._avg_run_score += sum(avg_scores[i][:avg_max_run_count])
+        self._avg_run_budget /= len(avg_scores) * avg_max_run_count
+        self._avg_run_score /= len(avg_scores) * avg_max_run_count
     def get_avg_run_budget(self) -> float:
         if (self._avg_run_budget is None):
-            self.load_anytime_scores()
+            self.load_avg_values()
         return self._avg_run_budget
     def get_avg_run_score(self) -> float:
         if (self._avg_run_score is None):
-            self.load_anytime_scores()
+            self.load_avg_values()
         return self._avg_run_score
 
     def __repr__(self)-> str:

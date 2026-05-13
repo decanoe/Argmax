@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from button import ButtonCycle, KeyHoldEvent, ButtonCheck
+from button import ButtonCycle, KeyHoldEvent, ButtonCheckPartial, TextField
 from data_loader import DataLoader
 
 from plots.plot_axis import PlotAxis
@@ -16,8 +16,9 @@ class Window:
     K: ButtonCycle = None
     SAT_TYPE: ButtonCycle = None
     PROBLEM: ButtonCycle = None
-    SELECTED_ALGOS_1: ButtonCheck = None
-    SELECTED_ALGOS_2: ButtonCheck = None
+    SELECTED_ALGOS_1: ButtonCheckPartial = None
+    SELECTED_ALGOS_2: ButtonCheckPartial = None
+    FILTER: TextField
     AXIS1: ButtonCycle = None
     AXIS2: ButtonCycle = None
     AXIS1_WHEN: ButtonCycle = None
@@ -76,8 +77,14 @@ class Window:
         sorted_algos = sorted([(self.data_loaders["NK"].get_file(algo).algo_infos.get_plot_label(), algo) for algo in self.data_loaders["NK"].Algo_keys], key=lambda t: t[0])
         temp_keys, temp_values = list(zip(*sorted_algos))
         half_point = len(sorted_algos) // 2
-        self.SELECTED_ALGOS_1 = ButtonCheck(self.figure.add_axes([0.73, 0.02, 0.12, 0.96]), temp_keys[:half_point], temp_values[:half_point], callback=self.update)
-        self.SELECTED_ALGOS_2 = ButtonCheck(self.figure.add_axes([0.88, 0.02, 0.12, 0.96]), temp_keys[half_point:], temp_values[half_point:], callback=self.update)
+        self.SELECTED_ALGOS_1 = ButtonCheckPartial(self.figure.add_axes([0.73, 0.02, 0.12, 0.96]), temp_keys[:half_point], temp_values[:half_point], callback=self.update)
+        self.SELECTED_ALGOS_2 = ButtonCheckPartial(self.figure.add_axes([0.88, 0.02, 0.12, 0.96]), temp_keys[half_point:], temp_values[half_point:], callback=self.update)
+        
+        def on_filter():
+            filters: list[str] = self.FILTER.get_text().split()
+            self.SELECTED_ALGOS_1.filter(filters)
+            self.SELECTED_ALGOS_2.filter(filters)
+        self.FILTER = TextField(self.figure.add_axes([0.045, 0.02, 0.32, 0.05]), "a", on_filter)
     def set_default_selected_algos(self):
         for button in [self.SELECTED_ALGOS_1, self.SELECTED_ALGOS_2]:
             for i in range(len(button.values)):
@@ -129,7 +136,7 @@ class Window:
         
         self.REGRESSION.set_visible(self.PLOT_TYPE.get_value() == "correlation" and self.CORRELATION_PLOT.get_value() == "regression" and not(self.is_full_screen()))
         
-        for b in [self.PLOT_TYPE, self.PROBLEM, self.LEGEND_POSITION, self.SELECTED_ALGOS_1, self.SELECTED_ALGOS_2, self.N]:
+        for b in [self.PLOT_TYPE, self.PROBLEM, self.LEGEND_POSITION, self.SELECTED_ALGOS_1, self.SELECTED_ALGOS_2, self.FILTER, self.N]:
             b.set_visible(not(self.is_full_screen()))
         if self.is_full_screen():
             self.figure.subplots_adjust(left=0.075, right=0.98, bottom=0.1, top=0.95)
@@ -139,7 +146,7 @@ class Window:
             self.set_font_size(10)
     
     def on_key_press(self, key: str):
-        if (key == "' '"):
+        if (key == "' '" and self.key_held.is_key_held('shift')):
             self.FULL_SCREEN = not(self.is_full_screen())
             self.soft_update()
             return

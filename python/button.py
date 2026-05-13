@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Bbox
-from matplotlib.widgets import Button, CheckButtons
+from matplotlib.widgets import Button, CheckButtons, TextBox
 from matplotlib.backend_bases import MouseButton
 
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
@@ -111,13 +111,14 @@ class ButtonCycle:
     def set_to(self, index: int):
         self.index = index % len(self.labels)
         self.button.label.set_text(self.labels[self.index])
-    
+
 class ButtonCheck:
     axes: plt.Axes
     button: CheckButtons
     position: Bbox
     labels: list[str]
     values: list[str]
+    states: list[bool]
     key_hold: KeyHoldEvent
     last_clicked_label: str
     
@@ -131,22 +132,26 @@ class ButtonCheck:
         self.last_clicked_label = None
         self.labels = labels
         self.values = labels if values == None else values
+        self.states = [False] * len(self.values)
         
         self.position = axes.get_position()
     
     def add_key_hold_shortcuts(self, key_hold: KeyHoldEvent):
         self.key_hold = key_hold
+    def _process_maj_check(self, label1: str, label2: str):
+        index1: int = self.labels.index(label1)
+        index2: int = self.labels.index(label2)
+        self.button.eventson = False
+        for i in range(min(index1, index2), max(index1, index2) + 1):
+            self.check_index(i, self.states[index2])
+        self.button.eventson = True
     def process(self, clicked_label):
+        index = self.labels.index(clicked_label)
+        self.states[index] = clicked_label in self.button.get_checked_labels()
+        
         if (self.key_hold != None):
             if (clicked_label != None and self.last_clicked_label != None and self.key_hold.is_key_held("shift")):
-                index1: int = self.labels.index(self.last_clicked_label)
-                index2: int = self.labels.index(clicked_label)
-                self.button.eventson = False
-                for i in range(min(index1, index2), max(index1, index2) + 1):
-                    if (i < 0 or i >= len(self.button.get_status())):
-                        continue
-                    self.button.set_active(i, self.button.get_status()[index2])
-                self.button.eventson = True
+                self._process_maj_check(self.last_clicked_label, clicked_label)
         self.last_clicked_label = clicked_label
         
         if (self.callback != None):
@@ -166,14 +171,80 @@ class ButtonCheck:
     
     def check_index(self, index: int, state: bool = True):
         self.button.set_active(index, state)
+        self.states[index] = state
     def check(self, key: str, state: bool = True):
-        if (key in self.values):
-            self.button.set_active(self.values.index(key), state)
+        self.check_index(self.values.index(key), state)
     def check_all(self, keys: list[str], state: bool = True):
         for key in keys:
             self.check(key, state)
     
     def is_checked(self, key: str) -> bool:
-        if (key in self.values):
-            return self.button.get_status()[self.values.index(key)]
-        return False
+        if (key not in self.values):
+            return False
+        return self.states[self.values.index(key)]
+class ButtonCheckPartial(ButtonCheck):
+    displayed: list[bool]
+    
+    def __init__(self, axes: plt.Axes, labels: list[str], values: list[str] = None, callback = None):
+        super().__init__(axes, labels, values, callback)
+        self.displayed = [True] * len(self.values)
+
+    def filter(self, keywords: list[str]):
+        self.last_clicked_label = None
+
+        self.displayed = [False] * len(self.values)
+        for i in range(len(self.displayed)):
+            found: str = True
+            for keyword in keywords:
+                if not keyword.startswith('!') and keyword not in self.labels[i]:
+                    found = False
+                    break
+                if keyword.startswith('!') and keyword.removeprefix('!') in self.labels[i]:
+                    found = False
+                    break
+            
+            if found:
+                self.displayed[i] = True
+        
+        self.axes.clear()
+        self.button = CheckButtons(
+            self.axes,
+            [self.labels[i] for i in range(len(self.labels)) if self.displayed[i]],
+            [self.states[i] for i in range(len(self.labels)) if self.displayed[i]],
+        )
+        self.button.on_clicked(self.process)
+        self.axes.get_figure().canvas.draw_idle()
+    
+    def _process_maj_check(self, label1: str, label2: str):
+        index1: int = self.labels.index(label1)
+        index2: int = self.labels.index(label2)
+        self.button.eventson = False
+        for i in range(min(index1, index2), max(index1, index2) + 1):
+            if (self.displayed[i]): self.check_index(i, self.states[index2])
+        self.button.eventson = True
+    def check_index(self, index: int, state: bool = True):
+        if (self.displayed[index]):
+            display_index: int = [i for i in range(len(self.displayed)) if self.displayed[i]].index(index)
+            self.button.set_active(display_index, state)
+        self.states[index] = state
+
+class TextField:
+    axes: plt.Axes
+    field: TextBox
+    
+    def __init__(self, axes: plt.Axes, label: str, callback):
+        self.axes = axes
+        self.axes._is_button = True # custom tag
+        self.field = TextBox(axes, label)
+        self.field.on_submit(self.process)
+        self.callback = callback
+    
+    def process(self, text):
+        self.callback()
+    
+    def get_text(self)->str:
+        return self.field.text
+    
+    def set_visible(self, state: bool):
+        self.axes.set_visible(state)
+    

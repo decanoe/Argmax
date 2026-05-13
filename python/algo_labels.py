@@ -137,7 +137,7 @@ class GreedyAlgo(Algo):
             return f"{SCOPE_TRANSLATIONS[self.scope]}"
         def temp_order()-> str:
             if (self.scope == "improve"): return f"{ORDERING_TRANSLATIONS[self.positive_ordering]}+"
-            return f"{ORDERING_TRANSLATIONS[self.positive_ordering]}+ {ORDERING_TRANSLATIONS[self.positive_ordering]}-"
+            return f"{ORDERING_TRANSLATIONS[self.positive_ordering]}+ {ORDERING_TRANSLATIONS[self.negative_ordering]}-"
         
         return f"GJ {temp_scope()} {CRITERION_TRANSLATIONS[self.criterion]} {temp_order()}"
     
@@ -192,7 +192,7 @@ class GreedyTabuAlgo(Algo):
             if (self.aspiration): return "tabu aspiration"
             return "tabu"
 
-        return f"GJ {temp_asp()} {PUSH_ORDER_TRANSLATIONS[self.push_order]} {self.translate_amount(self.tabu_size)}~{self.translate_amount(self.tabu_random)} {ORDERING_TRANSLATIONS[self.positive_ordering]}+ {ORDERING_TRANSLATIONS[self.positive_ordering]}-"
+        return f"GJ {temp_asp()} {PUSH_ORDER_TRANSLATIONS[self.push_order]} {self.translate_amount(self.tabu_size)}~{self.translate_amount(self.tabu_random)} {ORDERING_TRANSLATIONS[self.positive_ordering]}+ {ORDERING_TRANSLATIONS[self.negative_ordering]}-"
     
     def get_tex_category(self) -> str:
         return ""
@@ -249,7 +249,7 @@ class GreedyLambdaAlgo(Algo):
             if (self.aspiration): return "lambda aspiration"
             return "lambda"
 
-        return f"GJ {temp_asp()} {self.translate_amount(self.lambda_)} {ORDERING_TRANSLATIONS[self.positive_ordering]}+ {ORDERING_TRANSLATIONS[self.positive_ordering]}-"
+        return f"GJ {temp_asp()} {self.translate_amount(self.lambda_)} {ORDERING_TRANSLATIONS[self.positive_ordering]}+ {ORDERING_TRANSLATIONS[self.negative_ordering]}-"
     
     def get_tex_category(self) -> str:
         return ""
