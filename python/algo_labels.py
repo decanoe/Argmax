@@ -186,7 +186,7 @@ class GreedyTabuAlgo(Algo):
     def get_plot_color(self) -> str:
         return "cyan"
     def get_plot_style(self) -> str:
-        return (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
+        return (0, (3, 1, 1, 1, 1, 1)) # densely dashdotdotted (double dot)
     def get_plot_label(self) -> str:
         def temp_asp():
             if (self.aspiration): return "tabu aspiration"
@@ -213,13 +213,13 @@ class TabuAlgo(Algo):
     def get_plot_color(self) -> str:
         return "gray"
     def get_plot_style(self) -> str:
-        return (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
+        return (0, (3, 1, 1, 1, 1, 1)) # densely dashdotdotted (double dot)
     def get_plot_label(self) -> str:
         def temp_asp():
             if (self.aspiration): return "tabu aspiration"
             return "tabu"
 
-        return f"GJ {temp_asp()} {self.translate_amount(self.tabu_size)}~{self.translate_amount(self.tabu_random)}"
+        return f"{temp_asp()} {self.translate_amount(self.tabu_size)}~{self.translate_amount(self.tabu_random)}"
     
     def get_tex_category(self) -> str:
         return ""
@@ -243,7 +243,7 @@ class GreedyLambdaAlgo(Algo):
     def get_plot_color(self) -> str:
         return "yellow"
     def get_plot_style(self) -> str:
-        return (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
+        return (0, (3, 1, 1, 1, 1, 1)) # densely dashdotdotted (double dot)
     def get_plot_label(self) -> str:
         def temp_asp():
             if (self.aspiration): return "lambda aspiration"
@@ -268,7 +268,7 @@ class LambdaAlgo(Algo):
     def get_plot_color(self) -> str:
         return "gray"
     def get_plot_style(self) -> str:
-        return (0, (3, 1, 1, 1, 1, 1)), # densely dashdotdotted (double dot)
+        return (0, (3, 1, 1, 1, 1, 1)) # densely dashdotdotted (double dot)
     def get_plot_label(self) -> str:
         def temp_asp():
             if (self.aspiration): return "lambda aspiration"

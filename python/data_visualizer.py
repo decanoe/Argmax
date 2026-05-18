@@ -13,10 +13,11 @@ plt.rcParams.update({
     "savefig.format": "pdf",
 })
 
+directory: str = dir_path+"/../rundata/local_search/b1_000_000"
 data_loaders = {
-    "NK": NKDataLoader(dir_path+"/../rundata/local_search/b100_000"),
-    # "Sat": SatDataLoader(dir_path+"/../rundata/local_search"),
-    # "Qubo": QuboDataLoader(dir_path+"/../rundata/local_search"),
+    "NK": NKDataLoader(directory),
+    "Sat": SatDataLoader(directory),
+    "Qubo": QuboDataLoader(directory),
 }
 
 # generate_all_tables(data_loaders, dir_path + "/output")

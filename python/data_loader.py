@@ -172,7 +172,7 @@ class RunFile:
     def get_jumps(self, key: str) -> pd.DataFrame:
         if (key not in self._jumps):
             self.load_jumps(key)
-        return self._jumps[key]
+        return self._jumps[key].copy()
 
     def load_avg_values(self, datas: list[pd.DataFrame] = None):
         if (self._avg_run_score is not None and self._avg_run_budget is not None): return

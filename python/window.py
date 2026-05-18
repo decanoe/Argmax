@@ -66,8 +66,8 @@ class Window:
         self.PLOT_TYPE = ButtonCycle(self.figure.add_axes([0.4, 0.2, 0.32, 0.05]), ["anytime", "correlation", "one run"], callback=self.update)
         self.X_SCALE = ButtonCycle(self.figure.add_axes([0.4, 0.14, 0.1, 0.05]), ["log scale", "linear scale"], callback=self.soft_update)
 
-        self.AXIS1 = ButtonCycle(self.figure.add_axes([0.51, 0.14, 0.1, 0.05]), ["jump size", "fitness", "improving neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=self.update)
-        self.AXIS2 = ButtonCycle(self.figure.add_axes([0.51, 0.08, 0.1, 0.05]), ["fitness", "improving neighbors", "jump size"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=self.update)
+        self.AXIS1 = ButtonCycle(self.figure.add_axes([0.51, 0.14, 0.1, 0.05]), ["jump size", "budget", "fitness", "improving neighbors"], ["size_of_the_jump", "in_run_budget", "fitness", "nb_better_neighbors"], callback=self.update)
+        self.AXIS2 = ButtonCycle(self.figure.add_axes([0.51, 0.08, 0.1, 0.05]), ["fitness", "improving neighbors", "jump size", "budget"], ["fitness", "nb_better_neighbors", "size_of_the_jump", "in_run_budget"], callback=self.update)
         self.AXIS1_WHEN = ButtonCycle(self.figure.add_axes([0.62, 0.14, 0.1, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=self.update)
         self.AXIS2_WHEN = ButtonCycle(self.figure.add_axes([0.62, 0.08, 0.1, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=self.update)
 
@@ -90,8 +90,6 @@ class Window:
             for i in range(len(button.values)):
                 algo = button.values[i]
                 if (algo.startswith("hc_") and "cycle" not in algo and "first" not in algo):
-                    button.check_index(i)
-                elif (algo.startswith("greedy_") and "fixed" not in algo and "tabu" not in algo and "lambda" not in algo and '_Asc' not in algo and '_Rand' not in algo):
                     button.check_index(i)
 
     def clear_plot_axes(self):
@@ -131,8 +129,8 @@ class Window:
         self.K.set_visible(self.get_problem() == "NK" and not(self.is_full_screen()))
         self.SAT_TYPE.set_visible(self.get_problem() == "Sat" and not(self.is_full_screen()))
         
-        self.AXIS1_WHEN.set_visible(self.PLOT_TYPE.get_value() == "correlation" and self.AXIS1.get_value() != "size_of_the_jump" and not(self.is_full_screen()))
-        self.AXIS2_WHEN.set_visible(self.PLOT_TYPE.get_value() == "correlation" and self.AXIS2.get_value() != "size_of_the_jump" and not(self.is_full_screen()))
+        self.AXIS1_WHEN.set_visible(self.PLOT_TYPE.get_value() == "correlation" and (self.AXIS1.get_value() == "nb_better_neighbors" or self.AXIS1.get_value() == "fitness") and not(self.is_full_screen()))
+        self.AXIS2_WHEN.set_visible(self.PLOT_TYPE.get_value() == "correlation" and (self.AXIS2.get_value() == "nb_better_neighbors" or self.AXIS2.get_value() == "fitness") and not(self.is_full_screen()))
         
         self.REGRESSION.set_visible(self.PLOT_TYPE.get_value() == "correlation" and self.CORRELATION_PLOT.get_value() == "regression" and not(self.is_full_screen()))
         
@@ -169,22 +167,22 @@ class Window:
         return [algo for algo in self.data_loaders["NK"].Algo_keys if self.is_algo_selected(algo)]
     def get_axis1(self) -> str:
         axis1: str = self.AXIS1.get_value()
-        if (axis1 != "size_of_the_jump"):
+        if (axis1 == "nb_better_neighbors" or axis1 == "fitness"):
             axis1 += self.AXIS1_WHEN.get_value()
         return axis1
     def get_axis2(self) -> str:
         axis2: str = self.AXIS2.get_value()
-        if (axis2 != "size_of_the_jump"):
+        if (axis2 == "nb_better_neighbors" or axis2 == "fitness"):
             axis2 += self.AXIS2_WHEN.get_value()
         return axis2
     def get_axis1_label(self) -> str:
         axis1: str = self.AXIS1.get_label()
-        if (axis1 != "jump size"):
+        if (axis1 == "nb_better_neighbors" or axis1 == "fitness"):
             axis1 += " " + self.AXIS1_WHEN.get_label()
         return axis1
     def get_axis2_label(self) -> str:
         axis2: str = self.AXIS2.get_label()
-        if (axis2 != "jump size"):
+        if (axis2 == "nb_better_neighbors" or axis2 == "fitness"):
             axis2 += " " + self.AXIS2_WHEN.get_label()
         return axis2
     def get_correlation_type(self) -> str:

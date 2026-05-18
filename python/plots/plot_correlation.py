@@ -25,10 +25,12 @@ class PlotCorrelation(PlotAnnotedAxis):
         self.axis.set_ylabel(self.window.get_axis2_label())
         self.axis.grid()
     def plot(self):
+        axis1: str = self.window.get_axis1()
+        axis2: str = self.window.get_axis2()
         max_xy: float = 0
         for algo in self.window.get_selected_algos():
-            if algo.startswith("hc_"):
-                continue
+            if algo.startswith("hc_") and "size_of_the_jump" in axis1 + axis2:
+                    continue
             
             all_x, all_y = self.get_single_correlation_points(algo)
             max_xy = max(max_xy, all_x.max(), all_y.max())
@@ -57,6 +59,6 @@ class PlotCorrelation(PlotAnnotedAxis):
     def do_plot_x_equal_y_reference(self) -> bool:
         axis1: str = self.window.get_axis1()
         axis2: str = self.window.get_axis2()
-        return not("fitness" in axis1 + axis2) and not("delta" in axis1 + axis2)
+        return ("size_of_the_jump" in axis1 or "nb_better_neighbors" in axis1) and ("size_of_the_jump" in axis2 or "nb_better_neighbors" in axis2)
     def plot_single(self, algo: str, all_x: np.ndarray[float], all_y: np.ndarray[float]):
         pass

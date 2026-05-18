@@ -35,7 +35,7 @@ class PlotCorrelationHistogram(PlotCorrelation):
     def plot_single(self, algo: str, all_x: np.ndarray[float], all_y: np.ndarray[float]):
         run_info = self.window.get_data_loader().get_file(algo)
         
-        discrete_values: np.ndarray[float] = np.unique(all_x)
+        discrete_values: np.ndarray[float] = np.sort(np.unique(all_x))
         counts: np.ndarray[float] = np.zeros(discrete_values.size)
         
         for i in range(discrete_values.size):
