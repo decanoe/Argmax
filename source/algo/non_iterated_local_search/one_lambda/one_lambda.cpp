@@ -77,12 +77,13 @@ bool GreedyOneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instanc
         }
         if (i < instance->nb_args() * lambda) {
             if (instance->score() > score)
-                trajectory.insert_positive_flip(BitFlip(i, instance->score()));
+                trajectory.insert_positive_flip(BitFlip(index, instance->score()));
             else
-                trajectory.insert_negative_flip(BitFlip(i, instance->score()));
+                trajectory.insert_negative_flip(BitFlip(index, instance->score()));
         }
         instance->revert_last_mutation();
     }
+    trajectory.finalize();
 
     // apply all mutations in trajectory
     for (const BitFlip& bitflip : trajectory) instance->mutate_arg(bitflip.index);
@@ -107,7 +108,7 @@ bool GreedyOneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instanc
     }
     if (best_count == -1U && aspiration_flip == -1U) {
         output_iteration_ends_data(budget, improving_neighbor_count, score);
-        return best_count != 0;
+        return false;
     }
     // chose aspiration if it occured
     if (this->aspiration && aspiration_flip != -1U && aspiration_score > best_score) {

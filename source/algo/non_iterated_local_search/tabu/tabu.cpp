@@ -142,6 +142,7 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
         }
         instance->revert_last_mutation();
     }
+    trajectory.finalize();
 
     // apply all mutations in trajectory
     for (const BitFlip& bitflip : trajectory) instance->mutate_arg(bitflip.index);
@@ -166,7 +167,7 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
     }
     if (best_count == -1U && aspiration_flip == -1U) {
         output_iteration_ends_data(budget, improving_neighbor_count, score);
-        return best_count != 0;
+        return false;
     }
     // chose aspiration if it occured
     if (this->aspiration && aspiration_flip != -1U && aspiration_score > best_score) {
