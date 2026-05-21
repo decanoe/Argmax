@@ -127,10 +127,8 @@ void JobQueue::run_unthreaded() {
     std::cout << std::endl;
     while (true)
     {
-        std::cout << "\033[A"; // go up a 1 line
-        std::cout << "\r\033[2K";
         cout_bar((float)count / total_job_count);
-        std::cout << "\t" << count << " / " << total_job_count << std::flush;
+        std::cout << "\t" << count << " / " << total_job_count << std::endl;
 
         // get job
         Job job;
