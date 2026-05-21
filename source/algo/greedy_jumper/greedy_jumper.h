@@ -18,19 +18,23 @@ namespace LocalSearch {
             /// @param instance_score the score of the instance (will be set to the new score before returning)
             /// @param current_budget the current budget to update
             /// @param budget the budget to update
+            /// @param iteration the current iteration index (starting at 0)
             /// @return the number of bit flipped (or 0 if no jump was done)
-            virtual unsigned int chose_jump(const GreedyTrajectory& trajectory, std::unique_ptr<ReversibleInstance>& instance, float& instance_score, BudgetHelper& budget) const;
-        protected:
+            virtual unsigned int chose_jump(const GreedyTrajectory& trajectory, std::unique_ptr<ReversibleInstance>& instance, float& instance_score, BudgetHelper& budget, unsigned int iteration) const;
             /// @brief whether the provided tested score is better than the current one (in regard to the strategy)
             /// @param tested_score the newly tested score
             /// @param init_score the score at the begining of the iteration
             /// @param first_test true if there is no bette score yet
             /// @param iteration_best_score the best score for this iteration (yet)
+            /// @param iteration the current iteration index (starting at 0)
             /// @return true if the provided score needs to be kept
-            virtual bool do_keep(float tested_score, float init_score, bool first_keep, float iteration_best_score) const = 0;
+            virtual bool do_keep(float tested_score, float init_score, bool first_keep, float iteration_best_score, unsigned int iteration) const = 0;
             /// @brief whether the algorithm needs to stop at the first improving score
+            /// @param iteration the current iteration index (starting at 0)
             /// @return true if the algorithm needs to stop at the first improving score
-            virtual bool stop_at_first_improve() const = 0;
+            virtual bool stop_at_first_improve(unsigned int iteration) const = 0;
+        protected:
+            static std::shared_ptr<GreedyJumper::Selection_Criterion> from_values(const std::string& key);
         };
         class Neighborhood_Scope: public LocalSearchAlgoComponent {
         public:
@@ -74,6 +78,6 @@ namespace LocalSearch {
         std::shared_ptr<Neighborhood_Scope> scope;
         GreedyTrajectory trajectory;
         
-        bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget) override;
+        bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, unsigned int iteration) override;
     };
 }

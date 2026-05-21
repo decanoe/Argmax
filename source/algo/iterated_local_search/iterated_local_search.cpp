@@ -13,7 +13,7 @@ LocalSearchAlgo* IteratedLocalSearch::set_output(std::ostream* out, bool add_hea
     return LocalSearchAlgo::set_output(out, false);
 }
 
-bool IteratedLocalSearch::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget) { return false; }
+bool IteratedLocalSearch::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, unsigned int iteration) { return false; }
 float IteratedLocalSearch::run(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) {
     std::mt19937 copied_random_generator = *random_generator;
 

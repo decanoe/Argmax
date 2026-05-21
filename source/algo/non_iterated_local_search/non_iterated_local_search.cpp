@@ -23,7 +23,7 @@ float NonIteratedLocalSearch::run(std::unique_ptr<ReversibleInstance>& instance,
     return score;
 }
 
-bool NonIteratedLocalSearch::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget) {
+bool NonIteratedLocalSearch::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, unsigned int iteration) {
     std::cerr << "NonIteratedLocalSearch::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget) should not be used !" << std::endl;
     exit(1);
 }

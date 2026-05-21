@@ -35,12 +35,10 @@ namespace LocalSearch {
         HillClimber(std::shared_ptr<Selection_Criterion> criterion);
 
         LocalSearchAlgo* set_seed(std::shared_ptr<std::mt19937> random_generator) override;
-        
-        float run(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) override;
     protected:
         std::shared_ptr<Selection_Criterion> criterion;
         unsigned int iteration_count;
 
-        bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget);
+        bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, unsigned int iteration);
     };
 }

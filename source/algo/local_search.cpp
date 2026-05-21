@@ -40,12 +40,13 @@ void LocalSearchAlgo::output_iteration_ends_data(const BudgetHelper& budget, uns
 }
 
 float LocalSearchAlgo::run(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) {
+    unsigned int iteration = 0;
     float score = instance->score();
     budget++;
     unsigned int better_neighbors = count_better_neighbors(instance);
     output_iteration_ends_data(budget, better_neighbors, score);
 
-    while (!budget.out_of_budget() && this->improve(instance, score, better_neighbors, budget));
+    while (!budget.out_of_budget() && this->improve(instance, score, better_neighbors, budget, iteration)) ++iteration;
 
     return score;
 }

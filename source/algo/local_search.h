@@ -65,8 +65,9 @@ namespace LocalSearch {
         /// @param improving_neighbor_count the number of improving neighbors of the instance (must be kept updated) to avoid unnecessary computation
         /// @param iteration_count the iteration index (used by HC_cycle)
         /// @param budget to update
+        /// @param iteration the current iteration index (starting at 0)
         /// @return whether the improvement resulted in a jump
-        virtual bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget) = 0;
+        virtual bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, unsigned int iteration) = 0;
     };
     
     class LocalSearchAlgoComponent {
@@ -77,7 +78,7 @@ namespace LocalSearch {
         /// @brief sets the random generator engine
         /// @param random_generator the random engine to use
         /// @return itself
-        LocalSearchAlgoComponent* set_seed(std::shared_ptr<std::mt19937> random_generator);
+        virtual LocalSearchAlgoComponent* set_seed(std::shared_ptr<std::mt19937> random_generator);
     protected:
         std::shared_ptr<std::mt19937> random_generator;
     };

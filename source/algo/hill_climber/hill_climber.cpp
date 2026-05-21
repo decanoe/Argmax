@@ -67,7 +67,8 @@ std::shared_ptr<HillClimber::Selection_Criterion> HillClimber::Selection_Criteri
     else if (string == "least") return std::make_shared<HC_Least_Criterion>();
     else if (string == "best") return std::make_shared<HC_Best_Criterion>();
     
-    return std::make_shared<HC_First_Criterion>(); // default
+    std::cerr << "\033[1;31mThe field <selection_criterion> \"" << string << "\" of the preset file doesn't correspond to any implemented HillClimber::Selection_Criterion.\n\033[0m";
+    exit(1);
 }
 /* #endregion */
 
@@ -78,12 +79,7 @@ LocalSearchAlgo* HillClimber::set_seed(std::shared_ptr<std::mt19937> random_gene
     return LocalSearchAlgo::set_seed(random_generator);
 }
 
-float HillClimber::run(std::unique_ptr<ReversibleInstance>& instance, BudgetHelper& budget) {
-    this->iteration_count = 0;
-    return LocalSearchAlgo::run(instance, budget);
-}
-bool HillClimber::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget) {
-    this->iteration_count++;
+bool HillClimber::improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, unsigned int iteration) {
     float old_score = score;
     unsigned int old_improving_neighbor_count = improving_neighbor_count;
 
@@ -97,7 +93,7 @@ bool HillClimber::improve(std::unique_ptr<ReversibleInstance>& instance, float& 
             output_iteration_ends_data(budget, improving_neighbor_count, score);
             return false;
         }
-        unsigned int index = criterion->get_test_index(i, iteration_count, instance->nb_args());
+        unsigned int index = criterion->get_test_index(i, iteration, instance->nb_args());
 
         instance->mutate_arg(index);
         budget++;

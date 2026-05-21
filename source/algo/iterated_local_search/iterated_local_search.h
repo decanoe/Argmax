@@ -13,6 +13,6 @@ namespace LocalSearch {
     protected:
         std::shared_ptr<LocalSearchAlgo> algo;
 
-        bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget) override;
+        bool improve(std::unique_ptr<ReversibleInstance>& instance, float& score, unsigned int& improving_neighbor_count, BudgetHelper& budget, unsigned int iteration) override;
     };
 }
