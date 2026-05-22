@@ -38,6 +38,7 @@ temp.rundata
 results
 rundata/*
 python/output/*
+python/output_latex_main
 __pycache__
 .venv
 docs/temp.*

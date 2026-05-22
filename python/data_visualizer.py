@@ -20,8 +20,8 @@ data_loaders = {
     "Qubo": QuboDataLoader(directory),
 }
 
-# generate_all_tables(data_loaders, dir_path + "/output")
-# exit(0)
+generate_all_tables(data_loaders, dir_path + "/output")
+exit(0)
 
 fig, _ = plt.subplots()
 Window(data_loaders, fig)

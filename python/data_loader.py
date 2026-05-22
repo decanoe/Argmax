@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import re
+from typing import Any
 import pandas as pd
 import numpy as np
 import io
@@ -303,6 +304,9 @@ class DataLoader:
         pass
     def set_parameters(self, **kwargs) -> DataLoader:
         return self
+
+    def get_parameters_iterator(self) -> list[tuple[str, dict[str, Any]]]:
+        return []
 class NKDataLoader(DataLoader):
     file_infos: dict[int, dict[int, dict[str, NKRunFile]]]
     N_keys: list[str]
@@ -325,12 +329,19 @@ class NKDataLoader(DataLoader):
         self.n = self.N_keys[0]
         self.k = self.K_keys[0]
     
+    def get_file(self, algo: str) -> RunFile:
+        return self.file_infos[self.n][self.k][algo]
     def set_parameters(self, **kwargs):
         if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
         if (kwargs.get("k", self.k) in self.K_keys): self.k = kwargs.get("k")
         return super().set_parameters(**kwargs)
-    def get_file(self, algo: str) -> RunFile:
-        return self.file_infos[self.n][self.k][algo]
+    
+    def get_parameters_iterator(self) -> list[tuple[str, dict[str, Any]]]:
+        result: list[tuple[str, dict[str, int]]] = []
+        for n, n_data in sorted(self.file_infos.items(), key=lambda p : p[0]):
+            for k, _ in sorted(n_data.items(), key=lambda p : p[0]):
+                result.append((f"N{n}_K{k}", {"n":n, "k":k}))
+        return result
 class QuboDataLoader(DataLoader):
     file_infos: dict[int, dict[str, NKRunFile]]
     N_keys: list[str]
@@ -349,11 +360,17 @@ class QuboDataLoader(DataLoader):
         
         self.n = self.N_keys[0]
     
+    def get_file(self, algo: str) -> RunFile:
+        return self.file_infos[self.n][algo]
     def set_parameters(self, **kwargs):
         if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
         return super().set_parameters(**kwargs)
-    def get_file(self, algo: str) -> RunFile:
-        return self.file_infos[self.n][algo]
+    
+    def get_parameters_iterator(self) -> list[tuple[str, dict[str, Any]]]:
+        result: list[tuple[str, dict[str, int]]] = []
+        for n, _ in sorted(self.file_infos.items(), key=lambda p : p[0]):
+            result.append((f"N{n}_Qubo", {"n":n}))
+        return result
 class SatDataLoader(DataLoader):
     file_infos: dict[int, dict[str, dict[str, NKRunFile]]]
     N_keys: list[str]
@@ -376,9 +393,16 @@ class SatDataLoader(DataLoader):
         self.n = self.N_keys[0]
         self.type_name = self.type_keys[1]
     
+    def get_file(self, algo: str) -> RunFile:
+        return self.file_infos[self.n][self.type_name][algo]
     def set_parameters(self, **kwargs):
         if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
         if (kwargs.get("type_name", self.type_name) in self.type_keys): self.type_name = kwargs.get("type_name")
         return super().set_parameters(**kwargs)
-    def get_file(self, algo: str) -> RunFile:
-        return self.file_infos[self.n][self.type_name][algo]
+    
+    def get_parameters_iterator(self) -> list[tuple[str, dict[str, Any]]]:
+        result: list[tuple[str, dict[str, Any]]] = []
+        for n, n_data in sorted(self.file_infos.items(), key=lambda p : p[0]):
+            for t, _ in sorted(n_data.items(), key=lambda p : p[0]):
+                result.append((f"N{n}_Sat_{t}", {"n":n, "type_name":t}))
+        return result
