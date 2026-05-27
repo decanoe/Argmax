@@ -61,7 +61,7 @@ public:
     }
 protected:
 };
-class GJ_Middle_Criterion: public GreedyJumper::Selection_Criterion {
+class GJ_MiddleScore_Criterion: public GreedyJumper::Selection_Criterion {
 public:
     unsigned int chose_jump(const GreedyTrajectory& trajectory, std::unique_ptr<ReversibleInstance>& instance, float& instance_score, BudgetHelper& budget, unsigned int iteration) const override {
         std::vector<float> results = std::vector<float>(trajectory.size() + 1, 0); // index 0 not used (no jump of size 0)
@@ -76,7 +76,6 @@ public:
             budget++;
             float s = instance->score();
             results[count] = s;
-            max = std::max(max, s);
             if (s > max) max = s;
             if (min < instance_score || (s < min && s > instance_score)) min = s;
         }
@@ -101,6 +100,101 @@ public:
 
         instance_score = results[best_count];
         return best_count;
+    }
+
+    bool do_keep(float tested_score, float init_score, bool first_keep, float iteration_best_score, unsigned int iteration) const override {
+        return tested_score > init_score; // not used
+    }
+    bool stop_at_first_improve(unsigned int iteration) const override {
+        return false; // not used
+    }
+protected:
+};
+class GJ_MiddleJump_Criterion: public GreedyJumper::Selection_Criterion {
+public:
+    unsigned int chose_jump(const GreedyTrajectory& trajectory, std::unique_ptr<ReversibleInstance>& instance, float& instance_score, BudgetHelper& budget, unsigned int iteration) const override {
+        std::vector<float> results = std::vector<float>(trajectory.size() + 1, 0); // index 0 not used (no jump of size 0)
+        
+        // apply all mutations in trajectory and gather max and min improvements
+        unsigned int count = 0;
+        unsigned int max_count = -1U;
+        unsigned int min_count = -1U;
+        float max = instance_score;
+        float min = instance_score;
+        for (const BitFlip& bitflip : trajectory) {
+            count++;
+            instance->mutate_arg(bitflip.index);
+            budget++;
+            float s = instance->score();
+            results[count] = s;
+            if (s <= instance_score) continue;
+
+            if (max_count == -1U || s > max) {
+                max_count = count;
+                max = s;
+            }
+            if (min_count == -1U || s < min) {
+                min_count = count;
+                min = s;
+            }
+        }
+        if (max_count == -1U) { // revert instance and return 0 (no improvement found)
+            for (auto bitflip = trajectory.rbegin(); bitflip != trajectory.rend(); ++bitflip) instance->mutate_arg((*bitflip).index);
+            return 0;
+        }
+
+        // apply average of best jump and worst jump
+        unsigned int target_count = std::ceil((max_count + min_count) / 2.f);
+        for (auto bitflip = trajectory.rbegin(); bitflip != trajectory.rend(); ++bitflip) {
+            if (count == target_count) break;
+            instance->mutate_arg((*bitflip).index);
+            count--;
+        }
+
+        instance_score = results[target_count];
+        return target_count;
+    }
+
+    bool do_keep(float tested_score, float init_score, bool first_keep, float iteration_best_score, unsigned int iteration) const override {
+        return tested_score > init_score; // not used
+    }
+    bool stop_at_first_improve(unsigned int iteration) const override {
+        return false; // not used
+    }
+protected:
+};
+class GJ_MedianScore_Criterion: public GreedyJumper::Selection_Criterion {
+public:
+    unsigned int chose_jump(const GreedyTrajectory& trajectory, std::unique_ptr<ReversibleInstance>& instance, float& instance_score, BudgetHelper& budget, unsigned int iteration) const override {
+        std::vector<std::pair<float, unsigned int>> improving_jumps = std::vector<std::pair<float, unsigned int>>();
+        
+        // apply all mutations in trajectory and gather max and min improvements
+        unsigned int count = 0;
+        for (const BitFlip& bitflip : trajectory) {
+            count++;
+            instance->mutate_arg(bitflip.index);
+            budget++;
+            float s = instance->score();
+            if (s > instance_score) improving_jumps.push_back(std::pair<float, unsigned int>(s, count));
+        }
+        if (improving_jumps.empty()) { // revert instance and return 0 (no improvement found)
+            for (auto bitflip = trajectory.rbegin(); bitflip != trajectory.rend(); ++bitflip) instance->mutate_arg((*bitflip).index);
+            return 0;
+        }
+
+        // find jump size for median (improving) score
+        auto median = improving_jumps.begin() + improving_jumps.size() / 2;
+        std::nth_element(improving_jumps.begin(), median, improving_jumps.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+
+        // apply target jump size
+        for (auto bitflip = trajectory.rbegin(); bitflip != trajectory.rend(); ++bitflip) {
+            if (count == median->second) break;
+            instance->mutate_arg((*bitflip).index);
+            count--;
+        }
+
+        instance_score = median->first;
+        return median->second;
     }
 
     bool do_keep(float tested_score, float init_score, bool first_keep, float iteration_best_score, unsigned int iteration) const override {
@@ -176,7 +270,9 @@ std::shared_ptr<GreedyJumper::Selection_Criterion> GreedyJumper::Selection_Crite
     else if (key == "best") return std::make_shared<GJ_Best_Criterion>();
     else if (key == "least") return std::make_shared<GJ_Least_Criterion>();
     else if (key == "random") return std::make_shared<GJ_Random_Criterion>();
-    else if (key == "middle") return std::make_shared<GJ_Middle_Criterion>();
+    else if (key == "middle") return std::make_shared<GJ_MiddleScore_Criterion>();
+    else if (key == "middle2") return std::make_shared<GJ_MiddleJump_Criterion>();
+    else if (key == "median") return std::make_shared<GJ_MedianScore_Criterion>();
     
     std::cerr << "\033[1;31mThe field <selection_criterion> or <guide_criterion> \"" << key << "\" of the preset file doesn't correspond to any implemented GreedyJumper::Selection_Criterion.\n\033[0m";
     exit(1);

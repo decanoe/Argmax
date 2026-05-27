@@ -1,5 +1,5 @@
 import os
-from typing import Literal
+from typing import Any, Literal
 from algo_labels import Algo
 from data_loader import DataLoader, NKDataLoader
 import re
@@ -27,53 +27,129 @@ class Table:
         self.lines_headers.append(line_header)
         self.lines.append(line)
     
-    def format_value(self, value: float) -> str:
-        return "%01.4f"%value
     def do_highlight(self, value: float, line_values: list[float]) -> bool:
         if (self.highlight == 'max'): return value == max(line_values)
         if (self.highlight == 'min'): return value == min(line_values)
         return False
     
     def get_md_title(self) -> str | None: return None
-    def to_md(self) -> str:
-        cell_size: int = max([len(f"<ins>{self.format_value(v)}</ins>") for line in self.lines for v in line] + [len(f"**{h}**") for h in [self.corner_header] + [h.get_plot_label() for h in self.headers] + self.lines_headers])
-        
-        result: str = "| " + " | ".join([add_spaces(f"**{h}**", cell_size) for h in [self.corner_header] + [h.get_plot_label() for h in self.headers]]) + " |\n"
-        result += "| " + " | ".join(["-" * cell_size] * (len(self.headers) + 1)) + " |\n"
-        
-        for header, line in zip(self.lines_headers, self.lines, strict=True):
-            modified_line = [f"<ins>{self.format_value(v)}</ins>" if self.do_highlight(v, line) else self.format_value(v) for v in line]
-            result += f"| {add_spaces(f"**{header}**", cell_size)} | " + " | ".join([add_spaces(h, cell_size) for h in modified_line]) + " |\n"
-        
-        if (self.get_md_title() is not None): result = f"# {self.get_md_title()}\n{result}"
-        return result
-    def save_md(self, path: str):
-        with open(path, 'w') as f: f.write(self.to_md())
-
     def get_tex_title(self) -> str | None: return None
     def get_tex_label(self) -> str | None: return None
-    def to_tex(self) -> str:
-        # list of tuple (header, category, category_sort_index, old_index)
-        modified_headers: list[tuple[str, str, int, int]] = [(self.headers[i].get_tex_name(), self.headers[i].get_tex_category(), self.headers[i].get_tex_category_sort_index(), i) for i in range(len(self.headers))]
+    
+class TableSaver:
+    table: Table
+    lang: Literal['md', 'tex']
+    kwargs: dict[str, Any]
+    
+    def __init__(self, table: Table, lang: Literal['md', 'tex'], **kwargs):
+        self.table = table
+        self.lang = lang
+        self.kwargs = kwargs
+    
+    def get_categories(self, modified_headers: list[tuple[str, str, int, int]] = None) -> list[str, int]:
+        ''' list of tuple (category header, category size) '''
+        if modified_headers is None: modified_headers = self.get_modified_headers()
+        
+        categories: list[tuple[str, int]] = [(modified_headers[0][1], 0)]
+        for _, category, _, _ in modified_headers:
+            if (category == categories[-1][0]): categories[-1] = (categories[-1][0], categories[-1][1] + 1)
+            else: categories.append((category, 1))
+        return categories
+    def get_modified_headers(self) -> list[tuple[str, str, int, int]]:
+        ''' list of tuple (header, category, category_sort_index, old_index) '''
+        headers: list[Algo] = self.table.headers
+        modified_headers: list[tuple[str, str, int, int]] = [(headers[i].get_label(self.lang, **self.kwargs), headers[i].get_category(self.lang, **self.kwargs), headers[i].get_category_sort_index(), i) for i in range(len(headers))]
         modified_headers = sorted(modified_headers, key=lambda h:(h[2], h[1], h[3]))
+        return modified_headers
+    def get_cell_size(self, modified_headers: list[tuple[str, str, int, int]] = None) -> int:
+        if modified_headers is None: modified_headers = self.get_modified_headers()
+        html = self.lang == 'md'
+        return max(
+            [len(self.highlight_value(self.format_value(v), html)) for line in self.table.lines for v in line] +
+            [len(self.highlight_text(h, html)) for h in [self.table.corner_header] + [h[0] for h in modified_headers] + self.table.lines_headers])
+    
+    def format_value(self, value: float) -> str:
+        return "%01.4f"%value
+    def highlight_value(self, value: str, html_override: bool = False) -> str:
+        if html_override:       return f"<u>{value}</u>"
+        if self.lang == 'tex': return "\\underline{" + value + "}"
+        if self.lang == 'md': return f"<ins>{value}</ins>"
+        return value
+    def highlight_text(self, text: str, html_override: bool = False) -> str:
+        if html_override:       return f"<strong>{text}</strong>"
+        if self.lang == 'tex':  return "\\textbf{" + text + "}"
+        if self.lang == 'md':   return f"**{text}**"
+        return text
+    
+    def generate_text(self) -> str:
+        return ""
+
+    def save(self, path: str):
+        with open(path, 'w') as f: f.write(self.generate_text())
+class TableMarkdownSaver(TableSaver):
+    def __init__(self, table: Table, **kwargs):
+        super().__init__(table, 'md', **kwargs)
+    
+    def generate_text(self) -> str:
+        md_headers: str = ""
+        if (self.table.get_md_title() is not None): md_headers += self.highlight_text(self.table.get_md_title()) + "\n"
         
-        cell_size: int = max([len(f"\\underline[{self.format_value(v)}]") for line in self.lines for v in line] + [len(f"\\textbf[{h}]") for h in [self.corner_header] + [h[0] for h in modified_headers] + self.lines_headers])
+        modified_headers: list[tuple[str, str, int, int]] = self.get_modified_headers()
+        categories: list[tuple[str, int]] = self.get_categories(modified_headers)
+        cell_size: int = self.get_cell_size(modified_headers)
         
+        md_headers += """
+<table>
+<thead>
+<tr>
+"""
+        md_headers += f"<th> {add_spaces("", cell_size)} </th> "
+        for category, size in categories:
+            if size == 1:   md_headers += f"<th> {add_spaces(category, cell_size)} </th> "
+            else:           md_headers += f"<th colspan=\"{size}\"> {add_spaces(category, cell_size * size + len(" </th> <th> ") * (size - 1) - len(f" colspan=\"{size}\""))} </th> "
+        
+        md_headers += "\n</tr>\n<tr>\n"
+        
+        for h in [self.table.corner_header] + [h[0] for h in modified_headers]:
+            md_headers += f"<th> {add_spaces(h, cell_size)} </th> "
+                                 
+        md_headers += "\n </tr>\n</thead>\n"
+
+
+        md_body: str = "</tbody>"
+        for header, line in zip(self.table.lines_headers, self.table.lines, strict=True):
+            md_body += "<tr>\n"
+            md_body += f"<th> {add_spaces(self.highlight_text(header.replace("_", " "), html_override=True), cell_size)} </th> "
+            
+            for _, _, _, index in modified_headers:
+                value = line[index]
+                temp = self.format_value(value)
+                if self.table.do_highlight(value, line): temp = self.highlight_value(temp)
+                md_body += f"<td> {add_spaces(temp, cell_size)} </td> "
+            md_body += "\n</tr>\n"
+        md_body += "</tbody>\n"
+        
+        md_footer: str = "</table>"
+
+        return md_headers + md_body + md_footer
+class TableTexSaver(TableSaver):
+    def __init__(self, table: Table, **kwargs):
+        super().__init__(table, 'tex', **kwargs)
+    
+    def generate_text(self) -> str:
         tex_headers: str = "\\begin{table}[ht]\n"
-        if (self.get_tex_title() is not None): tex_headers += "\\caption{" + self.get_tex_title() + "}\n"
-        if (self.get_tex_label() is not None): tex_headers += "\\label{" + self.get_tex_label() + "}"
+        if (self.table.get_tex_title() is not None): tex_headers += "\\caption{" + self.table.get_tex_title() + "}\n"
+        if (self.table.get_tex_label() is not None): tex_headers += "\\label{" + self.table.get_tex_label() + "}"
+        
+        modified_headers: list[tuple[str, str, int, int]] = self.get_modified_headers()
+        categories: list[tuple[str, int]] = self.get_categories(modified_headers)
+        cell_size: int = self.get_cell_size(modified_headers)
         
         tex_headers += """
 \\centering
 \\setlength{\\tabcolsep}{4pt} % Ajustement de l'espacement des colonnes
 \\begin{scriptsize}
 """
-        # list of (category header, category size, category_sort_index)
-        categories: list[tuple[str, int]] = [(modified_headers[0][1], 0)]
-        for _, category, _, _ in modified_headers:
-            if (category == categories[-1][0]): categories[-1] = (categories[-1][0], categories[-1][1] + 1)
-            else: categories.append((category, 1))
-        
         tex_headers += "\\begin{tabular}{l |" + " | ".join([" ".join("c" * c[1]) for c in categories]) + "}\n"
         tex_headers += "\\hline\n"
         tex_headers += add_spaces("", cell_size)
@@ -81,37 +157,35 @@ class Table:
             if size == 1:   tex_headers += f" & {add_spaces(category, cell_size)}"
             else:           tex_headers += " & " + add_spaces("\\multicolumn{" + str(size) + "}{" + ("c|" if category != categories[-1][0] else "c") + "}{" + category + "}", cell_size * size + len(" & ") * (size - 1))
         tex_headers += "\\\\ \n"
-        tex_headers += " & ".join([add_spaces(h, cell_size) for h in [self.corner_header] + [h[0] for h in modified_headers]])
+        tex_headers += " & ".join([add_spaces(h, cell_size) for h in [self.table.corner_header] + [h[0] for h in modified_headers]])
         tex_headers += "\\\\ \n"
         tex_headers += "\\hline\n"
-        
-        tex_footer: str = """\\end{tabular}
-\\end{scriptsize}
-\\end{table}"""
+
 
         tex_body: str = ""
-        
         current_n: str = "-1"
-        for header, line in zip(self.lines_headers, self.lines, strict=True):
+        for header, line in zip(self.table.lines_headers, self.table.lines, strict=True):
             new_n: str = header.split("_")[0]
             if (current_n != new_n):
                 tex_body += "\\hline\n"
                 current_n = new_n
             
-            tex_body += add_spaces("\\textbf{" + header.replace("_", " ") + "}", cell_size)
+            tex_body += add_spaces(self.highlight_text(header.replace("_", " ")), cell_size)
             
             for _, _, _, index in modified_headers:
                 value = line[index]
-                if self.do_highlight(value, line):
-                    tex_body += " & " + add_spaces("\\underline{" + self.format_value(value) + "}", cell_size)
-                else:
-                    tex_body += " & " + add_spaces(self.format_value(value), cell_size)
+                temp = self.format_value(value)
+                if self.table.do_highlight(value, line): temp = self.highlight_value(temp)
+                tex_body += " & " + add_spaces(temp, cell_size)
             tex_body += "\\\\\n"
         tex_body += "\\hline\n"
         
+        
+        tex_footer: str = """\\end{tabular}
+\\end{scriptsize}
+\\end{table}"""
+
         return tex_headers + tex_body + tex_footer
-    def save_tex(self, path: str):
-        with open(path, 'w') as f: f.write(self.to_tex())
 
 class AvgScoreTable(Table):
     def __init__(self, data_loaders: list[DataLoader], algo_list: list[Algo]):
@@ -197,19 +271,19 @@ def generate_all_tables(data_loaders: dict[str, DataLoader], output_path: str, *
     gj_algos: list[Algo] = sorted([data_loaders["NK"].get_file(algo).algo_infos for algo in data_loaders["NK"].Algo_keys if gj_selector(algo)], key=lambda t: t.get_algo())
     algo_list: list[Algo] = hc_algos + gj_algos
     print(f"{len(algo_list)} algos in tables")
-    print([algo.get_plot_label() for algo in algo_list])
+    print([algo.get_full_label() for algo in algo_list])
     
     table_data_loaders: list[DataLoader] = [data_loaders["NK"], data_loaders["Sat"], data_loaders["Qubo"]]
     
     table = AvgScoreTable(table_data_loaders, algo_list)
-    table.save_md(output_path + "/avg.md", **kwargs)
-    table.save_tex(output_path + "/avg.tex", **kwargs)
+    TableMarkdownSaver(table, **kwargs).save(output_path + "/avg.md")
+    TableTexSaver(table, **kwargs).save(output_path + "/avg.tex")
     
     table = AvgBudgetTable(table_data_loaders, algo_list)
-    table.save_md(output_path + "/budgets.md", **kwargs)
-    table.save_tex(output_path + "/budgets.tex", **kwargs)
+    TableMarkdownSaver(table, **kwargs).save(output_path + "/budgets.md")
+    TableTexSaver(table, **kwargs).save(output_path + "/budgets.tex")
     
     for budget in [1_000, 10_000, 100_000, 1_000_000]:
         table = MaxScoreTable(table_data_loaders, algo_list, budget)
-        table.save_md(output_path + f"/best_{budget:_}.md", **kwargs)
-        table.save_tex(output_path + f"/best_{budget:_}.tex", **kwargs)
+        TableMarkdownSaver(table, **kwargs).save(output_path + f"/best_{budget:_}.md")
+        TableTexSaver(table, **kwargs).save(output_path + f"/best_{budget:_}.tex")

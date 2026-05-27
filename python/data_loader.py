@@ -36,12 +36,10 @@ class RunFile:
         self._avg_run_budget = None
         self._jumps = {}
     
-    def get_label(self) -> str:
-        return self.algo_infos.get_plot_label()
     def get_linestyle(self) -> str:
-        return self.algo_infos.get_plot_style()
+        return self.algo_infos.get_style()
     def get_color(self) -> str:
-        return self.algo_infos.get_plot_color()
+        return self.algo_infos.get_color()
     
     def get_similar_data(self) -> list[pd.DataFrame]:
         base_dir: str = os.path.dirname(self.path)
