@@ -30,5 +30,5 @@ class PlotCorrelationMeanStd(PlotCorrelation):
             std[i] = all_y[mask].std()
         
         self.axis.fill_between(discrete_values, mean - std, mean + std, alpha=.25, linewidth=0, color = run_info.algo_infos.get_color())
-        line, = self.axis.plot(discrete_values, mean, label=run_info.algo_infos.get_full_label() + " mean", color = run_info.algo_infos.get_color(), linestyle = run_info.algo_infos.get_style())
-        self.add_line(line, run_info.algo_infos.get_full_label() + " mean")
+        line, = self.axis.plot(discrete_values, mean, label=run_info.algo_infos.get_full_label('plot', **self.window.kwargs) + " mean", color = run_info.algo_infos.get_color(), linestyle = run_info.algo_infos.get_style())
+        self.add_line(line, run_info.algo_infos.get_full_label('plot', **self.window.kwargs) + " mean")

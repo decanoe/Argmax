@@ -286,9 +286,9 @@ class SatRunFile(RunFile):
 class DataLoader:
     Algo_keys: list[str]
     
-    def load_file(self, file: str, dir: str):
+    def load_file(self, file: str, dir: str, **kwargs):
         pass
-    def __init__(self, dir_path: str):
+    def __init__(self, dir_path: str, **kwargs):
         from tqdm import tqdm
         files: list[tuple[str, str]] = []
         for d in os.walk(dir_path):
@@ -296,7 +296,7 @@ class DataLoader:
 
         for i in tqdm(range(len(files))):
             d, f = files[i]
-            self.load_file(f, d)
+            self.load_file(f, d, **kwargs)
     
     def get_file(self, algo: str) -> RunFile:
         pass
@@ -312,13 +312,13 @@ class NKDataLoader(DataLoader):
     n: int
     k: int
     
-    def load_file(self, file: str, dir: str):
+    def load_file(self, file: str, dir: str, **kwargs):
         info: NKRunFile = NKRunFile.from_file(dir + "/" + file)
-        if (info != None):
+        if (info != None and info.algo_infos.is_valid(**kwargs)):
             self.file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo_infos.algo, info)
-    def __init__(self, rundata_path: str):
+    def __init__(self, rundata_path: str, **kwargs):
         self.file_infos = {}
-        super().__init__(rundata_path+"/NK")
+        super().__init__(rundata_path+"/NK", **kwargs)
 
         self.N_keys = sorted(self.file_infos.keys())
         self.K_keys = sorted(self.file_infos[self.N_keys[0]].keys())
@@ -345,13 +345,13 @@ class QuboDataLoader(DataLoader):
     N_keys: list[str]
     n: int
     
-    def load_file(self, file: str, dir: str):
+    def load_file(self, file: str, dir: str, **kwargs):
         info: QuboRunFile = QuboRunFile.from_file(dir + "/" + file)
-        if (info != None):
+        if (info != None and info.algo_infos.is_valid(**kwargs)):
             self.file_infos.setdefault(info.N, {}).setdefault(info.algo_infos.algo, info)
-    def __init__(self, rundata_path: str):
+    def __init__(self, rundata_path: str, **kwargs):
         self.file_infos = {}
-        super().__init__(rundata_path+"/Qubo")
+        super().__init__(rundata_path+"/Qubo", **kwargs)
 
         self.N_keys = sorted(self.file_infos.keys())
         self.Algo_keys = sorted(self.file_infos[self.N_keys[0]].keys())
@@ -376,13 +376,13 @@ class SatDataLoader(DataLoader):
     n: int
     type_name: str
     
-    def load_file(self, file: str, dir: str):
+    def load_file(self, file: str, dir: str, **kwargs):
         info: SatRunFile = SatRunFile.from_file(dir + "/" + file)
-        if (info != None):
+        if (info != None and info.algo_infos.is_valid(**kwargs)):
             self.file_infos.setdefault(info.N, {}).setdefault(info.type_name, {}).setdefault(info.algo_infos.algo, info)
-    def __init__(self, rundata_path: str):
+    def __init__(self, rundata_path: str, **kwargs):
         self.file_infos = {}
-        super().__init__(rundata_path+"/Sat")
+        super().__init__(rundata_path+"/Sat", **kwargs)
 
         self.N_keys = sorted(self.file_infos.keys())
         self.type_keys = sorted(self.file_infos[self.N_keys[0]].keys())

@@ -1,3 +1,5 @@
+from typing import Any
+
 import matplotlib.pyplot as plt
 
 from button import ButtonCycle, KeyHoldEvent, ButtonCheckPartial, TextField
@@ -34,9 +36,12 @@ class Window:
     plot_axis: PlotAxis
     key_held: KeyHoldEvent
     
-    def __init__(self, data_loaders: dict[str, DataLoader], figure: plt.Figure):
+    kwargs: dict[str, Any]
+    
+    def __init__(self, data_loaders: dict[str, DataLoader], figure: plt.Figure, **kwargs):
         self.figure = figure
         self.data_loaders = data_loaders
+        self.kwargs = kwargs
         
         self.figure.canvas.mpl_connect('key_press_event', lambda evt: self.on_key_press(repr(evt.key)))
         self.key_held: KeyHoldEvent = KeyHoldEvent(self.figure)
@@ -74,7 +79,7 @@ class Window:
         self.CORRELATION_PLOT = ButtonCycle(self.figure.add_axes([0.51, 0.02, 0.1, 0.05]), ["mean+std", "regression"], callback=self.update)
         self.REGRESSION = ButtonCycle(self.figure.add_axes([0.62, 0.02, 0.1, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=self.update)
         
-        sorted_algos = sorted([(self.data_loaders["NK"].get_file(algo).algo_infos.get_plot_label(), algo) for algo in self.data_loaders["NK"].Algo_keys], key=lambda t: t[0])
+        sorted_algos = sorted([(self.data_loaders["NK"].get_file(algo).algo_infos.get_full_label('plot', **self.kwargs), algo) for algo in self.data_loaders["NK"].Algo_keys], key=lambda t: t[0])
         temp_keys, temp_values = list(zip(*sorted_algos))
         half_point = len(sorted_algos) // 2
         self.SELECTED_ALGOS_1 = ButtonCheckPartial(self.figure.add_axes([0.73, 0.02, 0.12, 0.96]), temp_keys[:half_point], temp_values[:half_point], callback=self.update)

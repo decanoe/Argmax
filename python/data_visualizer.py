@@ -1,4 +1,5 @@
 import os
+from typing import Any
 from tables import generate_all_tables
 from data_loader import NKDataLoader, SatDataLoader, QuboDataLoader
 import matplotlib.pyplot as plt
@@ -13,15 +14,21 @@ plt.rcParams.update({
     "savefig.format": "pdf",
 })
 
-directory: str = dir_path+"/../rundata/local_search/b1_000_000"
-data_loaders = {
-    "NK": NKDataLoader(directory),
-    "Sat": SatDataLoader(directory),
-    "Qubo": QuboDataLoader(directory),
+kwargs: dict[str, Any] = {
+    # "display_ordering": True,
+    # "display_aspiration": True,
+    # "display_push_order": True,
 }
 
-generate_all_tables(data_loaders, dir_path + "/output")
-exit(0)
+directory: str = dir_path+"/../rundata/local_search/b1_000_000"
+data_loaders = {
+    "NK": NKDataLoader(directory, **kwargs),
+    "Sat": SatDataLoader(directory, **kwargs),
+    "Qubo": QuboDataLoader(directory, **kwargs),
+}
+
+# generate_all_tables(data_loaders, dir_path + "/output")
+# exit(0)
 
 fig, _ = plt.subplots()
-Window(data_loaders, fig)
+Window(data_loaders, fig, **kwargs)

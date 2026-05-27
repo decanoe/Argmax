@@ -44,5 +44,5 @@ class PlotCorrelationHistogram(PlotCorrelation):
         
         counts /= counts.sum()
         
-        line, = self.axis.plot(discrete_values, counts, label=run_info.algo_infos.get_full_label() + " frequency", color = run_info.algo_infos.get_color(), linestyle = run_info.algo_infos.get_style())
-        self.add_line(line, run_info.algo_infos.get_full_label() + " frequency")
+        line, = self.axis.plot(discrete_values, counts, label=run_info.algo_infos.get_full_label('plot', **self.window.kwargs) + " frequency", color = run_info.algo_infos.get_color(), linestyle = run_info.algo_infos.get_style())
+        self.add_line(line, run_info.algo_infos.get_full_label('plot', **self.window.kwargs) + " frequency")

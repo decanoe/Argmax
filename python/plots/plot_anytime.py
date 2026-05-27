@@ -40,5 +40,5 @@ class PlotAnytime(PlotAnnotedAxis):
             run_info = data_loader.get_file(algo)
             data = run_info.get_anytime_scores()
             
-            line, = self.axis.plot(data.budget, data.fitness, label=run_info.algo_infos.get_full_label(), color = run_info.algo_infos.get_color(), linestyle = run_info.algo_infos.get_style())
-            self.add_line(line, run_info.algo_infos.get_full_label())
+            line, = self.axis.plot(data.budget, data.fitness, label=run_info.algo_infos.get_full_label('plot', **self.window.kwargs), color = run_info.algo_infos.get_color(), linestyle = run_info.algo_infos.get_style())
+            self.add_line(line, run_info.algo_infos.get_full_label('plot', **self.window.kwargs))

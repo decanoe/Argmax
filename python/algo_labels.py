@@ -124,6 +124,8 @@ class Algo:
         "least": "red",
         "random": "green",
         "middle": "magenta",
+        "middle2": "magenta",
+        "median": "magenta",
     }
     
     algo: str
@@ -147,7 +149,10 @@ class Algo:
         return ""
     def get_full_label(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
         return f"{self.get_category(lang, **kwargs)} {self.get_label(lang, **kwargs)}"
-        
+    
+    def is_valid(self, **kwargs) -> bool:
+        return True
+    
     @classmethod
     def from_algo(cls, algo: str) -> Algo:
         if (algo.startswith("greedy_tabu")):
@@ -184,6 +189,12 @@ class GreedyAlgo(Algo):
         if hasattr(self, "negative_ordering"): temp += f" {translate_ordering(self.negative_ordering, lang, **kwargs)}-"
         return temp
 
+    def is_valid(self, **kwargs) -> bool:
+        if not kwargs.get("display_ordering", False):
+            if hasattr(self, "positive_ordering") and self.positive_ordering != 'Desc': return False
+            if hasattr(self, "negative_ordering") and self.negative_ordering != 'Desc': return False
+        return super().is_valid(**kwargs)
+    
 class GreedyJumperAlgo(GreedyAlgo):
     scope: SCOPES
     criterion: CRITERIONS
@@ -227,9 +238,9 @@ class GreedyJumperAlgo(GreedyAlgo):
     def temp_criterion(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs)-> str:
         return translate_criterion_gj(self.criterion, lang, **kwargs)
     
-    def get_plot_color(self) -> str:
+    def get_color(self) -> str:
         return self.REFERENCE_COLORS[self.criterion]
-    def get_plot_style(self) -> str:
+    def get_style(self) -> str:
         return "solid" if self.scope == "all" else "dashdot"
     
     def get_label(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
@@ -249,9 +260,9 @@ class HillClimberAlgo(Algo):
         algo, _              = get_literal(self.algo, algo, Literal['hc'])
         algo, self.criterion = get_literal(self.algo, algo, CRITERIONS)
 
-    def get_plot_color(self) -> str:
+    def get_color(self) -> str:
         return self.REFERENCE_COLORS.get(self.criterion, 'gray')
-    def get_plot_style(self) -> str:
+    def get_style(self) -> str:
         return "dashed"
     
     def get_label(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
@@ -277,15 +288,15 @@ class GreedyTabuAlgo(GreedyAlgo):
         algo, self.positive_ordering = get_literal(self.algo, algo, ORDERING, '+')
         algo, self.negative_ordering = get_literal(self.algo, algo, ORDERING, '-')
 
-    def get_plot_color(self) -> str:
+    def get_color(self) -> str:
         return "cyan"
-    def get_plot_style(self) -> str:
+    def get_style(self) -> str:
         return (0, (3, 1, 1, 1, 1, 1)) # densely dashdotdotted (double dot)
     
     def get_label(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
         temp: str = translate_amount(self.tabu_size, lang, **kwargs)
-        if self.tabu_random != 0: temp += f" translate_amount(self.tabu_random, lang, **kwargs)"
-        temp += f" {self.temp_order()}"
+        if self.tabu_random != 0: temp += f" {translate_amount(self.tabu_random, lang, **kwargs)}"
+        temp += f" {self.temp_order(**kwargs)}"
         return temp
     def get_category(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
         temp: str = "\\GJTabu" if lang == 'tex' else "GJ tabu"
@@ -294,6 +305,13 @@ class GreedyTabuAlgo(GreedyAlgo):
         return temp
     def get_category_sort_index(self, **kwargs) -> int:
         return 101
+    
+    def is_valid(self, **kwargs) -> bool:
+        if not kwargs.get("display_aspiration", False):
+            if not self.aspiration: return False
+        if not kwargs.get("display_push_order", False):
+            if self.push_order != 'WorstToBest': return False
+        return super().is_valid(**kwargs)
 class TabuAlgo(Algo):
     aspiration: bool
     tabu_size: float
@@ -306,19 +324,24 @@ class TabuAlgo(Algo):
         algo, self.tabu_size    = get_amount(self.algo, algo)
         algo, self.tabu_random  = get_amount(self.algo, algo, 'r')
 
-    def get_plot_color(self) -> str:
+    def get_color(self) -> str:
         return "gray"
-    def get_plot_style(self) -> str:
+    def get_style(self) -> str:
         return (0, (3, 1, 1, 1, 1, 1)) # densely dashdotdotted (double dot)
     
     def get_label(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
         temp: str = translate_amount(self.tabu_size, lang, **kwargs)
-        if self.tabu_random != 0: temp += f" translate_amount(self.tabu_random, lang, **kwargs)"
+        if self.tabu_random != 0: temp += f" {translate_amount(self.tabu_random, lang, **kwargs)}"
         return temp
     def get_category(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
         return "\\Tabu" if lang == 'tex' else "tabu"
     def get_category_sort_index(self, **kwargs) -> int:
         return 100
+
+    def is_valid(self, **kwargs) -> bool:
+        if not kwargs.get("display_aspiration", False):
+            if not self.aspiration: return False
+        return super().is_valid(**kwargs)
 
 class GreedyLambdaAlgo(GreedyAlgo):
     aspiration: bool
@@ -332,19 +355,24 @@ class GreedyLambdaAlgo(GreedyAlgo):
         algo, self.positive_ordering = get_literal(self.algo, algo, ORDERING, '+')
         algo, self.negative_ordering = get_literal(self.algo, algo, ORDERING, '-')
 
-    def get_plot_color(self) -> str:
+    def get_color(self) -> str:
         return "yellow"
-    def get_plot_style(self) -> str:
+    def get_style(self) -> str:
         return (0, (3, 1, 1, 1, 1, 1)) # densely dashdotdotted (double dot)
     
     def get_label(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
-        return f"{translate_amount(self.lambda_, lang, **kwargs)} {self.temp_order()}"
+        return f"{translate_amount(self.lambda_, lang, **kwargs)} {self.temp_order(**kwargs)}"
     def get_category(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
         temp: str = "\\GJ_One_Lambda" if lang == 'tex' else "GJ lambda"
         if self.aspiration and kwargs.get("display_aspiration", False): temp += " aspiration"
         return temp
     def get_category_sort_index(self, **kwargs) -> int:
         return 201
+
+    def is_valid(self, **kwargs) -> bool:
+        if not kwargs.get("display_aspiration", False):
+            if not self.aspiration: return False
+        return super().is_valid(**kwargs)
 class LambdaAlgo(Algo):
     aspiration: bool
     lambda_: float
@@ -355,9 +383,9 @@ class LambdaAlgo(Algo):
         algo, self.aspiration   = get_bool(self.algo, algo, "aspiration")
         algo, self.lambda_  = get_amount(self.algo, algo)
 
-    def get_plot_color(self) -> str:
+    def get_color(self) -> str:
         return "gray"
-    def get_plot_style(self) -> str:
+    def get_style(self) -> str:
         return (0, (3, 1, 1, 1, 1, 1)) # densely dashdotdotted (double dot)
     
     def get_label(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
@@ -368,3 +396,8 @@ class LambdaAlgo(Algo):
         return temp
     def get_category_sort_index(self, **kwargs) -> int:
         return 200
+
+    def is_valid(self, **kwargs) -> bool:
+        if not kwargs.get("display_aspiration", False):
+            if not self.aspiration: return False
+        return super().is_valid(**kwargs)
