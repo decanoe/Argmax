@@ -4,9 +4,11 @@ from tables import generate_all_tables
 from data_loader import NKDataLoader, SatDataLoader, QuboDataLoader
 import matplotlib.pyplot as plt
 from window import Window
+import sys
 
 if __name__ != "__main__":
     exit()
+
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 plt.rcParams.update({
@@ -27,8 +29,9 @@ data_loaders = {
     "Qubo": QuboDataLoader(directory, **kwargs),
 }
 
-# generate_all_tables(data_loaders, dir_path + "/output")
-# exit(0)
+if ("tables" in sys.argv):
+    generate_all_tables(data_loaders, dir_path + "/output")
+    exit(0)
 
 fig, _ = plt.subplots()
 Window(data_loaders, fig, **kwargs)

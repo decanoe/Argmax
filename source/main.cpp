@@ -8,7 +8,6 @@
 void path_message() {
     std::cerr << "\033[1;31mIf you want to run an algorithm you need to put a path to a file with all the informations\n\033[0m";
     std::cerr << "\033[1;31mIf you want to launch the visualizer please use -visualize or -v\n\033[0m";
-    std::cerr << "\033[1;31mIf you want to test a Faraway hand please use -test or -t followed by all the card indices\n\033[0m";
     std::cerr << "\033[1;31mIf you want to create a NK instance please use -create_nk or -nk followed by the N and the K wanted and a path to save the instance\n\033[0m";
     exit(1);
 }
@@ -31,6 +30,10 @@ int main(int argc, char *args[]) {
     std::string arg1 = args[1];
     if (arg1 == "-visualize" || arg1 == "-v") {
         system("python ./python/data_visualizer.py");
+        return 0;
+    }
+    if (arg1 == "-tables") {
+        system("python ./python/data_visualizer.py tables");
         return 0;
     }
     else if (arg1 == "-create_nk" || arg1 == "-nk") {
