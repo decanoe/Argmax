@@ -305,6 +305,8 @@ class DataLoader:
 
     def get_parameters_iterator(self) -> list[tuple[str, dict[str, Any]]]:
         return []
+    def get_with_parameters(self, algo: str, **kwargs) -> RunFile:
+        pass
 class NKDataLoader(DataLoader):
     file_infos: dict[int, dict[int, dict[str, NKRunFile]]]
     N_keys: list[str]
@@ -315,6 +317,7 @@ class NKDataLoader(DataLoader):
     def load_file(self, file: str, dir: str, **kwargs):
         info: NKRunFile = NKRunFile.from_file(dir + "/" + file)
         if (info != None and info.algo_infos.is_valid(**kwargs)):
+            if (info.N > 100): return
             self.file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo_infos.algo, info)
     def __init__(self, rundata_path: str, **kwargs):
         self.file_infos = {}
@@ -329,6 +332,8 @@ class NKDataLoader(DataLoader):
     
     def get_file(self, algo: str) -> RunFile:
         return self.file_infos[self.n][self.k][algo]
+    def get_with_parameters(self, algo: str, **kwargs) -> RunFile:
+        return self.file_infos[kwargs.get("n", self.n)][kwargs.get("k", self.k)][algo]
     def set_parameters(self, **kwargs):
         if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
         if (kwargs.get("k", self.k) in self.K_keys): self.k = kwargs.get("k")
@@ -348,6 +353,7 @@ class QuboDataLoader(DataLoader):
     def load_file(self, file: str, dir: str, **kwargs):
         info: QuboRunFile = QuboRunFile.from_file(dir + "/" + file)
         if (info != None and info.algo_infos.is_valid(**kwargs)):
+            if (info.N > 100): return
             self.file_infos.setdefault(info.N, {}).setdefault(info.algo_infos.algo, info)
     def __init__(self, rundata_path: str, **kwargs):
         self.file_infos = {}
@@ -360,6 +366,8 @@ class QuboDataLoader(DataLoader):
     
     def get_file(self, algo: str) -> RunFile:
         return self.file_infos[self.n][algo]
+    def get_with_parameters(self, algo: str, **kwargs) -> RunFile:
+        return self.file_infos[kwargs.get("n", self.n)][algo]
     def set_parameters(self, **kwargs):
         if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
         return super().set_parameters(**kwargs)
@@ -379,6 +387,7 @@ class SatDataLoader(DataLoader):
     def load_file(self, file: str, dir: str, **kwargs):
         info: SatRunFile = SatRunFile.from_file(dir + "/" + file)
         if (info != None and info.algo_infos.is_valid(**kwargs)):
+            if (info.N > 100): return
             self.file_infos.setdefault(info.N, {}).setdefault(info.type_name, {}).setdefault(info.algo_infos.algo, info)
     def __init__(self, rundata_path: str, **kwargs):
         self.file_infos = {}
@@ -393,6 +402,8 @@ class SatDataLoader(DataLoader):
     
     def get_file(self, algo: str) -> RunFile:
         return self.file_infos[self.n][self.type_name][algo]
+    def get_with_parameters(self, algo: str, **kwargs) -> RunFile:
+        return self.file_infos[kwargs.get("n", self.n)][kwargs.get("type_name", self.type_name)][algo]
     def set_parameters(self, **kwargs):
         if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
         if (kwargs.get("type_name", self.type_name) in self.type_keys): self.type_name = kwargs.get("type_name")

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from window import Window
 
+from matplotlib.axes import Axes
 from matplotlib.backend_bases import Event
 
 from plots.plot_axis import PlotAxis
@@ -18,11 +19,19 @@ class PlotDualCorrelation(PlotAxis):
     def __init__(self, window: Window):
         super().__init__(window)
         
-        if (self.window.get_correlation_type() == "regression"):
-            self.correlation = PlotCorrelationReg(window, window.figure.add_subplot(211))
+        axis: Axes = None
+        if (window.do_hist_plot()):
+            axis = window.figure.add_subplot(211)
         else:
-            self.correlation = PlotCorrelationMeanStd(window, window.figure.add_subplot(211))
-        self.histogram = PlotCorrelationHistogram(window, window.figure.add_subplot(212, sharex=self.correlation.axis))
+            axis = window.figure.add_subplot(111)
+        
+        if (self.window.get_correlation_type() == "regression"):
+            self.correlation = PlotCorrelationReg(window, axis)
+        else:
+            self.correlation = PlotCorrelationMeanStd(window, axis)
+        
+        if (window.do_hist_plot()):
+            self.histogram = PlotCorrelationHistogram(window, window.figure.add_subplot(212, sharex=self.correlation.axis))
     
     def soft_update(self, event: Event = None):
         super().soft_update(event)

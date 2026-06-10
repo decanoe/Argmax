@@ -1,7 +1,10 @@
 import os
+import threading
 from typing import Any, Literal
+
+import tqdm
 from algo_labels import Algo
-from data_loader import DataLoader, NKDataLoader
+from data_loader import DataLoader, NKDataLoader, RunFile
 import re
 
 def add_spaces(value: float, str_size: int):
@@ -208,7 +211,7 @@ class AvgScoreTable(Table):
 class MaxScoreTable(Table):
     budget: int
     
-    def __init__(self, data_loaders: list[DataLoader], algo_list: list[tuple[str, str]], budget: int):
+    def __init__(self, data_loaders: list[DataLoader], algo_list: list[Algo], budget: int):
         super().__init__("Instances", algo_list, 'max')
         self.budget = budget
         
@@ -250,6 +253,27 @@ class AvgBudgetTable(Table):
     def get_tex_label(self):
         return "tab:mean_budget"
 
+def ensure_load(data_loaders: list[DataLoader], algo_list: list[Algo]):
+    def load(data_loader: DataLoader, keys, algo: Algo):
+        data_loader.get_with_parameters(algo.get_algo(), **keys).get_anytime_scores(100)
+        data_loader.get_with_parameters(algo.get_algo(), **keys).get_avg_run_score()
+
+    threads = []
+    
+    for data_loader in data_loaders:
+        for instance, keys in data_loader.get_parameters_iterator():
+            # load(data_loader, keys, algo_list)
+            for algo in algo_list:
+                t = threading.Thread(target=load, args=(data_loader,keys,algo))
+                threads.append(t)
+
+    # Start each thread
+    for t in threads:
+        t.start()
+
+    for i in tqdm.tqdm(range(len(threads))):
+        threads[i].join()
+
 def generate_all_tables(data_loaders: dict[str, DataLoader], output_path: str, **kwargs):
     def hc_selector(algo: str) -> bool:
         return (algo.startswith("hc_")
@@ -257,6 +281,19 @@ def generate_all_tables(data_loaders: dict[str, DataLoader], output_path: str, *
                 and "first" not in algo
         )
     def gj_selector(algo: str) -> bool:
+        return (algo.startswith("greedy_")
+                and "median" not in algo
+                and "middle" not in algo
+                and "middle2" not in algo
+                and "fixed" not in algo
+                and "random" not in algo
+                and "adaptative" not in algo
+                and "guided" not in algo
+                and "tabu" not in algo
+                and "lambda" not in algo
+                and "Asc+" not in algo and "Asc-" not in algo
+                and "Rand+" not in algo and "Rand-" not in algo
+        )
         return (algo.startswith("greedy_")
                 and ("fixed" not in algo or re.search("fixed_[^_]*_\\.25", algo))
                 and ("adaptative" not in algo or "least" in algo or "first" in algo)
@@ -274,6 +311,8 @@ def generate_all_tables(data_loaders: dict[str, DataLoader], output_path: str, *
     print([algo.get_full_label() for algo in algo_list])
     
     table_data_loaders: list[DataLoader] = [data_loaders["NK"], data_loaders["Sat"], data_loaders["Qubo"]]
+    
+    ensure_load(table_data_loaders, algo_list)
     
     table = AvgScoreTable(table_data_loaders, algo_list)
     TableMarkdownSaver(table, **kwargs).save(output_path + "/avg.md")

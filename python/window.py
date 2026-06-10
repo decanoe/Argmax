@@ -26,6 +26,7 @@ class Window:
     AXIS1_WHEN: ButtonCycle = None
     AXIS2_WHEN: ButtonCycle = None
     CORRELATION_PLOT: ButtonCycle = None
+    CORRELATION_HIST: ButtonCycle = None
     REGRESSION: ButtonCycle = None
     X_SCALE: ButtonCycle = None
     LEGEND_POSITION: ButtonCycle = None
@@ -78,6 +79,7 @@ class Window:
 
         self.CORRELATION_PLOT = ButtonCycle(self.figure.add_axes([0.51, 0.02, 0.1, 0.05]), ["mean+std", "regression"], callback=self.update)
         self.REGRESSION = ButtonCycle(self.figure.add_axes([0.62, 0.02, 0.1, 0.05]), ["linear", "quadratic", "degree 3"], [1, 2, 3], callback=self.update)
+        self.CORRELATION_HIST = ButtonCycle(self.figure.add_axes([0.4, 0.02, 0.1, 0.05]), ["correlation+hist", "correlation"], [True, False], callback=self.update)
         
         sorted_algos = sorted([(self.data_loaders["NK"].get_file(algo).algo_infos.get_full_label('plot', **self.kwargs), algo) for algo in self.data_loaders["NK"].Algo_keys], key=lambda t: t[0])
         temp_keys, temp_values = list(zip(*sorted_algos))
@@ -95,6 +97,8 @@ class Window:
             for i in range(len(button.values)):
                 algo = button.values[i]
                 if (algo.startswith("hc_") and "cycle" not in algo and "first" not in algo):
+                    button.check_index(i)
+                elif (algo.startswith("greedy_") and ("all" in algo or "improve" in algo) and ("best" in algo or "least" in algo or "first" in algo) and "guided" not in algo):
                     button.check_index(i)
 
     def clear_plot_axes(self):
@@ -126,7 +130,7 @@ class Window:
         for text in self.figure.findobj(match=lambda x: hasattr(x, "set_fontsize")):
             text.set_fontsize(size)
     def visibility_update(self, event = None):
-        for b in [self.AXIS1, self.AXIS2, self.CORRELATION_PLOT]:
+        for b in [self.AXIS1, self.AXIS2, self.CORRELATION_PLOT, self.CORRELATION_HIST]:
             b.set_visible(self.PLOT_TYPE.get_value() == "correlation" and not(self.is_full_screen()))
         for b in [self.X_SCALE]:
             b.set_visible(self.PLOT_TYPE.get_value() != "correlation" and not(self.is_full_screen()))
@@ -182,16 +186,18 @@ class Window:
         return axis2
     def get_axis1_label(self) -> str:
         axis1: str = self.AXIS1.get_label()
-        if (axis1 == "nb_better_neighbors" or axis1 == "fitness"):
+        if (axis1 == "improving neighbors" or axis1 == "fitness"):
             axis1 += " " + self.AXIS1_WHEN.get_label()
         return axis1
     def get_axis2_label(self) -> str:
         axis2: str = self.AXIS2.get_label()
-        if (axis2 == "nb_better_neighbors" or axis2 == "fitness"):
+        if (axis2 == "improving neighbors" or axis2 == "fitness"):
             axis2 += " " + self.AXIS2_WHEN.get_label()
         return axis2
     def get_correlation_type(self) -> str:
         return self.CORRELATION_PLOT.get_value()
+    def do_hist_plot(self) -> bool:
+        return self.CORRELATION_HIST.get_value()
     def get_regression_degree(self) -> int:
         return self.REGRESSION.get_value()
     def get_x_scale(self) -> str:

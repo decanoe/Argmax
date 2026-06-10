@@ -59,6 +59,6 @@ class PlotCorrelation(PlotAnnotedAxis):
     def do_plot_x_equal_y_reference(self) -> bool:
         axis1: str = self.window.get_axis1()
         axis2: str = self.window.get_axis2()
-        return ("size_of_the_jump" in axis1 or "nb_better_neighbors" in axis1) and ("size_of_the_jump" in axis2 or "nb_better_neighbors" in axis2)
+        return ("size_of_the_jump" in axis1 or "nb_better_neighbors" in axis1) and ("size_of_the_jump" in axis2 or "nb_better_neighbors" in axis2) and "delta" not in axis1 + axis2
     def plot_single(self, algo: str, all_x: np.ndarray[float], all_y: np.ndarray[float]):
         pass
