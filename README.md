@@ -1,46 +1,52 @@
-# Etude d'algorithmes de recherches locales
+# Recherches locales gloutonnes pour la résolution de problèmes d’optimisation combinatoire
 ## Sommaire
 - [Introduction](#introduction)
+- [Greedy Jumper](#greedy-jumper)
 - [Utilisation](#utilisation)
 - [Résultats et interprétations](#résultats-et-interprétations)
 - [Derniers ajouts](#derniers-ajouts)
 
-Autres pages :
-- [Guide d'utilisation complet](docs/how_to_use.md)
-- [Résultats d'évolution](docs/evolution_results.md)
-- [Résultats de recherche locale](docs/local_search_results.md)
-
 ## Introduction
-L'objectif de ce dépot est de tester différents algorithmes de recherche locales sur différents problèmes (principalement des problèmes d'optimisation sur des chaines de variables booléenes).
+Ce dépôt corresponds à deux stages de recherche effectués à l'Université d'Angers en 3ème année de Double Licence Mathématiques-Informatique et en 1ère année de Master Informatique.
+Ces stages portent sur l'étude de méthodes heuristiques d'optimisation combinatoire appliquées à des problèmes pseudo-booléens,
 
-Les différents problèmes implémentés sont :
-- SAT
-- NK
-- *Far Away (peu représentatif)*
+Leur objectif est d'explorer une alternative aux approches classiques en étudiant une méthode de recherche locale basée sur des mouvements agrégés de plusieurs variables, appelée *Greedy Jumper*. Cette méthode a été conçue dans le cadre du stage avec l'encadrant et constitue le cœur du travail réalisé.
 
-Parmis les différents algorithmes il y a :
-- Algorithme évolutif
-- Algorithme mimétique
-- Hill Climb
-- Recherche tabou
-- Recherche glouton
-- Greedy Jumper
+## Greedy Jumper
+L'idée est d'étendre le voisinage classique (basé sur des flips unitaires) vers des mouvements agrégés, tout en conservant la logique de sélection gloutonne propre à la recherche locale.
 
-Afin d'étudier les résultats, deux interfaces sont disponibles. Une première pour étudier les executions des algorithmes évolutifs et mimétiques. Une autre pour comparer les perfomances des algorithmes moins complexes.
+Chaque itération du Greedy Jumper se déroule comme suit :
+Dans un premier temps, les variables sont triées en fonction de la variation de fitness induite par un flip individuel. On considère ensuite N sauts s<sub>i</sub> formés chacun des i variables ayant le meilleur impact local. C'est parmi ces N sauts appliqués à la solution actuelle que le Greedy Jumper choisira un voisin améliorant pour continuer sa recherche.
 
 ## Utilisation
 > [!NOTE]
 > Un guide complet est disponible [ici](docs/how_to_use.md)
 
-Dû au nombre élévé de paramètres pour chaque éxecution, une grande partie des algorithmes sont éxécutés à l'aide d'un fichier contenant toute les informations.
-
 > [!WARNING]
-> Le projet complet a été conçu sous Windows 10 et peut ne pas marcher correctement sous d'autres systèmes.
+> Le projet complet a été conçu sous Linux et peut ne pas marcher correctement sous d'autres systèmes.
+
+Pour compiler le projet, se placer à la racine du répertoire, puis exécuter les commandes suivantes :
+```
+mkdir build
+cd build
+cmake ..
+make
+cd ..
+```
+
+Pour exécuter, utiliser la commande :
+```
+./build/Argmax <file> <options>
+```
+ou
+```
+./build/Argmax <options>
+```
+
+Dû au nombre élevé de paramètres, chaque algorithme est exécuté à l'aide d'un fichier contenant l'ensemble des informations.
 
 ## Résultats et interprétations
 L'ensemble des résultats sont répertoriés [ici](docs/local_search_results.md).
-> [!NOTE]
-> Ces résultats concernent principalement les algorithmes de recherche locales simples. Pour des résultats sur les algorithmes évolutifs et mimétiques, voir [ici](docs/evolution_results.md).
 
 ## Derniers ajouts
 - réécriture des tableaux de budgets moyens ([ici](docs/local_search_results.md))

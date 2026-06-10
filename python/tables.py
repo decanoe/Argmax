@@ -152,13 +152,14 @@ class TableTexSaver(TableSaver):
 \\centering
 \\setlength{\\tabcolsep}{4pt} % Ajustement de l'espacement des colonnes
 \\begin{scriptsize}
+\\makebox[\\textwidth][c]{%
 """
-        tex_headers += "\\begin{tabular}{l |" + " | ".join([" ".join("c" * c[1]) for c in categories]) + "}\n"
+        tex_headers += "\\begin{tabular}{| l |" + " | ".join([" ".join("c" * c[1]) for c in categories]) + " |}\n"
         tex_headers += "\\hline\n"
         tex_headers += add_spaces("", cell_size)
         for category, size in categories:
             if size == 1:   tex_headers += f" & {add_spaces(category, cell_size)}"
-            else:           tex_headers += " & " + add_spaces("\\multicolumn{" + str(size) + "}{" + ("c|" if category != categories[-1][0] else "c") + "}{" + category + "}", cell_size * size + len(" & ") * (size - 1))
+            else:           tex_headers += " & " + add_spaces("\\multicolumn{" + str(size) + "}{c|}{" + category + "}", cell_size * size + len(" & ") * (size - 1))
         tex_headers += "\\\\ \n"
         tex_headers += " & ".join([add_spaces(h, cell_size) for h in [self.table.corner_header] + [h[0] for h in modified_headers]])
         tex_headers += "\\\\ \n"
@@ -184,7 +185,7 @@ class TableTexSaver(TableSaver):
         tex_body += "\\hline\n"
         
         
-        tex_footer: str = """\\end{tabular}
+        tex_footer: str = """\\end{tabular}}
 \\end{scriptsize}
 \\end{table}"""
 
