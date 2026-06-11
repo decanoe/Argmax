@@ -23,21 +23,31 @@ protected:
 };
 class HC_Random_Criterion: public HillClimber::Selection_Criterion {
 public:
-    HC_Random_Criterion(): visited_indices() {}
+    HC_Random_Criterion(): indices(), remaining(0) {}
 
     unsigned int get_test_index(unsigned int default_index, unsigned int iteration_index, unsigned int nb_args) override {
-        if (default_index == 0) this->visited_indices.clear();
-        unsigned int index = RandomUtils::get_index(nb_args, visited_indices, *this->random_generator);
-        visited_indices.insert(index);
+        if (default_index == 0) {
+            this->remaining = nb_args;
+            if (this->indices.size() != nb_args) {
+                this->indices.resize(nb_args);
+                for (unsigned int i = 0; i < nb_args; i++) indices[i] = i;
+            }
+        }
 
-        return index;
+        unsigned int i = (*random_generator)() % remaining;
+        unsigned int result = indices[i];
+        remaining--;
+        std::swap(indices[i], indices[remaining]);
+
+        return result;
     }
     bool do_keep(float tested_score, float init_score, bool first_keep, float iteration_best_score) const override {
         return (tested_score > init_score);
     }
     bool stop_at_first_improve() const override { return true; }
 protected:
-    std::set<unsigned int> visited_indices;
+    std::vector<unsigned int> indices;
+    unsigned int remaining;
 };
 class HC_First_Criterion: public HillClimber::Selection_Criterion {
 public:
