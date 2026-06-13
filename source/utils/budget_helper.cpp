@@ -30,3 +30,9 @@ BudgetHelper& BudgetHelper::operator+=(unsigned int cost) {
 bool BudgetHelper::out_of_budget() const {
     return this->current_global_budget >= this->max_budget;
 }
+
+
+std::ostream& BudgetHelper::cout(std::ostream& c) const {
+    return c << "budget : " << current_global_budget << " / " << max_budget;
+}
+std::ostream& operator<<(std::ostream&c, const BudgetHelper& b) { return b.cout(c); }

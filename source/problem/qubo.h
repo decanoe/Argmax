@@ -7,15 +7,10 @@ namespace Problem {
     class Qubo: public Problem
     {
     protected:
-        class Weight {
-            public:
-            Weight(unsigned int index1, unsigned int index2, float value);
-            unsigned int index1, index2;
-            float value;
-        };
-        
         unsigned int n;
-        std::vector<Weight> weights;
+        std::vector<unsigned int> indices1;
+        std::vector<unsigned int> indices2;
+        std::vector<float> _values;
     public:
         Qubo(const std::string& path);
         Qubo(unsigned int n, std::mt19937& rand);

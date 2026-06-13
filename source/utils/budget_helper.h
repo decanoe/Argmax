@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 
 class BudgetHelper
 {
@@ -22,4 +23,7 @@ public:
 
     /// @return true if the max budget is reached
     bool out_of_budget() const;
+
+    std::ostream& cout(std::ostream&) const;
 };
+std::ostream& operator<<(std::ostream&, const BudgetHelper&);
