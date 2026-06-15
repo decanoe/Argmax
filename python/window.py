@@ -14,7 +14,9 @@ class Window:
     # =========== buttons =============
     FULL_SCREEN: bool = False
     PLOT_TYPE: ButtonCycle = None
-    N: ButtonCycle = None
+    N_NK: ButtonCycle = None
+    N_SAT: ButtonCycle = None
+    N_QUBO: ButtonCycle = None
     K: ButtonCycle = None
     SAT_TYPE: ButtonCycle = None
     PROBLEM: ButtonCycle = None
@@ -57,13 +59,19 @@ class Window:
 
     def place_buttons(self):
         N_keys = sorted(self.data_loaders["NK"].N_keys)
-        self.N = ButtonCycle(self.figure.add_axes([0.045, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
+        self.N_NK = ButtonCycle(self.figure.add_axes([0.045, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
+        self.N_NK.set_to(-1)
+        N_keys = sorted(self.data_loaders["Sat"].N_keys)
+        self.N_SAT = ButtonCycle(self.figure.add_axes([0.045, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
+        self.N_SAT.set_to(-1)
+        N_keys = sorted(self.data_loaders["Qubo"].N_keys)
+        self.N_QUBO = ButtonCycle(self.figure.add_axes([0.045, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
+        self.N_QUBO.set_to(-1)
+        
         K_keys = sorted(self.data_loaders["NK"].K_keys)
         self.K = ButtonCycle(self.figure.add_axes([0.155, 0.2, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, self.update)
         Sat_keys = sorted(self.data_loaders["Sat"].type_keys) if "Sat" in self.data_loaders else ["no sat"]
-        self.SAT_TYPE = ButtonCycle(self.figure.add_axes([0.265, 0.2, 0.1, 0.05]), Sat_keys, callback=self.update)
-        
-        self.N.set_to(-1)
+        self.SAT_TYPE = ButtonCycle(self.figure.add_axes([0.265, 0.2, 0.1, 0.05]), Sat_keys, callback=self.update)        
         self.K.set_to(-1)
 
         self.PROBLEM = ButtonCycle(self.figure.add_axes([0.045, 0.14, 0.1, 0.05]), list(self.data_loaders.keys()), callback=self.update)
@@ -135,15 +143,19 @@ class Window:
         for b in [self.X_SCALE]:
             b.set_visible(self.PLOT_TYPE.get_value() != "correlation" and not(self.is_full_screen()))
         
-        self.K.set_visible(self.get_problem() == "NK" and not(self.is_full_screen()))
-        self.SAT_TYPE.set_visible(self.get_problem() == "Sat" and not(self.is_full_screen()))
+        for b in [self.N_NK, self.K]:
+            b.set_visible(self.get_problem() == "NK" and not(self.is_full_screen()))
+        for b in [self.N_SAT, self.SAT_TYPE]:
+            b.set_visible(self.get_problem() == "Sat" and not(self.is_full_screen()))
+        for b in [self.N_QUBO]:
+            b.set_visible(self.get_problem() == "Qubo" and not(self.is_full_screen()))
         
         self.AXIS1_WHEN.set_visible(self.PLOT_TYPE.get_value() == "correlation" and (self.AXIS1.get_value() == "nb_better_neighbors" or self.AXIS1.get_value() == "fitness") and not(self.is_full_screen()))
         self.AXIS2_WHEN.set_visible(self.PLOT_TYPE.get_value() == "correlation" and (self.AXIS2.get_value() == "nb_better_neighbors" or self.AXIS2.get_value() == "fitness") and not(self.is_full_screen()))
         
         self.REGRESSION.set_visible(self.PLOT_TYPE.get_value() == "correlation" and self.CORRELATION_PLOT.get_value() == "regression" and not(self.is_full_screen()))
         
-        for b in [self.PLOT_TYPE, self.PROBLEM, self.LEGEND_POSITION, self.SELECTED_ALGOS_1, self.SELECTED_ALGOS_2, self.FILTER, self.N]:
+        for b in [self.PLOT_TYPE, self.PROBLEM, self.LEGEND_POSITION, self.SELECTED_ALGOS_1, self.SELECTED_ALGOS_2, self.FILTER]:
             b.set_visible(not(self.is_full_screen()))
         if self.is_full_screen():
             self.figure.subplots_adjust(left=0.075, right=0.98, bottom=0.1, top=0.95)
@@ -163,7 +175,10 @@ class Window:
     def get_plot_type(self) -> str:
         return self.PLOT_TYPE.get_value()
     def get_n(self) -> str:
-        return self.N.get_value()
+        if (self.get_problem() == "NK"): return self.N_NK.get_value()
+        if (self.get_problem() == "Sat"): return self.N_SAT.get_value()
+        if (self.get_problem() == "Qubo"): return self.N_QUBO.get_value()
+        return self.N_NK.get_value()
     def get_k(self) -> str:
         return self.K.get_value()
     def get_sat_type(self) -> str:

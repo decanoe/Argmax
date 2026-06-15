@@ -107,6 +107,7 @@ class ButtonCycle:
 
     def set_visible(self, state: bool):
         self.axes.set_visible(state)
+        self.button.set_active(state)
 
     def set_to(self, index: int):
         self.index = index % len(self.labels)

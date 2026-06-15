@@ -317,7 +317,6 @@ class NKDataLoader(DataLoader):
     def load_file(self, file: str, dir: str, **kwargs):
         info: NKRunFile = NKRunFile.from_file(dir + "/" + file)
         if (info != None and info.algo_infos.is_valid(**kwargs)):
-            if (info.N > 100): return
             self.file_infos.setdefault(info.N, {}).setdefault(info.K, {}).setdefault(info.algo_infos.algo, info)
     def __init__(self, rundata_path: str, **kwargs):
         self.file_infos = {}
@@ -353,7 +352,6 @@ class QuboDataLoader(DataLoader):
     def load_file(self, file: str, dir: str, **kwargs):
         info: QuboRunFile = QuboRunFile.from_file(dir + "/" + file)
         if (info != None and info.algo_infos.is_valid(**kwargs)):
-            if (info.N > 100): return
             self.file_infos.setdefault(info.N, {}).setdefault(info.algo_infos.algo, info)
     def __init__(self, rundata_path: str, **kwargs):
         self.file_infos = {}
@@ -387,7 +385,6 @@ class SatDataLoader(DataLoader):
     def load_file(self, file: str, dir: str, **kwargs):
         info: SatRunFile = SatRunFile.from_file(dir + "/" + file)
         if (info != None and info.algo_infos.is_valid(**kwargs)):
-            if (info.N > 100): return
             self.file_infos.setdefault(info.N, {}).setdefault(info.type_name, {}).setdefault(info.algo_infos.algo, info)
     def __init__(self, rundata_path: str, **kwargs):
         self.file_infos = {}
