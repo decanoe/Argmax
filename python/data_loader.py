@@ -330,9 +330,15 @@ class NKDataLoader(DataLoader):
         self.k = self.K_keys[0]
     
     def get_file(self, algo: str) -> RunFile:
-        return self.file_infos[self.n][self.k][algo]
+        try:
+            return self.file_infos[self.n][self.k][algo]
+        except KeyError:
+            return None
     def get_with_parameters(self, algo: str, **kwargs) -> RunFile:
-        return self.file_infos[kwargs.get("n", self.n)][kwargs.get("k", self.k)][algo]
+        try:
+            return self.file_infos[kwargs.get("n", self.n)][kwargs.get("k", self.k)][algo]
+        except KeyError:
+            return None
     def set_parameters(self, **kwargs):
         if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
         if (kwargs.get("k", self.k) in self.K_keys): self.k = kwargs.get("k")
@@ -363,9 +369,15 @@ class QuboDataLoader(DataLoader):
         self.n = self.N_keys[0]
     
     def get_file(self, algo: str) -> RunFile:
-        return self.file_infos[self.n][algo]
+        try:
+            return self.file_infos[self.n][algo]
+        except KeyError:
+            return None
     def get_with_parameters(self, algo: str, **kwargs) -> RunFile:
-        return self.file_infos[kwargs.get("n", self.n)][algo]
+        try:
+            return self.file_infos[kwargs.get("n", self.n)][algo]
+        except KeyError:
+            return None
     def set_parameters(self, **kwargs):
         if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
         return super().set_parameters(**kwargs)
@@ -398,9 +410,15 @@ class SatDataLoader(DataLoader):
         self.type_name = self.type_keys[1]
     
     def get_file(self, algo: str) -> RunFile:
-        return self.file_infos[self.n][self.type_name][algo]
+        try:
+            return self.file_infos[self.n][self.type_name][algo]
+        except KeyError:
+            return None
     def get_with_parameters(self, algo: str, **kwargs) -> RunFile:
-        return self.file_infos[kwargs.get("n", self.n)][kwargs.get("type_name", self.type_name)][algo]
+        try:
+            return self.file_infos[kwargs.get("n", self.n)][kwargs.get("type_name", self.type_name)][algo]
+        except KeyError:
+            return None
     def set_parameters(self, **kwargs):
         if (kwargs.get("n", self.n) in self.N_keys): self.n = kwargs.get("n")
         if (kwargs.get("type_name", self.type_name) in self.type_keys): self.type_name = kwargs.get("type_name")

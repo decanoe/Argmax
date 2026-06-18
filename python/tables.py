@@ -1,8 +1,10 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import threading
+import unhandled_exit
 from typing import Any, Literal
 
-import tqdm
+from tqdm import tqdm
 from algo_labels import Algo
 from data_loader import DataLoader, NKDataLoader, RunFile
 import re
@@ -31,8 +33,9 @@ class Table:
         self.lines.append(line)
     
     def do_highlight(self, value: float, line_values: list[float]) -> bool:
-        if (self.highlight == 'max'): return value == max(line_values)
-        if (self.highlight == 'min'): return value == min(line_values)
+        if (value is None): return False
+        if (self.highlight == 'max'): return value == max([v for v in line_values if v is not None])
+        if (self.highlight == 'min'): return value == min([v for v in line_values if v is not None])
         return False
     
     def get_md_title(self) -> str | None: return None
@@ -72,6 +75,7 @@ class TableSaver:
             [len(self.highlight_text(h, html)) for h in [self.table.corner_header] + [h[0] for h in modified_headers] + self.table.lines_headers])
     
     def format_value(self, value: float) -> str:
+        if (value is None): return ""
         return "%01.4f"%value
     def highlight_value(self, value: str, html_override: bool = False) -> str:
         if html_override:       return f"<u>{value}</u>"
@@ -200,7 +204,13 @@ class AvgScoreTable(Table):
             for instance, keys in data_loader.get_parameters_iterator():
                 data_loader.set_parameters(**keys)
                 print(f"\t{instance}")
-                self.add_line(instance, [round(data_loader.get_file(algo.get_algo()).get_avg_run_score(), 4) for algo in algo_list])
+                
+                line = []
+                for  algo in algo_list:
+                    file: RunFile = data_loader.get_file(algo.get_algo())
+                    if (file is not None): line.append(round(file.get_avg_run_score(), 4))
+                    else: line.append(None)
+                self.add_line(instance, line)
     
     def get_md_title(self):
         return "Mean fitness score per execution. Results are averaged over " + str(COUNT_PER_INSTANCE * 10) + " instances per (N,K) pair. The best results for each instance are underlined."
@@ -221,7 +231,13 @@ class MaxScoreTable(Table):
             for instance, keys in data_loader.get_parameters_iterator():
                 data_loader.set_parameters(**keys)
                 print(f"\t{instance}")
-                self.add_line(instance, [round(data_loader.get_file(algo.get_algo()).get_anytime_scores(budget).fitness.max(), 4) for algo in algo_list])
+                
+                line = []
+                for  algo in algo_list:
+                    file: RunFile = data_loader.get_file(algo.get_algo())
+                    if (file is not None): line.append(round(file.get_anytime_scores(budget).fitness.max(), 4))
+                    else: line.append(None)
+                self.add_line(instance, line)
                 
     def get_md_title(self):
         if (self.budget == 1_000): return "Best fitness achieved under a limited budget of 1,000 evaluations. Underlined values indicate the best performance for each instance."
@@ -241,7 +257,13 @@ class AvgBudgetTable(Table):
             for instance, keys in data_loader.get_parameters_iterator():
                 data_loader.set_parameters(**keys)
                 print(f"\t{instance}")
-                self.add_line(instance, [data_loader.get_file(algo.get_algo()).get_avg_run_budget() for algo in algo_list])
+                
+                line = []
+                for  algo in algo_list:
+                    file: RunFile = data_loader.get_file(algo.get_algo())
+                    if (file is not None): line.append(round(file.get_avg_run_budget(), 1))
+                    else: line.append(None)
+                self.add_line(instance, line)
     
     def format_value(self, value: float) -> str:
         return "%.1f"%value
@@ -256,24 +278,21 @@ class AvgBudgetTable(Table):
 
 def ensure_load(data_loaders: list[DataLoader], algo_list: list[Algo]):
     def load(data_loader: DataLoader, keys, algo: Algo):
-        data_loader.get_with_parameters(algo.get_algo(), **keys).get_anytime_scores(100)
-        data_loader.get_with_parameters(algo.get_algo(), **keys).get_avg_run_score()
+        file: RunFile = data_loader.get_with_parameters(algo.get_algo(), **keys)
+        if (file is not None):
+            file.get_anytime_scores(100)
+            file.get_avg_run_score()
+            
+    futures = []
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        for data_loader in data_loaders:
+            for instance, keys in data_loader.get_parameters_iterator():
+                # load(data_loader, keys, algo_list)
+                for algo in algo_list:
+                    futures.append(executor.submit(load, data_loader,keys,algo))
 
-    threads = []
-    
-    for data_loader in data_loaders:
-        for instance, keys in data_loader.get_parameters_iterator():
-            # load(data_loader, keys, algo_list)
-            for algo in algo_list:
-                t = threading.Thread(target=load, args=(data_loader,keys,algo))
-                threads.append(t)
-
-    # Start each thread
-    for t in threads:
-        t.start()
-
-    for i in tqdm.tqdm(range(len(threads))):
-        threads[i].join()
+        for future in tqdm(as_completed(futures), total=len(futures)):
+            future.result()
 
 def generate_all_tables(data_loaders: dict[str, DataLoader], output_path: str, **kwargs):
     def hc_selector(algo: str) -> bool:
@@ -283,19 +302,6 @@ def generate_all_tables(data_loaders: dict[str, DataLoader], output_path: str, *
         )
     def gj_selector(algo: str) -> bool:
         return (algo.startswith("greedy_")
-                and "median" not in algo
-                and "middle" not in algo
-                and "middle2" not in algo
-                and "fixed" not in algo
-                and "random" not in algo
-                and "adaptative" not in algo
-                and "guided" not in algo
-                and "tabu" not in algo
-                and "lambda" not in algo
-                and "Asc+" not in algo and "Asc-" not in algo
-                and "Rand+" not in algo and "Rand-" not in algo
-        )
-        return (algo.startswith("greedy_")
                 and ("fixed" not in algo or re.search("fixed_[^_]*_\\.25", algo))
                 and ("adaptative" not in algo or "least" in algo or "first" in algo)
                 and ("guided" not in algo or "guided_best_1" in algo)
@@ -303,6 +309,9 @@ def generate_all_tables(data_loaders: dict[str, DataLoader], output_path: str, *
                 and "lambda" not in algo
                 and "Asc+" not in algo and "Asc-" not in algo
                 and "Rand+" not in algo and "Rand-" not in algo
+                
+                and "median" not in algo
+                and "middle" not in algo
         )
     
     hc_algos: list[Algo] = sorted([data_loaders["NK"].get_file(algo).algo_infos for algo in data_loaders["NK"].Algo_keys if hc_selector(algo)], key=lambda t: t.get_algo())
