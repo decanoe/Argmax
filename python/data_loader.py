@@ -45,6 +45,7 @@ class RunFile:
         base_dir: str = os.path.dirname(self.path)
 
         files: list[str] = [f for f in os.listdir(base_dir) if re.match(r"^_[0-9]+\.rundata$", f.removeprefix(self.algo_infos.algo)) and os.path.isfile(os.path.join(base_dir, f))]
+        files = sorted(files, key = lambda f : int(f.removesuffix(".rundata").split("_")[-1]))
         
         datas: list[pd.DataFrame] = []
         for file in files:
@@ -202,6 +203,41 @@ class RunFile:
             self.load_avg_values()
         return self._avg_run_score
 
+    def csv_header(self, iterated: bool) -> str:
+        if not iterated: return "numinstance\tnumrun\tfitness\tbudget\n"
+        else:            return "numinstance\tbudget\tfitness\n"
+    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int) -> str:
+        return f"{numinstance}\t{numrun}\t{fitness}\t{budget}\n"
+    def to_csv_line_iterated(self, numinstance: int, budget: int, fitness) -> str:
+        return f"{numinstance}\t{budget}\t{fitness}\n"
+    def to_csv_lines_non_iterated(self) -> str:
+        result: str = ""
+        
+        datas = self.get_similar_data()
+        for i in range(len(datas)):
+            data: pd.DataFrame = datas[i]
+            ends = data[(data.size_of_the_jump == 0) * (data.in_run_budget != 1) * (data.budget != data.budget.max())]
+            ends = ends.reset_index(drop=True)
+            
+            for idx, row in ends.iterrows():
+                result += self.to_csv_line_non_iterated(i, idx, row.fitness_after_jump, int(row.in_run_budget))
+            
+        return result
+    def to_csv_lines_iterated(self) -> str:
+        result: str = ""
+        
+        datas = self.get_similar_data()
+        for i in range(len(datas)):
+            data: pd.DataFrame = datas[i]
+            
+            for budget in [10_000, 100_000, 1_000_000]:
+                result += self.to_csv_line_iterated(i, budget, data[data.budget < budget].fitness_after_jump.max())
+            
+        return result
+    def to_csv_lines(self, iterated: bool) -> str:
+        if iterated: return self.to_csv_lines_iterated()
+        else:        return self.to_csv_lines_non_iterated()
+    
     def __repr__(self)-> str:
         return self.algo_infos + " unknown"
 class NKRunFile(RunFile):
@@ -230,6 +266,13 @@ class NKRunFile(RunFile):
         data.fitness_before_jump /= self.N
         data.fitness_after_jump /= self.N
     
+    def csv_header(self, iterated: bool) -> str:
+        return "N\tK\t" + super().csv_header(iterated)
+    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int) -> str:
+        return f"{self.N}\t{self.K}\t" + super().to_csv_line_non_iterated(numinstance, numrun, fitness, budget)
+    def to_csv_line_iterated(self, numinstance: int, budget: int, fitness) -> str:
+        return f"{self.N}\t{self.K}\t" + super().to_csv_line_iterated(numinstance, budget, fitness)
+    
     def __repr__(self)-> str:
         return self.algo_infos + f" {self.N} {self.K}"
 class QuboRunFile(RunFile):
@@ -252,6 +295,13 @@ class QuboRunFile(RunFile):
 
     def normalize(self, data: pd.DataFrame):
         pass
+    
+    def csv_header(self, iterated: bool) -> str:
+        return "N\t" + super().csv_header(iterated)
+    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int) -> str:
+        return f"{self.N}\t" + super().to_csv_line_non_iterated(numinstance, numrun, fitness, budget)
+    def to_csv_line_iterated(self, numinstance: int, budget: int, fitness) -> str:
+        return f"{self.N}\t" + super().to_csv_line_iterated(numinstance, budget, fitness)
     
     def __repr__(self)-> str:
         return self.algo_infos + f" Qubo {self.N}"
@@ -280,6 +330,13 @@ class SatRunFile(RunFile):
     def normalize(self, data: pd.DataFrame):
         pass
     
+    def csv_header(self, iterated: bool) -> str:
+        return "type\tN\t" + super().csv_header(iterated)
+    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int) -> str:
+        return f"{self.type_name}\t{self.N}\t" + super().to_csv_line_non_iterated(numinstance, numrun, fitness, budget)
+    def to_csv_line_iterated(self, numinstance: int, budget: int, fitness) -> str:
+        return f"{self.type_name}\t{self.N}\t" + super().to_csv_line_iterated(numinstance, budget, fitness)
+    
     def __repr__(self)-> str:
         return self.algo_infos + f" Sat {self.type_name} {self.N}"
 
@@ -307,6 +364,23 @@ class DataLoader:
         return []
     def get_with_parameters(self, algo: str, **kwargs) -> RunFile:
         pass
+
+    def to_csv(self, algo: str, save_path: str, iterated: bool):
+        if (os.path.isfile(save_path)): return
+        
+        header: str = None
+        body: str = ""
+        for _, keys in self.get_parameters_iterator():
+            file: RunFile = self.get_with_parameters(algo, **keys)
+            if (file is None): continue
+            
+            if (header is None): header = file.csv_header(iterated)
+            elif(header != file.csv_header(iterated)): raise AssertionError().add_note(f'headers do not match : "{header}" != "{file.csv_header(iterated)}"')
+            
+            body += file.to_csv_lines(iterated)
+        
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        with open(save_path, 'w') as f: f.write(header + body)
 class NKDataLoader(DataLoader):
     file_infos: dict[int, dict[int, dict[str, NKRunFile]]]
     N_keys: list[str]
@@ -358,6 +432,7 @@ class QuboDataLoader(DataLoader):
     def load_file(self, file: str, dir: str, **kwargs):
         info: QuboRunFile = QuboRunFile.from_file(dir + "/" + file)
         if (info != None and info.algo_infos.is_valid(**kwargs)):
+            if (info.N == 800): return
             self.file_infos.setdefault(info.N, {}).setdefault(info.algo_infos.algo, info)
     def __init__(self, rundata_path: str, **kwargs):
         self.file_infos = {}

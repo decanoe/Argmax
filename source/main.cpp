@@ -36,6 +36,10 @@ int main(int argc, char *args[]) {
         system("python ./python/data_visualizer.py tables");
         return 0;
     }
+    if (arg1 == "-csv") {
+        system("python ./python/data_visualizer.py csv");
+        return 0;
+    }
     else if (arg1 == "-create_nk" || arg1 == "-nk") {
         if (argc < 5) {
             std::cerr << "\033[1;31mIf you want to create an nk instance you need to put a N, a K and a path to save the instance.\n\033[0m";

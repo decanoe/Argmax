@@ -37,6 +37,7 @@ build
 temp.rundata
 results
 rundata/*
+!rundata/csv
 python/output/*
 python/output_latex_main
 __pycache__
