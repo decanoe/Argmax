@@ -54,8 +54,6 @@ def generate_all_iterated_csv(data_loaders: dict[str, DataLoader], output_path: 
         return (algo.startswith("hc_")
                 and "cycle" not in algo
                 and "first" not in algo
-        )   or  (algo == "tabu_aspiration_.1_r0"
-        )   or  (algo == "lambda_aspiration_.2"
         )
     def gj_selector(algo: str) -> bool:
         return (algo.startswith("greedy_")

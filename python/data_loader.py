@@ -204,12 +204,12 @@ class RunFile:
         return self._avg_run_score
 
     def csv_header(self, iterated: bool) -> str:
-        if not iterated: return "numinstance\tnumrun\tfitness\tbudget\n"
-        else:            return "numinstance\tbudget\tfitness\n"
-    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int) -> str:
-        return f"{numinstance}\t{numrun}\t{fitness}\t{budget}\n"
-    def to_csv_line_iterated(self, numinstance: int, budget: int, fitness) -> str:
-        return f"{numinstance}\t{budget}\t{fitness}\n"
+        if not iterated: return "numinstance\tnumrun\tfitness\tbudget\tcomment\n"
+        else:            return "numinstance\tnumrun\tbudget\tfitness\tcomment\n"
+    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int, comment: str = "") -> str:
+        return f"{numinstance}\t{numrun}\t{fitness}\t{budget}\t{comment}\n"
+    def to_csv_line_iterated(self, numinstance: int, numrun: int, budget: int, fitness: float, comment: str = "") -> str:
+        return f"{numinstance}\t{numrun}\t{budget}\t{fitness}\t{comment}\n"
     def to_csv_lines_non_iterated(self) -> str:
         result: str = ""
         
@@ -220,7 +220,7 @@ class RunFile:
             ends = ends.reset_index(drop=True)
             
             for idx, row in ends.iterrows():
-                result += self.to_csv_line_non_iterated(i, idx, row.fitness_after_jump, int(row.in_run_budget))
+                result += self.to_csv_line_non_iterated(i, idx, row.fitness_after_jump, int(row.in_run_budget), "numrun=seed")
             
         return result
     def to_csv_lines_iterated(self) -> str:
@@ -228,10 +228,27 @@ class RunFile:
         
         datas = self.get_similar_data()
         for i in range(len(datas)):
-            data: pd.DataFrame = datas[i]
+            scores_10_000: list[float] = [float("-inf") for _ in range(10)]
+            scores_100_000: list[float] = [float("-inf") for _ in range(10)]
             
-            for budget in [10_000, 100_000, 1_000_000]:
-                result += self.to_csv_line_iterated(i, budget, data[data.budget < budget].fitness_after_jump.max())
+            data: pd.DataFrame = datas[i]
+            ends = data[(data.size_of_the_jump == 0) * (data.in_run_budget != 1)]
+            ends = ends.reset_index(drop=True)
+            
+            budgets: list[int] = [0 for _ in range(10)]
+            
+            for idx, row in ends.iterrows():
+                run: int = idx % 10
+                budgets[run] += row.in_run_budget
+                
+                if (budgets[run] <= 10_000): scores_10_000[run] = max(scores_10_000[run], row.fitness_after_jump)
+                if (budgets[run] <= 100_000): scores_100_000[run] = max(scores_100_000[run], row.fitness_after_jump)
+            
+            for run in range(10):
+                result += self.to_csv_line_iterated(i, run, 10_000, scores_10_000[run], "numrun=seeds%10")
+                result += self.to_csv_line_iterated(i, run, 100_000, scores_100_000[run], "numrun=seeds%10")
+
+            result += self.to_csv_line_iterated(i, 0, 1_000_000, data[data.budget <= 1_000_000].fitness_after_jump.max(), "only one run (every seed)")
             
         return result
     def to_csv_lines(self, iterated: bool) -> str:
@@ -268,10 +285,10 @@ class NKRunFile(RunFile):
     
     def csv_header(self, iterated: bool) -> str:
         return "N\tK\t" + super().csv_header(iterated)
-    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int) -> str:
-        return f"{self.N}\t{self.K}\t" + super().to_csv_line_non_iterated(numinstance, numrun, fitness, budget)
-    def to_csv_line_iterated(self, numinstance: int, budget: int, fitness) -> str:
-        return f"{self.N}\t{self.K}\t" + super().to_csv_line_iterated(numinstance, budget, fitness)
+    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int, comment: str = "") -> str:
+        return f"{self.N}\t{self.K}\t" + super().to_csv_line_non_iterated(numinstance, numrun, fitness, budget, comment)
+    def to_csv_line_iterated(self, numinstance: int, numrun: int, budget: int, fitness: float, comment: str = "") -> str:
+        return f"{self.N}\t{self.K}\t" + super().to_csv_line_iterated(numinstance, numrun, budget, fitness, comment)
     
     def __repr__(self)-> str:
         return self.algo_infos + f" {self.N} {self.K}"
@@ -298,10 +315,10 @@ class QuboRunFile(RunFile):
     
     def csv_header(self, iterated: bool) -> str:
         return "N\t" + super().csv_header(iterated)
-    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int) -> str:
-        return f"{self.N}\t" + super().to_csv_line_non_iterated(numinstance, numrun, fitness, budget)
-    def to_csv_line_iterated(self, numinstance: int, budget: int, fitness) -> str:
-        return f"{self.N}\t" + super().to_csv_line_iterated(numinstance, budget, fitness)
+    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int, comment: str = "") -> str:
+        return f"{self.N}\t" + super().to_csv_line_non_iterated(numinstance, numrun, fitness, budget, comment)
+    def to_csv_line_iterated(self, numinstance: int, numrun: int, budget: int, fitness: float, comment: str = "") -> str:
+        return f"{self.N}\t" + super().to_csv_line_iterated(numinstance, numrun, budget, fitness, comment)
     
     def __repr__(self)-> str:
         return self.algo_infos + f" Qubo {self.N}"
@@ -332,10 +349,10 @@ class SatRunFile(RunFile):
     
     def csv_header(self, iterated: bool) -> str:
         return "type\tN\t" + super().csv_header(iterated)
-    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int) -> str:
-        return f"{self.type_name}\t{self.N}\t" + super().to_csv_line_non_iterated(numinstance, numrun, fitness, budget)
-    def to_csv_line_iterated(self, numinstance: int, budget: int, fitness) -> str:
-        return f"{self.type_name}\t{self.N}\t" + super().to_csv_line_iterated(numinstance, budget, fitness)
+    def to_csv_line_non_iterated(self, numinstance: int, numrun: int, fitness: float, budget: int, comment: str = "") -> str:
+        return f"{self.type_name}\t{self.N}\t" + super().to_csv_line_non_iterated(numinstance, numrun, fitness, budget, comment)
+    def to_csv_line_iterated(self, numinstance: int, numrun: int, budget: int, fitness: float, comment: str = "") -> str:
+        return f"{self.type_name}\t{self.N}\t" + super().to_csv_line_iterated(numinstance, numrun, budget, fitness, comment)
     
     def __repr__(self)-> str:
         return self.algo_infos + f" Sat {self.type_name} {self.N}"

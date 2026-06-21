@@ -34,8 +34,8 @@ if ("tables" in sys.argv):
     generate_all_tables(data_loaders, dir_path + "/output")
     exit(0)
 if ("csv" in sys.argv):
-    generate_all_non_iterated_csv(data_loaders, dir_path + "/output/csv")
-    generate_all_iterated_csv(data_loaders, dir_path + "/output/csv")
+    generate_all_non_iterated_csv(data_loaders, dir_path + "/../rundata/csv")
+    generate_all_iterated_csv(data_loaders, dir_path + "/../rundata/csv")
     exit(0)
 
 fig, _ = plt.subplots()
