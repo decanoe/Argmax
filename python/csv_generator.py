@@ -19,7 +19,7 @@ def generate_all_non_iterated_csv(data_loaders: dict[str, DataLoader], output_pa
         return (algo.startswith("greedy_")
                 and "fixed" not in algo
                 and "adaptative_max(2n,5)" not in algo
-                and ("adaptative_n+5" not in algo or "least" in algo or "first" in algo)
+                and ("adaptative_n+5" not in algo or "least" in algo or "first" in algo or "best" in algo)
                 and "guided" not in algo
                 and "tabu" not in algo
                 and "lambda" not in algo
@@ -61,7 +61,7 @@ def generate_all_iterated_csv(data_loaders: dict[str, DataLoader], output_path: 
         return (algo.startswith("greedy_")
                 and "fixed" not in algo
                 and "adaptative_max(2n,5)" not in algo
-                and ("adaptative_n+5" not in algo or "least" in algo or "first" in algo)
+                and ("adaptative_n+5" not in algo or "least" in algo or "first" in algo or "best" in algo)
                 and "guided" not in algo
                 and "tabu" not in algo
                 and "lambda" not in algo
