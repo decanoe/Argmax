@@ -36,7 +36,7 @@ if ("tables" in sys.argv):
 if ("csv" in sys.argv):
     csv_generator.generate_all_non_iterated_csv(data_loaders, dir_path + "/../rundata/csv")
     csv_generator.generate_all_iterated_csv(data_loaders, dir_path + "/../rundata/csv")
-    csv_generator.special_cases(dir_path, dir_path + "/../rundata/csv", **kwargs)
+    csv_generator.special_cases(data_loaders, dir_path, dir_path + "/../rundata/csv", **kwargs)
     exit(0)
 
 fig, _ = plt.subplots()

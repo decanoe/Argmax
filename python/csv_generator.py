@@ -102,22 +102,27 @@ def special_to_csv_lines(file: RunFile, numrun: int) -> str:
             result += file.to_csv_line_iterated(i, numrun, budget, data[data.budget <= budget].fitness_after_jump.max(), "numrun=seeds")
         
     return result
-def special_cases(dir_path: str, output_path, **kwargs):
+def special_cases(reference_data_loaders: dict[str, DataLoader], dir_path: str, output_path, **kwargs):
     output_path += "/iterated"
     true_algo_name : str = "tabu_aspiration_.1_r0"
+    
+    problems_left: list[str] = []
+    for problem in ["NK", "Sat", "Qubo"]:
+        algo: Algo = reference_data_loaders[problem].get_file(true_algo_name).algo_infos
+        save_path = output_path + f"/{problem}/" + algo.get_full_label(lang = 'plot', **kwargs).replace(" ", "_") + ".csv"
+        if not(os.path.isfile(save_path)): problems_left.append(problem)
     
     headers: dict[str, str] = {}
     bodies: dict[str, str] = {}
     
     for i in range(10):
         directory: str = dir_path+f"/../rundata/local_search/tabu_1_000_000_run{i}"
-        data_loaders: dict[str, DataLoader] = {
-            "NK": NKDataLoader(directory, **kwargs),
-            "Sat": SatDataLoader(directory, **kwargs),
-            "Qubo": QuboDataLoader(directory, **kwargs),
-        }
+        data_loaders: dict[str, DataLoader] = {}
+        if ("NK" in problems_left): data_loaders["NK"] = NKDataLoader(directory, **kwargs)
+        if ("Sat" in problems_left): data_loaders["Sat"] = SatDataLoader(directory, **kwargs)
+        if ("Qubo" in problems_left): data_loaders["Qubo"] = QuboDataLoader(directory, **kwargs)
         
-        for problem in ["NK", "Sat", "Qubo"]:
+        for problem in problems_left:
             headers.setdefault(problem, None)
             bodies.setdefault(problem, "")
             for _, keys in data_loaders[problem].get_parameters_iterator():
@@ -129,8 +134,8 @@ def special_cases(dir_path: str, output_path, **kwargs):
                 
                 bodies[problem] += special_to_csv_lines(file, i)
             
-    for problem in ["NK", "Sat", "Qubo"]:
-        algo: Algo = data_loaders[problem].get_file(true_algo_name).algo_infos
+    for problem in problems_left:
+        algo: Algo = reference_data_loaders[problem].get_file(true_algo_name).algo_infos
         save_path = output_path + f"/{problem}/" + algo.get_full_label(lang = 'plot', **kwargs).replace(" ", "_") + ".csv"
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         with open(save_path, 'w') as f: f.write(headers[problem] + bodies[problem])

@@ -228,8 +228,8 @@ class RunFile:
         
         datas = self.get_similar_data()
         for i in range(len(datas)):
-            scores_10_000: list[float] = [float("-inf") for _ in range(10)]
-            scores_100_000: list[float] = [float("-inf") for _ in range(10)]
+            scores_10_000: list[float] = [None for _ in range(10)]
+            scores_100_000: list[float] = [None for _ in range(10)]
             
             data: pd.DataFrame = datas[i]
             ends = data[(data.size_of_the_jump == 0) * (data.in_run_budget != 1)]
@@ -241,10 +241,20 @@ class RunFile:
                 run: int = idx % 10
                 budgets[run] += row.in_run_budget
                 
-                if (budgets[run] <= 10_000): scores_10_000[run] = max(scores_10_000[run], row.fitness_after_jump)
-                if (budgets[run] <= 100_000): scores_100_000[run] = max(scores_100_000[run], row.fitness_after_jump)
+                if (budgets[run] <= 10_000):
+                    if (scores_10_000[run] is None): scores_10_000[run] = row.fitness_after_jump
+                    else: scores_10_000[run] = max(scores_10_000[run], row.fitness_after_jump)
+                if (budgets[run] <= 100_000):
+                    if (scores_100_000[run] is None): scores_100_000[run] = row.fitness_after_jump
+                    else: scores_100_000[run] = max(scores_100_000[run], row.fitness_after_jump)
             
             for run in range(10):
+                if (scores_10_000[run] is None):
+                    print(f"{self.algo_infos.get_full_label()} has not enough run to complete iterated run {run} of budget 10 000")
+                    exit(1)
+                if (scores_100_000[run] is None):
+                    print(f"{self.algo_infos.get_full_label()} has not enough run to complete iterated run {run} of budget 100 000")
+                    exit(1)
                 result += self.to_csv_line_iterated(i, run, 10_000, scores_10_000[run], "numrun=seeds%10")
                 result += self.to_csv_line_iterated(i, run, 100_000, scores_100_000[run], "numrun=seeds%10")
 
