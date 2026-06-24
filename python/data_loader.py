@@ -226,40 +226,25 @@ class RunFile:
     def to_csv_lines_iterated(self) -> str:
         result: str = ""
         
-        datas = self.get_similar_data()
-        for i in range(len(datas)):
-            for budget in [10_000, 100_000]:
-                data: pd.DataFrame = datas[i]
-                data["next_in_run_budget"] = data["in_run_budget"].shift(-1)
-                
-                scores: list[float] = [None for _ in range(10)]
-                current_budgets: list[int] = [0 for _ in range(10)]
-                # ends = data[((data.size_of_the_jump == 0) & (data.in_run_budget != 1)) | ((data.in_run_budget <= budget) & (data.in_run_budget.shift(-1) > budget))]
-                
-                nb_ends: int = 0
-                seed: int = -1
-                for row in data.itertuples():
-                    if (row.size_of_the_jump == 0 and row.in_run_budget == 1): seed += 1 # new run
-                    
-                    run: int = seed % 10
-                    left_budget: int = budget - current_budgets[run]
-                    
-                    if (row.in_run_budget > left_budget): continue # out of budget
-                    elif ((row.size_of_the_jump == 0 and row.in_run_budget != 1) or (row.in_run_budget <= left_budget and row.next_in_run_budget > left_budget)): # end of run (or end of budget)
-                        nb_ends += 1
-                        current_budgets[run] += row.in_run_budget
-                        
-                        if (scores[run] is None): scores[run] = row.fitness_after_jump
-                        else: scores[run] = max(scores[run], row.fitness_after_jump)
-                
-                for run in range(10):
-                    if (scores[run] is None):
-                        print(f"nb_ends: {nb_ends}, nb_seed: {seed+1}")
-                        print(f"{self.algo_infos.get_full_label()} has not enough run to complete iterated run {run} of budget {budget}")
-                        os._exit(1)
-                    result += self.to_csv_line_iterated(i, run, budget, scores[run], "numrun=seeds%10")
-
-            result += self.to_csv_line_iterated(i, 0, 1_000_000, data[data.budget <= 1_000_000].fitness_after_jump.max(), "only one run (every seed)")
+        base_dir: str = os.path.dirname(self.path)
+        
+        for run in range(10):
+            run_dir: str = base_dir if run == 0 else base_dir.replace("/b1_000_000/", f"/b100_000/{run}/")
+            
+            files: list[str] = [f for f in os.listdir(run_dir) if re.match(r"^_[0-9]+\.rundata$", f.removeprefix(self.algo_infos.algo)) and os.path.isfile(os.path.join(run_dir, f))]
+            files = sorted(files, key = lambda f : int(f.removesuffix(".rundata").split("_")[-1]))
+            
+            datas: list[pd.DataFrame] = []
+            for file in files:
+                with open(run_dir + "/" + file) as f:
+                    data = pd.read_csv(io.StringIO(f.read()), sep = "\t")
+                    data = data[data.budget <= 1_000_000]
+                    self.normalize(data)
+                    datas.append(data)
+        
+            for i in range(len(datas)):
+                for budget in [10_000, 100_000] + ([1_000_000] if run == 0 else []):
+                    result += self.to_csv_line_iterated(i, run, budget, data[data.budget <= budget].fitness_after_jump.max(), "seed=numrun*10^6")
             
         return result
     def to_csv_lines(self, iterated: bool) -> str:
