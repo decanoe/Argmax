@@ -58,30 +58,31 @@ class Window:
         plt.show()
 
     def place_buttons(self):
+        self.PROBLEM = ButtonCycle(self.figure.add_axes([0.045, 0.2, 0.1, 0.05]), list(self.data_loaders.keys()), callback=self.update)
+        
         N_keys = sorted(self.data_loaders["NK"].N_keys)
-        self.N_NK = ButtonCycle(self.figure.add_axes([0.045, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
+        self.N_NK = ButtonCycle(self.figure.add_axes([0.155, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
         self.N_NK.set_to(-1)
         N_keys = sorted(self.data_loaders["Sat"].N_keys)
-        self.N_SAT = ButtonCycle(self.figure.add_axes([0.045, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
+        self.N_SAT = ButtonCycle(self.figure.add_axes([0.155, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
         self.N_SAT.set_to(-1)
         N_keys = sorted(self.data_loaders["Qubo"].N_keys)
-        self.N_QUBO = ButtonCycle(self.figure.add_axes([0.045, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
+        self.N_QUBO = ButtonCycle(self.figure.add_axes([0.155, 0.2, 0.1, 0.05]), ["N" + str(i) for i in N_keys], N_keys, self.update)
         self.N_QUBO.set_to(-1)
         
         K_keys = sorted(self.data_loaders["NK"].K_keys)
-        self.K = ButtonCycle(self.figure.add_axes([0.155, 0.2, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, self.update)
+        self.K = ButtonCycle(self.figure.add_axes([0.265, 0.2, 0.1, 0.05]), ["K" + str(i) for i in K_keys], K_keys, self.update)
         Sat_keys = sorted(self.data_loaders["Sat"].type_keys) if "Sat" in self.data_loaders else ["no sat"]
         self.SAT_TYPE = ButtonCycle(self.figure.add_axes([0.265, 0.2, 0.1, 0.05]), Sat_keys, callback=self.update)        
         self.K.set_to(-1)
-
-        self.PROBLEM = ButtonCycle(self.figure.add_axes([0.045, 0.14, 0.1, 0.05]), list(self.data_loaders.keys()), callback=self.update)
-        self.LEGEND_POSITION = ButtonCycle(self.figure.add_axes([0.155, 0.14, 0.1, 0.05]), ["best", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], self.soft_update)
+        
+        self.LEGEND_POSITION = ButtonCycle(self.figure.add_axes([0.045, 0.08, 0.1, 0.05]), ["legend position", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], self.soft_update)
+        self.X_SCALE = ButtonCycle(self.figure.add_axes([0.155, 0.08, 0.1, 0.05]), ["log scale", "linear scale"], callback=self.soft_update)
 
         self.PLOT_TYPE = ButtonCycle(self.figure.add_axes([0.4, 0.2, 0.32, 0.05]), ["anytime", "correlation", "one run"], callback=self.update)
-        self.X_SCALE = ButtonCycle(self.figure.add_axes([0.4, 0.14, 0.1, 0.05]), ["log scale", "linear scale"], callback=self.soft_update)
 
-        self.AXIS1 = ButtonCycle(self.figure.add_axes([0.51, 0.14, 0.1, 0.05]), ["jump size", "budget", "fitness", "improving neighbors"], ["size_of_the_jump", "in_run_budget", "fitness", "nb_better_neighbors"], callback=self.update)
-        self.AXIS2 = ButtonCycle(self.figure.add_axes([0.51, 0.08, 0.1, 0.05]), ["fitness", "improving neighbors", "jump size", "budget"], ["fitness", "nb_better_neighbors", "size_of_the_jump", "in_run_budget"], callback=self.update)
+        self.AXIS1 = ButtonCycle(self.figure.add_axes([0.51, 0.14, 0.1, 0.05]), ["jump size", "fitness", "improving neighbors"], ["size_of_the_jump", "fitness", "nb_better_neighbors"], callback=self.update)
+        self.AXIS2 = ButtonCycle(self.figure.add_axes([0.51, 0.08, 0.1, 0.05]), ["fitness", "improving neighbors", "jump size"], ["fitness", "nb_better_neighbors", "size_of_the_jump"], callback=self.update)
         self.AXIS1_WHEN = ButtonCycle(self.figure.add_axes([0.62, 0.14, 0.1, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=self.update)
         self.AXIS2_WHEN = ButtonCycle(self.figure.add_axes([0.62, 0.08, 0.1, 0.05]), ["after jump", "before jump", "delta"], ["_after_jump", "_before_jump", "_delta"], callback=self.update)
 
@@ -99,7 +100,7 @@ class Window:
             filters: list[str] = self.FILTER.get_text().split()
             self.SELECTED_ALGOS_1.filter(filters)
             self.SELECTED_ALGOS_2.filter(filters)
-        self.FILTER = TextField(self.figure.add_axes([0.045, 0.02, 0.32, 0.05]), "a", on_filter)
+        self.FILTER = TextField(self.figure.add_axes([0.045, 0.02, 0.32, 0.05]), "filter", on_filter)
     def set_default_selected_algos(self):
         for button in [self.SELECTED_ALGOS_1, self.SELECTED_ALGOS_2]:
             for i in range(len(button.values)):
@@ -202,12 +203,18 @@ class Window:
     def get_axis1_label(self) -> str:
         axis1: str = self.AXIS1.get_label()
         if (axis1 == "improving neighbors" or axis1 == "fitness"):
-            axis1 += " " + self.AXIS1_WHEN.get_label()
+            if (self.AXIS1_WHEN.get_label() == "delta"):
+                axis1 = self.AXIS1_WHEN.get_label() + " " + axis1
+            else:
+                axis1 += " " + self.AXIS1_WHEN.get_label()
         return axis1
     def get_axis2_label(self) -> str:
         axis2: str = self.AXIS2.get_label()
         if (axis2 == "improving neighbors" or axis2 == "fitness"):
-            axis2 += " " + self.AXIS2_WHEN.get_label()
+            if (self.AXIS2_WHEN.get_label() == "delta"):
+                axis2 = self.AXIS2_WHEN.get_label() + " " + axis2
+            else:
+                axis2 += " " + self.AXIS2_WHEN.get_label()
         return axis2
     def get_correlation_type(self) -> str:
         return self.CORRELATION_PLOT.get_value()
