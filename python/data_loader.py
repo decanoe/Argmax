@@ -135,6 +135,7 @@ class RunFile:
         fitness_points: np.ndarray[float] = np.array([])
         
         for data in datas:
+            data = data[data.budget == data.in_run_budget]
             budget_points = np.unique(np.concatenate((budget_points, data.in_run_budget)))
         budget_points.sort()
         
