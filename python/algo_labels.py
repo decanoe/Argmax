@@ -117,17 +117,23 @@ PUSH_ORDER_TRANSLATIONS = {
 def translate_push_order(ordering: PUSH_ORDER, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs)-> str:
     return PUSH_ORDER_TRANSLATIONS[ordering]
 
-class Algo:
-    REFERENCE_COLORS: dict[str, str] = {
-        "best": "blue",
-        "first": "orange",
-        "least": "red",
-        "random": "green",
-        "middle": "magenta",
-        "middle2": "magenta",
-        "median": "magenta",
-    }
+REFERENCE_STYLES: dict[CRITERIONS, str] = {
+    "best": "solid",
+    "first": (5, (10, 3)),
+    "least": "dashdot",
+    "random": (5, (10, 3)),
+    "middle": "dashdot",
+    "middle2": "dashdot",
+    "median": "dotted",
+}
+REFERENCE_COLORS: dict[SCOPES, str] = {
+    "all": "red",
+    "improve": "blue",
+    "adaptative": "limegreen",
+    "fixed": "orange",
+}
     
+class Algo:
     algo: str
     def __init__(self, algo: str):
         self.algo = algo
@@ -231,6 +237,8 @@ class GreedyJumperAlgo(GreedyAlgo):
             case "fixed":
                 return f"{translate_scope(self.scope, lang, **kwargs)}-{translate_amount(self.fixed_amount, lang, **kwargs)}"
             case "adaptative":
+                if (self.adaptative_formula == "n+5"): return f"{translate_scope("improve", lang, **kwargs)}+5"
+                
                 if lang == 'tex': return f"${self.adaptative_formula.replace("max", "\\max")}$"
                 return self.adaptative_formula
             case _:
@@ -239,9 +247,9 @@ class GreedyJumperAlgo(GreedyAlgo):
         return translate_criterion_gj(self.criterion, lang, **kwargs)
     
     def get_color(self) -> str:
-        return self.REFERENCE_COLORS[self.criterion]
+        return REFERENCE_COLORS[self.scope]
     def get_style(self) -> str:
-        return "solid" if self.scope == "all" else "dashdot"
+        return REFERENCE_STYLES[self.criterion]
     
     def get_label(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
         return f"{self.temp_criterion(lang, **kwargs)} {self.temp_order(lang, **kwargs)}"
@@ -261,9 +269,9 @@ class HillClimberAlgo(Algo):
         algo, self.criterion = get_literal(self.algo, algo, CRITERIONS)
 
     def get_color(self) -> str:
-        return self.REFERENCE_COLORS.get(self.criterion, 'gray')
+        return 'gray'
     def get_style(self) -> str:
-        return "dashed"
+        return REFERENCE_STYLES[self.criterion]
     
     def get_label(self, lang: Literal['md', 'tex', 'plot'] = 'plot', **kwargs) -> str:
         return translate_criterion_hc(self.criterion, lang, **kwargs)
