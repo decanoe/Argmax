@@ -220,6 +220,7 @@ class RunFile:
             ends = data[(data.size_of_the_jump == 0) * (data.in_run_budget != 1) * (data.budget != data.budget.max())]
             ends = ends.reset_index(drop=True)
             
+            if len(ends) < 10: print(self.__repr__() + " is missing some runs (only " + str(len(ends)) + " found)")
             for idx, row in ends.iterrows():
                 result += self.to_csv_line_non_iterated(i, idx, row.fitness_after_jump, int(row.in_run_budget), "numrun=seed")
             
@@ -253,7 +254,7 @@ class RunFile:
         else:        return self.to_csv_lines_non_iterated()
     
     def __repr__(self)-> str:
-        return self.algo_infos + " unknown"
+        return self.algo_infos.get_full_label('plot') + " unknown"
 class NKRunFile(RunFile):
     N: int
     K: int
@@ -288,7 +289,7 @@ class NKRunFile(RunFile):
         return f"{self.N}\t{self.K}\t" + super().to_csv_line_iterated(numinstance, numrun, budget, fitness, comment)
     
     def __repr__(self)-> str:
-        return self.algo_infos + f" {self.N} {self.K}"
+        return self.algo_infos.get_full_label('plot') + f" {self.N} {self.K}"
 class QuboRunFile(RunFile):
     N: int
     
@@ -318,7 +319,7 @@ class QuboRunFile(RunFile):
         return f"{self.N}\t" + super().to_csv_line_iterated(numinstance, numrun, budget, fitness, comment)
     
     def __repr__(self)-> str:
-        return self.algo_infos + f" Qubo {self.N}"
+        return self.algo_infos.get_full_label('plot') + f" Qubo {self.N}"
 class SatRunFile(RunFile):
     N: int
     type_name: str
@@ -352,7 +353,7 @@ class SatRunFile(RunFile):
         return f"{self.type_name}\t{self.N}\t" + super().to_csv_line_iterated(numinstance, numrun, budget, fitness, comment)
     
     def __repr__(self)-> str:
-        return self.algo_infos + f" Sat {self.type_name} {self.N}"
+        return self.algo_infos.get_full_label('plot') + f" Sat {self.type_name} {self.N}"
 
 class DataLoader:
     Algo_keys: list[str]

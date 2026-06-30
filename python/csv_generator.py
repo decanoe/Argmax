@@ -1,11 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import os
-from typing import Any, Literal
 
-import pandas as pd
 from tqdm import tqdm
 from algo_labels import Algo
-from data_loader import DataLoader, NKDataLoader, QuboDataLoader, RunFile, SatDataLoader
+from data_loader import DataLoader
 
 def generate_all_non_iterated_csv(data_loaders: dict[str, DataLoader], output_path: str, **kwargs):
     output_path += "/non_iterated"
@@ -44,7 +41,8 @@ def generate_all_non_iterated_csv(data_loaders: dict[str, DataLoader], output_pa
     with ThreadPoolExecutor(max_workers=8) as executor:
         for algo in algo_list:
             for problem in ["NK", "Sat", "Qubo"]:
-                futures.append(executor.submit(create_csv, data_loaders[problem], algo.algo, output_path + f"/{problem}/" + algo.get_full_label(lang = 'plot', **kwargs).replace(" ", "_") + ".csv"))
+                if (problem in data_loaders):
+                    futures.append(executor.submit(create_csv, data_loaders[problem], algo.algo, output_path + f"/{problem}/" + algo.get_full_label(lang = 'plot', **kwargs).replace(" ", "_") + ".csv"))
 
         for future in tqdm(as_completed(futures), total=len(futures)):
             future.result()
@@ -86,7 +84,8 @@ def generate_all_iterated_csv(data_loaders: dict[str, DataLoader], output_path: 
     with ThreadPoolExecutor(max_workers=8) as executor:
         for algo in algo_list:
             for problem in ["NK", "Sat", "Qubo"]:
-                futures.append(executor.submit(create_csv, data_loaders[problem], algo.algo, output_path + f"/{problem}/" + algo.get_full_label(lang = 'plot', **kwargs).replace(" ", "_") + ".csv"))
+                if (problem in data_loaders):
+                    futures.append(executor.submit(create_csv, data_loaders[problem], algo.algo, output_path + f"/{problem}/" + algo.get_full_label(lang = 'plot', **kwargs).replace(" ", "_") + ".csv"))
 
         for future in tqdm(as_completed(futures), total=len(futures)):
             future.result()
