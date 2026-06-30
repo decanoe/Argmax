@@ -38,6 +38,9 @@ temp.rundata
 results
 rundata/*
 !rundata/csv
+!rundata/local_search
+rundata/local_search/*
+python/temp.py
 python/output/*
 python/output_latex_main
 __pycache__
