@@ -77,7 +77,7 @@ class Window:
         self.K.set_to(-1)
         
         self.LEGEND_POSITION = ButtonCycle(self.figure.add_axes([0.045, 0.08, 0.1, 0.05]), ["legend position", "upper right", "upper left", "lower left", "lower right"], [i for i in range(5)], self.soft_update)
-        self.X_SCALE = ButtonCycle(self.figure.add_axes([0.155, 0.08, 0.1, 0.05]), ["log scale", "linear scale"], callback=self.soft_update)
+        self.X_SCALE = ButtonCycle(self.figure.add_axes([0.155, 0.08, 0.1, 0.05]), ["linear scale", "log scale"], callback=self.soft_update)
 
         self.PLOT_TYPE = ButtonCycle(self.figure.add_axes([0.4, 0.2, 0.32, 0.05]), ["anytime", "correlation", "one run"], callback=self.update)
 
@@ -122,9 +122,12 @@ class Window:
         self.plot_axis.soft_update(event)
         
         self.draw_idle()
+    def title_update(self):
+        self.figure.canvas.manager.set_window_title(f"{self.get_problem_label()}_{self.get_plot_type_label()}")
     def update(self, event = None):
         self.clear_plot_axes()
         self.visibility_update(event)
+        self.title_update()
         
         if (self.get_plot_type() == "anytime"):
             self.plot_axis = PlotAnytime(self)
@@ -175,6 +178,10 @@ class Window:
         return self.FULL_SCREEN
     def get_plot_type(self) -> str:
         return self.PLOT_TYPE.get_value()
+    def get_plot_type_label(self) -> str:
+        if (self.get_plot_type() == "correlation"):
+            return f"{self.get_axis2_label().replace(" ", "_")}_VS_{self.get_axis1_label().replace(" ", "_")}"
+        return self.get_plot_type().replace(" ", "_")
     def get_n(self) -> str:
         if (self.get_problem() == "NK"): return self.N_NK.get_value()
         if (self.get_problem() == "Sat"): return self.N_SAT.get_value()
@@ -185,6 +192,14 @@ class Window:
     def get_sat_type(self) -> str:
         return self.SAT_TYPE.get_value()
     def get_problem(self) -> str:
+        return self.PROBLEM.get_value()
+    def get_problem_label(self) -> str:
+        if (self.get_problem() == "NK"):
+            return f"N{self.get_n()}_K{self.get_k()}"
+        if (self.get_problem() == "Sat"):
+            return f"Sat_{self.get_n()}_{self.get_sat_type()}"
+        if (self.get_problem() == "Qubo"):
+            return f"Qubo_{self.get_n()}"
         return self.PROBLEM.get_value()
     def is_algo_selected(self, algo: str) -> bool:
         return self.SELECTED_ALGOS_1.is_checked(algo) or self.SELECTED_ALGOS_2.is_checked(algo)
