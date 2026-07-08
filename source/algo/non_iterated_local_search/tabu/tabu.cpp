@@ -136,9 +136,9 @@ bool GreedyTabuSearch::improve(std::unique_ptr<ReversibleInstance>& instance, fl
         }
         if (!this->tabu_list.contains(i)) {
             if (instance->score() > score)
-                trajectory.insert_positive_flip(BitFlip(i, instance->score()));
+                trajectory.insert_positive_flip(i, instance->score());
             else
-                trajectory.insert_negative_flip(BitFlip(i, instance->score()));
+                trajectory.insert_negative_flip(i, instance->score());
         }
         instance->revert_last_mutation();
     }

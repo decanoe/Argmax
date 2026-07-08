@@ -1,11 +1,15 @@
 #include "greedy_trajectory.h"
 #include <iostream>
 #include <algorithm>
+#include <random>
 
 using namespace LocalSearch;
 
-BitFlip::BitFlip(unsigned int index, float score): index(index), score(score) {}
-BitFlip::BitFlip(): BitFlip(0, 0) {}
+BitFlip::BitFlip(unsigned int index, float score, std::shared_ptr<std::mt19937> random_generator): index(index), score(score), tie_breaker(0) {
+    std::uniform_real_distribution<float> dist(0, 1);
+    this->tie_breaker = dist(*random_generator);
+}
+BitFlip::BitFlip(): index(0), score(0), tie_breaker(0) {}
 std::ostream& BitFlip::cout(std::ostream& c) const {
     return c << "(" << index << ", " << score << ")";
 }
@@ -17,14 +21,15 @@ class AscendantHalfTrajectory: public GreedyHalfTrajectory
 public:
     static bool cmp(BitFlip a, BitFlip b) {
         if (a.score != b.score) return a.score < b.score;
+        if (a.tie_breaker != b.tie_breaker) return a.tie_breaker < b.tie_breaker;
         else return a.index < b.index;
     };
 
     AscendantHalfTrajectory(): GreedyHalfTrajectory(), bit_flips_set(cmp) {}
 
-    GreedyHalfTrajectory* insert_flip(const BitFlip& flip) override {
+    GreedyHalfTrajectory* insert_flip(unsigned int index, float score) override {
         this->ensure_insert_flip();
-        this->bit_flips_set.insert(flip);
+        this->bit_flips_set.insert(BitFlip(index, score, random_generator));
         return this;
     }
     unsigned int finalize(unsigned int max_count = -1U) override {
@@ -62,14 +67,15 @@ class DescendantHalfTrajectory: public GreedyHalfTrajectory
 public:
     static bool cmp(BitFlip a, BitFlip b) {
         if (a.score != b.score) return a.score > b.score;
+        if (a.tie_breaker != b.tie_breaker) return a.tie_breaker < b.tie_breaker;
         else return a.index < b.index;
     };
 
     DescendantHalfTrajectory(): GreedyHalfTrajectory(), bit_flips_set(cmp) {}
 
-    GreedyHalfTrajectory* insert_flip(const BitFlip& flip) override {
+    GreedyHalfTrajectory* insert_flip(unsigned int index, float score) override {
         this->ensure_insert_flip();
-        this->bit_flips_set.insert(flip);
+        this->bit_flips_set.insert(BitFlip(index, score, random_generator));
         return this;
     }
     unsigned int finalize(unsigned int max_count) override {
@@ -103,15 +109,12 @@ public:
 };
 class RandomHalfTrajectory: public GreedyHalfTrajectory
 {
-    std::shared_ptr<std::mt19937> random_generator;
 public:
     RandomHalfTrajectory(): GreedyHalfTrajectory() {}
     
-    GreedyHalfTrajectory* set_seed(std::shared_ptr<std::mt19937> random_generator) { this->random_generator = random_generator; return GreedyHalfTrajectory::set_seed(random_generator); }
-
-    GreedyHalfTrajectory* insert_flip(const BitFlip& flip) override {
+    GreedyHalfTrajectory* insert_flip(unsigned int index, float score) override {
         this->ensure_insert_flip();
-        this->bit_flips.push_back(flip);
+        this->bit_flips.push_back(BitFlip(index, score, random_generator));
         return this;
     }
     unsigned int finalize(unsigned int max_count) override {
@@ -136,7 +139,7 @@ GreedyHalfTrajectory::ReverseIterator GreedyHalfTrajectory::rbegin() const {
 GreedyHalfTrajectory::ReverseIterator GreedyHalfTrajectory::rend() const {
     return this->bit_flips.rend();
 }
-GreedyHalfTrajectory* GreedyHalfTrajectory::set_seed(std::shared_ptr<std::mt19937> random_generator) { return this; }
+GreedyHalfTrajectory* GreedyHalfTrajectory::set_seed(std::shared_ptr<std::mt19937> random_generator) { this->random_generator = random_generator; return this; }
 void GreedyHalfTrajectory::ensure_insert_flip() {
     if (this->finalized) {
         std::cerr << "\033[1;31mCan't insert flip in a finalized GreedyHalfTrajectory\n\033[0m";
@@ -197,12 +200,12 @@ GreedyTrajectory* GreedyTrajectory::set_seed(std::shared_ptr<std::mt19937> rando
     return this;
 }
 
-GreedyTrajectory* GreedyTrajectory::insert_positive_flip(const BitFlip& flip) {
-    this->positive_bits->insert_flip(flip);
+GreedyTrajectory* GreedyTrajectory::insert_positive_flip(unsigned int index, float score) {
+    this->positive_bits->insert_flip(index, score);
     return this;
 }
-GreedyTrajectory* GreedyTrajectory::insert_negative_flip(const BitFlip& flip) {
-    this->negative_bits->insert_flip(flip);
+GreedyTrajectory* GreedyTrajectory::insert_negative_flip(unsigned int index, float score) {
+    this->negative_bits->insert_flip(index, score);
     return this;
 }
 unsigned int GreedyTrajectory::finalize(unsigned int max_count) {

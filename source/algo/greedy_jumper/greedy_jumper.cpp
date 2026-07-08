@@ -334,9 +334,9 @@ void GreedyJumper::Neighborhood_Scope::add_bit_flips(GreedyTrajectory& trajector
         budget++;
 
         if (instance->score() > score)
-            trajectory.insert_positive_flip(BitFlip(i, instance->score()));
+            trajectory.insert_positive_flip(i, instance->score());
         else
-            trajectory.insert_negative_flip(BitFlip(i, instance->score()));
+            trajectory.insert_negative_flip(i, instance->score());
         
         instance->revert_last_mutation();
     }

@@ -77,9 +77,9 @@ bool GreedyOneLambdaSearch::improve(std::unique_ptr<ReversibleInstance>& instanc
         }
         if (i < instance->nb_args() * lambda) {
             if (instance->score() > score)
-                trajectory.insert_positive_flip(BitFlip(index, instance->score()));
+                trajectory.insert_positive_flip(index, instance->score());
             else
-                trajectory.insert_negative_flip(BitFlip(index, instance->score()));
+                trajectory.insert_negative_flip(index, instance->score());
         }
         instance->revert_last_mutation();
     }

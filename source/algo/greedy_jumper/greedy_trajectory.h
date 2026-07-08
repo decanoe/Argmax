@@ -13,8 +13,9 @@ namespace LocalSearch {
         public:
         unsigned int index;
         float score;
+        float tie_breaker;
 
-        BitFlip(unsigned int index, float score);
+        BitFlip(unsigned int index, float score, std::shared_ptr<std::mt19937> random_generator);
         BitFlip();
 
         std::ostream& cout(std::ostream&) const;
@@ -25,11 +26,12 @@ namespace LocalSearch {
     protected:
         std::vector<BitFlip> bit_flips;
         bool finalized;
+        std::shared_ptr<std::mt19937> random_generator;
     public:
         GreedyHalfTrajectory();
 
         void ensure_insert_flip();
-        virtual GreedyHalfTrajectory* insert_flip(const BitFlip& flip) = 0;
+        virtual GreedyHalfTrajectory* insert_flip(unsigned int index, float score) = 0;
 
         virtual GreedyHalfTrajectory* set_seed(std::shared_ptr<std::mt19937> random_generator);
 
@@ -57,8 +59,8 @@ namespace LocalSearch {
 
         GreedyTrajectory* set_seed(std::shared_ptr<std::mt19937> random_generator);
 
-        GreedyTrajectory* insert_positive_flip(const BitFlip& flip);
-        GreedyTrajectory* insert_negative_flip(const BitFlip& flip);
+        GreedyTrajectory* insert_positive_flip(unsigned int index, float score);
+        GreedyTrajectory* insert_negative_flip(unsigned int index, float score);
 
         unsigned int finalize(unsigned int max_count = -1U);
         void clear();
