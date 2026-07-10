@@ -215,14 +215,39 @@ class RunFile:
         result: str = ""
         
         datas = self.get_similar_data()
+        added_datas: list[pd.DataFrame] = None
         for i in range(len(datas)):
             data: pd.DataFrame = datas[i]
             ends = data[(data.size_of_the_jump == 0) * (data.in_run_budget != 1) * (data.budget != data.budget.max())]
             ends = ends.reset_index(drop=True)
             
-            if len(ends) < 10: print(self.__repr__() + " is missing some runs (only " + str(len(ends)) + " found)")
             for idx, row in ends.iterrows():
                 result += self.to_csv_line_non_iterated(i, idx, row.fitness_after_jump, int(row.in_run_budget), "numrun=seed")
+            
+            if len(ends) < 10:
+                if (added_datas is None):
+                    added_datas = []
+                    temp_dir: str = os.path.dirname(self.path).replace("/local_search/b1_000_000/", "/HCtemp/")
+                    if (os.path.isdir(temp_dir)):
+                        files: list[str] = [f for f in os.listdir(temp_dir) if re.match(r"^_[0-9]+\.rundata$", f.removeprefix(self.algo_infos.algo)) and os.path.isfile(os.path.join(temp_dir, f))]
+                        files = sorted(files, key = lambda f : int(f.removesuffix(".rundata").split("_")[-1]))
+                        
+                        for file in files:
+                            with open(temp_dir + "/" + file) as f:
+                                temp_data = pd.read_csv(io.StringIO(f.read()), sep = "\t")
+                                temp_data = temp_data[temp_data.budget <= 1_000_000]
+                                self.normalize(temp_data)
+                                added_datas.append(temp_data)
+                if (len(added_datas) <= i): print("\n" + self.__repr__() + " is missing some runs (only " + str(len(ends)) + " found)\n")
+                added_data: pd.DataFrame = added_datas[i]
+                added_ends = added_data[(added_data.size_of_the_jump == 0) * (added_data.in_run_budget != 1) * (added_data.budget != added_data.budget.max())]
+                added_ends = added_ends.reset_index(drop=True)
+                
+                for idx, row in added_ends.iterrows():
+                    result += self.to_csv_line_non_iterated(i, idx, row.fitness_after_jump, int(row.in_run_budget), "numrun=seed")
+                
+                if len(ends) + len(added_ends) < 10:
+                    print("\n" + self.__repr__() + " is missing some runs (only " + str(len(ends)) + " found, even with added runs)\n")
             
         return result
     def to_csv_lines_iterated(self) -> str:
@@ -246,7 +271,7 @@ class RunFile:
         
             for i in range(len(datas)):
                 for budget in [10_000, 100_000] + ([1_000_000] if run == 0 else []):
-                    result += self.to_csv_line_iterated(i, run, budget, data[data.budget <= budget].fitness_after_jump.max(), "seed=numrun*10^6")
+                    result += self.to_csv_line_iterated(i, run, budget, datas[i][datas[i].budget <= budget].fitness_after_jump.max(), "seed=numrun*10^6")
             
         return result
     def to_csv_lines(self, iterated: bool) -> str:
